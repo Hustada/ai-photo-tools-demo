@@ -24,10 +24,19 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  /* display: flex; Removed to allow full-width app layout */
+  /* place-items: center; Removed to allow full-width app layout */
   min-width: 320px;
   min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  /* You might want to ensure App itself also takes full width/height if needed */
+  /* For example, by adding a display: flex; flex-direction: column; to #root */
+  /* and flex-grow: 1; to the .App div if it becomes a flex child. */
+  /* But for now, this should be sufficient. */
 }
 
 h1 {
