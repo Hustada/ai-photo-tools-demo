@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { companyCamService } from '../services/companyCamService';
 import type { Photo } from '../types';
 import PhotoModal from '../components/PhotoModal'; // Import the new modal component
+import PhotoCard from '../components/PhotoCard'; // Import the new PhotoCard component
 
 const HomePage: React.FC = () => {
   const [apiKey] = useState<string>(import.meta.env.VITE_APP_COMPANYCAM_API_KEY || '');
@@ -97,34 +98,12 @@ const HomePage: React.FC = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
         {photos.map((photo) => {
-          const thumbnailUrl = photo.uris.find(uri => uri.type === 'thumbnail')?.uri;
           return (
-            <div 
-              key={photo.id} 
-              style={{ border: '1px solid #ddd', padding: '10px', borderRadius: '4px', cursor: 'pointer' }} 
-              onClick={() => handlePhotoClick(photo)} // Open modal on click
-            >
-              {thumbnailUrl && (
-                <img 
-                  src={thumbnailUrl} 
-                  alt={photo.description || `Photo ${photo.id}`} 
-                  style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '4px' }} 
-                />
-              )}
-              <h3 style={{ fontSize: '1em', margin: '10px 0 5px' }}>{photo.description || `Photo ID: ${photo.id}`}</h3>
-              <p style={{ fontSize: '0.8em', color: '#555' }}>By: {photo.creator_name}</p>
-              <div style={{ marginTop: '10px' }}>
-                {photo.tags && photo.tags.length > 0 ? (
-                  photo.tags.map(tag => (
-                    <span key={tag.id} style={{ backgroundColor: '#e0e0e0', color: '#333', padding: '3px 8px', borderRadius: '12px', marginRight: '5px', marginBottom: '5px', fontSize: '0.75em', display: 'inline-block' }}>
-                      {tag.display_value}
-                    </span>
-                  ))
-                ) : (
-                  <span style={{ fontSize: '0.75em', color: '#777' }}>No tags</span>
-                )}
-              </div>
-            </div>
+            <PhotoCard
+              key={photo.id}
+              photo={photo}
+              onPhotoClick={handlePhotoClick}
+            />
           );
         })}
       </div>
