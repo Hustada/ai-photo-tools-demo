@@ -1,4 +1,4 @@
-// © 2025 Mark Hustad — MIT License
+// 2025 Mark Hustad — MIT License
 
 import axios from 'axios';
 import type { Photo, PhotosResponse, Tag, PhotoTagsResponse } from '../types';
@@ -51,10 +51,15 @@ export const companyCamService = {
           headers: getAuthHeaders(apiKey),
         },
       );
-      return response.data;
+      return response.data; // PhotoTagsResponse is Tag[]
     } catch (error: any) {
       console.error(`[companyCamService] getPhotoTags - Error fetching tags for photo ${photoId}:`, error.isAxiosError ? error.toJSON() : error);
-      throw error;
+      // Handle 404 specifically: if a photo has no tags, the API might 404.
+      if (axios.isAxiosError(error) && error.response && error.response.status === 404) {
+        console.log(`[companyCamService] getPhotoTags - Photo ${photoId} has no tags (404). Returning empty array.`);
+        return []; // Return empty array if no tags found (404)
+      }
+      throw error; // Re-throw other errors
     }
   },
 };

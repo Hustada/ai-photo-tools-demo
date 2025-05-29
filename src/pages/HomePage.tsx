@@ -1,47 +1,24 @@
 // © 2025 Mark Hustad — MIT License
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react'; 
 import { companyCamService } from '../services/companyCamService';
-import type { Photo, Tag } from '../types'; // Ensure Tag is imported
+import type { Photo, Tag } from '../types'; 
 import PhotoModal from '../components/PhotoModal';
 import PhotoCard from '../components/PhotoCard';
 
-// Define mock tags
-const now = Date.now();
-const mockCompanyId = 'mock_company_001';
-
-const mockTagsData: Tag[] = [
-  { id: 'mock_tag_1', company_id: mockCompanyId, display_value: 'Exterior', value: 'exterior', created_at: now, updated_at: now },
-  { id: 'mock_tag_2', company_id: mockCompanyId, display_value: 'Roofing', value: 'roofing', created_at: now, updated_at: now },
-  { id: 'mock_tag_3', company_id: mockCompanyId, display_value: 'Damage Assessment', value: 'damage_assessment', created_at: now, updated_at: now },
-  { id: 'mock_tag_4', company_id: mockCompanyId, display_value: 'Inspection Point', value: 'inspection_point', created_at: now, updated_at: now },
-  { id: 'mock_tag_5', company_id: mockCompanyId, display_value: 'Interior Detail', value: 'interior_detail', created_at: now, updated_at: now },
-  { id: 'mock_tag_6', company_id: mockCompanyId, display_value: 'Plumbing Issue', value: 'plumbing_issue', created_at: now, updated_at: now },
-  { id: 'mock_tag_7', company_id: mockCompanyId, display_value: 'Electrical Panel', value: 'electrical_panel', created_at: now, updated_at: now },
-  { id: 'mock_tag_8', company_id: mockCompanyId, display_value: 'Foundation Crack', value: 'foundation_crack', created_at: now, updated_at: now },
-  { id: 'mock_tag_9', company_id: mockCompanyId, display_value: 'Landscaping', value: 'landscaping', created_at: now, updated_at: now },
-  { id: 'mock_tag_10', company_id: mockCompanyId, display_value: 'Work in Progress', value: 'work_in_progress', created_at: now, updated_at: now },
-];
-
-// Helper function to get random tags
-const getRandomMockTags = (): Tag[] => {
-  const numberOfTags = Math.floor(Math.random() * 4); // 0 to 3 tags
-  const shuffled = [...mockTagsData].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, numberOfTags);
-};
-
 const HomePage: React.FC = () => {
   const [apiKey] = useState<string>(import.meta.env.VITE_APP_COMPANYCAM_API_KEY || '');
-  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]); 
+  const [allFetchedPhotos, setAllFetchedPhotos] = useState<Photo[]>([]); 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [hasMorePhotos, setHasMorePhotos] = useState<boolean>(true);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [activeTagIds, setActiveTagIds] = useState<string[]>([]); 
 
   const fetchPhotosAndTheirTags = async (pageToFetch: number) => {
     console.log('[HomePage] fetchPhotosAndTheirTags called for page:', pageToFetch);
-    console.log('[HomePage] Current API Key:', apiKey ? 'Exists' : 'MISSING/EMPTY');
     if (!apiKey) {
       setError('Please enter an API Key.');
       return;
@@ -49,46 +26,73 @@ const HomePage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const fetchedPhotos = await companyCamService.getPhotos(apiKey, pageToFetch, 20);
-      console.log('[HomePage] Fetched photos response:', fetchedPhotos);
+      const fetchedPhotosData = await companyCamService.getPhotos(apiKey, pageToFetch, 20);
+      console.log('[HomePage] Fetched photos raw from API:', fetchedPhotosData);
       
-      const photosWithProcessedTags = await Promise.all(
-        fetchedPhotos.map(async (photo, index) => {
-          if (index === 0) console.log('[HomePage] Processing tags for first photo:', photo.id);
+      const photosWithRealTags = await Promise.all(
+        fetchedPhotosData.map(async (photo) => {
           try {
             const tagsFromApi = await companyCamService.getPhotoTags(apiKey, photo.id);
-            if (index === 0) console.log(`[HomePage] Tags from API for photo ${photo.id}:`, tagsFromApi);
-            // If API returns tags and they are not empty, use them.
-            if (tagsFromApi && tagsFromApi.length > 0) {
-              return { ...photo, tags: tagsFromApi };
-            } else {
-              // No tags from API or API call failed for tags, assign mock tags
-              if (index === 0) console.log(`[HomePage] No tags from API for photo ${photo.id}, assigning mock tags.`);
-              return { ...photo, tags: getRandomMockTags() };
-            }
+            return { ...photo, tags: tagsFromApi || [] }; 
           } catch (tagError) {
-            console.warn(`Failed to fetch tags for photo ${photo.id}, assigning mock tags.`, tagError);
-            return { ...photo, tags: getRandomMockTags() }; // Assign mock tags on error
+            console.warn(`Failed to fetch tags for photo ${photo.id}. It will be shown with no tags.`, tagError);
+            return { ...photo, tags: [] }; 
           }
         })
       );
 
-      console.log('[HomePage] Photos with actual or mock tags processed:', photosWithProcessedTags);
-      setPhotos(prevPhotos => pageToFetch === 1 ? photosWithProcessedTags : [...prevPhotos, ...photosWithProcessedTags]);
+      console.log('[HomePage] Photos processed with their actual CompanyCam tags:', photosWithRealTags);
+      
+      setAllFetchedPhotos(prevAllPhotos => 
+        pageToFetch === 1 ? photosWithRealTags : [...prevAllPhotos, ...photosWithRealTags]
+      );
       setCurrentPage(pageToFetch);
-      setHasMorePhotos(fetchedPhotos.length === 20);
+      setHasMorePhotos(fetchedPhotosData.length === 20);
 
     } catch (err) {
       console.error('[HomePage] Error in fetchPhotosAndTheirTags:', err);
       setError('Failed to fetch photos. Check API Key and console for details.');
     } finally {
-      console.log('[HomePage] fetchPhotosAndTheirTags finally block reached.');
       setIsLoading(false);
     }
   };
 
+  const handleTagClick = (tagId: string) => {
+    setActiveTagIds(prev => 
+      prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
+    );
+  };
+
+  const applyClientSideFilters = () => {
+    if (activeTagIds.length === 0) {
+      setPhotos(allFetchedPhotos);
+      return;
+    }
+    const filtered = allFetchedPhotos.filter(photo => 
+      activeTagIds.every(filterTagId => 
+        photo.tags?.some(photoTag => photoTag.id === filterTagId)
+      )
+    );
+    setPhotos(filtered);
+  };
+
+  useEffect(() => {
+    applyClientSideFilters();
+  }, [activeTagIds, allFetchedPhotos]);
+
+  const uniqueFilterableTags = useMemo(() => {
+    const allTagsWithDuplicates = allFetchedPhotos.flatMap(photo => photo.tags || []);
+    const uniqueTagsMap = new Map<string, Tag>();
+    allTagsWithDuplicates.forEach(tag => {
+      if (tag && tag.id && !uniqueTagsMap.has(tag.id)) {
+        uniqueTagsMap.set(tag.id, tag);
+      }
+    });
+    return Array.from(uniqueTagsMap.values()).sort((a,b) => a.display_value.localeCompare(b.display_value));
+  }, [allFetchedPhotos]);
+
   const handleLoadMore = () => {
-    if (hasMorePhotos) {
+    if (hasMorePhotos && !isLoading) {
       fetchPhotosAndTheirTags(currentPage + 1);
     }
   };
@@ -107,15 +111,54 @@ const HomePage: React.FC = () => {
     } else {
       setError('API Key not found. Please ensure VITE_APP_COMPANYCAM_API_KEY is set in your .env file and you have restarted the development server.');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey]);
 
   return (
     <div className="p-5 font-sans">
       <h1 className="text-3xl font-bold mb-5 text-center">CompanyCam AI Photo Inspirations</h1>
+      
+      {uniqueFilterableTags.length > 0 && (
+        <div className="mb-5 p-4 border rounded bg-gray-50">
+          <h2 className="text-xl font-semibold mb-2">Filter by Tags:</h2>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {uniqueFilterableTags.map(tag => (
+              <button
+                key={tag.id}
+                onClick={() => handleTagClick(tag.id)}
+                className={`px-3 py-1 rounded-full text-sm transition-colors 
+                  ${activeTagIds.includes(tag.id) 
+                    ? 'bg-blue-500 text-white hover:bg-blue-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                {tag.display_value} ({allFetchedPhotos.filter(p => p.tags?.some(t => t.id === tag.id)).length})
+              </button>
+            ))}
+          </div>
+          {activeTagIds.length > 0 && (
+            <div className="mt-2">
+              <span className="text-sm font-medium">Active filters: </span>
+              {activeTagIds.map(tagId => {
+                const tag = uniqueFilterableTags.find(t => t.id === tagId);
+                return (
+                  <span key={tagId} className="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs mr-1 mb-1">
+                    {tag ? tag.display_value : tagId} 
+                  </span>
+                );
+              })}
+              <button 
+                onClick={() => setActiveTagIds([])} 
+                className="ml-2 text-xs text-red-500 hover:text-red-700 underline"
+              >
+                Clear All
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="mb-5 text-center">
         <button
-          onClick={() => fetchPhotosAndTheirTags(1)}
+          onClick={() => fetchPhotosAndTheirTags(1)} 
           disabled={isLoading || !apiKey}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
         >
@@ -131,6 +174,8 @@ const HomePage: React.FC = () => {
             key={photo.id}
             photo={photo}
             onPhotoClick={handlePhotoClick}
+            onTagClick={handleTagClick} 
+            activeTagIds={activeTagIds} 
           />
         ))}
       </div>
