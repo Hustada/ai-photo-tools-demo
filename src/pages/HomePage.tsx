@@ -1,8 +1,9 @@
-// © 2025 Mark Hustad — MIT License
+// 2025 Mark Hustad — MIT License
 
 import React, { useState, useEffect } from 'react';
 import { companyCamService } from '../services/companyCamService';
 import type { Photo } from '../types';
+import PhotoModal from '../components/PhotoModal'; // Import the new modal component
 
 const HomePage: React.FC = () => {
   const [apiKey] = useState<string>(import.meta.env.VITE_APP_COMPANYCAM_API_KEY || '');
@@ -11,6 +12,7 @@ const HomePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [hasMorePhotos, setHasMorePhotos] = useState<boolean>(true);
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null); // State for the selected photo
 
   const fetchPhotosAndTheirTags = async (pageToFetch: number) => {
     console.log('[HomePage] fetchPhotosAndTheirTags called for page:', pageToFetch);
@@ -55,7 +57,17 @@ const HomePage: React.FC = () => {
   };
 
   const handleLoadMore = () => {
-    fetchPhotosAndTheirTags(currentPage + 1);
+    if (hasMorePhotos) {
+      fetchPhotosAndTheirTags(currentPage + 1);
+    }
+  };
+
+  const handlePhotoClick = (photo: Photo) => {
+    setSelectedPhoto(photo);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedPhoto(null);
   };
   
   // Initial fetch if API key exists on load and on apiKey change
@@ -87,11 +99,17 @@ const HomePage: React.FC = () => {
         {photos.map((photo) => {
           const thumbnailUrl = photo.uris.find(uri => uri.type === 'thumbnail')?.uri;
           return (
-            <div key={photo.id} style={{ border: '1px solid #ccc', padding: '10px', borderRadius: '8px' }}>
-              {thumbnailUrl ? (
-                <img src={thumbnailUrl} alt={photo.description || `Photo ${photo.id}`} style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '4px' }} />
-              ) : (
-                <div style={{ width: '100%', height: '200px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px' }}>No Thumbnail</div>
+            <div 
+              key={photo.id} 
+              style={{ border: '1px solid #ddd', padding: '10px', borderRadius: '4px', cursor: 'pointer' }} 
+              onClick={() => handlePhotoClick(photo)} // Open modal on click
+            >
+              {thumbnailUrl && (
+                <img 
+                  src={thumbnailUrl} 
+                  alt={photo.description || `Photo ${photo.id}`} 
+                  style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '4px' }} 
+                />
               )}
               <h3 style={{ fontSize: '1em', margin: '10px 0 5px' }}>{photo.description || `Photo ID: ${photo.id}`}</h3>
               <p style={{ fontSize: '0.8em', color: '#555' }}>By: {photo.creator_name}</p>
@@ -121,6 +139,10 @@ const HomePage: React.FC = () => {
             <p style={{ color: '#555', fontStyle: 'italic' }}>All photos loaded.</p>
           )}
         </div>
+      )}
+
+      {selectedPhoto && (
+        <PhotoModal photo={selectedPhoto} onClose={handleCloseModal} />
       )}
     </div>
   );
