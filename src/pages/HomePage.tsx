@@ -10,7 +10,7 @@ const HomePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
-
+  const [hasMorePhotos, setHasMorePhotos] = useState<boolean>(true);
 
   const fetchPhotosAndTheirTags = async (pageToFetch: number) => {
     console.log('[HomePage] fetchPhotosAndTheirTags called for page:', pageToFetch);
@@ -42,6 +42,7 @@ const HomePage: React.FC = () => {
       console.log('[HomePage] Photos with tags processed:', photosWithTags);
       setPhotos(prevPhotos => pageToFetch === 1 ? photosWithTags : [...prevPhotos, ...photosWithTags]);
       setCurrentPage(pageToFetch);
+      setHasMorePhotos(fetchedPhotos.length === 20);
 
     } catch (err) {
       console.error('[HomePage] Error in fetchPhotosAndTheirTags:', err);
@@ -112,9 +113,13 @@ const HomePage: React.FC = () => {
       
       {photos.length > 0 && !isLoading && (
         <div style={{ marginTop: '20px', textAlign: 'center' }}>
-          <button onClick={handleLoadMore} disabled={isLoading} style={{ padding: '10px 20px' }}>
-            {isLoading ? 'Loading...' : 'Load More'}
-          </button>
+          {hasMorePhotos ? (
+            <button onClick={handleLoadMore} disabled={isLoading} style={{ padding: '10px 20px' }}>
+              Load More
+            </button>
+          ) : (
+            <p style={{ color: '#555', fontStyle: 'italic' }}>All photos loaded.</p>
+          )}
         </div>
       )}
     </div>
