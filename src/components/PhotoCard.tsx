@@ -11,35 +11,45 @@ interface PhotoCardProps {
 const PhotoCard: React.FC<PhotoCardProps> = ({ photo, onPhotoClick }) => {
   const thumbnailUrl = photo.uris.find(uri => uri.type === 'thumbnail')?.uri;
 
-  // Note: The outer 'key' prop is handled when PhotoCard is used in a list (e.g., in HomePage.tsx).
-  // We will replace inline styles with Tailwind classes in the next step.
   return (
     <div
-      style={{ border: '1px solid #ddd', padding: '10px', borderRadius: '4px', cursor: 'pointer' }}
-      onClick={() => onPhotoClick(photo)} // Use the onPhotoClick prop
+      className="bg-white border border-gray-300 p-4 rounded-lg cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-200 ease-in-out flex flex-col" // Added flex flex-col
+      onClick={() => onPhotoClick(photo)}
     >
-      {thumbnailUrl && (
-        <img
-          src={thumbnailUrl}
-          alt={photo.description || `Photo ${photo.id}`}
-          style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '4px' }}
-        />
-      )}
-      <h3 style={{ fontSize: '1em', margin: '10px 0 5px' }}>{photo.description || `Photo ID: ${photo.id}`}</h3>
-      <p style={{ fontSize: '0.8em', color: '#555' }}>By: {photo.creator_name}</p>
-      <div style={{ marginTop: '10px' }}>
-        {photo.tags && photo.tags.length > 0 ? (
-          photo.tags.map((tag) => ( // TypeScript should infer 'tag' type from 'photo.tags'
-            <span 
-              key={tag.id} // Inner key for list of tags
-              style={{ backgroundColor: '#e0e0e0', color: '#333', padding: '3px 8px', borderRadius: '12px', marginRight: '5px', marginBottom: '5px', fontSize: '0.75em', display: 'inline-block' }}
-            >
-              {tag.display_value}
-            </span>
-          ))
+      <div className="w-full h-48 rounded-md mb-3 bg-gray-100 flex items-center justify-center overflow-hidden"> {/* Image container / placeholder */}
+        {thumbnailUrl ? (
+          <img
+            src={thumbnailUrl}
+            alt={photo.description || `Photo ${photo.id}`}
+            className="w-full h-full object-cover" // Image fills its container
+          />
         ) : (
-          <span style={{ fontSize: '0.75em', color: '#777' }}>No tags</span>
+          <span className="text-gray-400 text-sm">No Image Available</span>
         )}
+      </div>
+      
+      {/* Text content area */}
+      <div className="flex flex-col flex-grow"> {/* Added flex-grow to allow this section to expand */}
+        <h3 className="text-lg font-semibold text-gray-800 mb-1 mt-2 truncate">
+          {photo.description || `Photo ID: ${photo.id}`}
+        </h3>
+        <p className="text-sm text-gray-600 mb-2 truncate">
+          By: {photo.creator_name || 'Unknown Creator'}
+        </p>
+        <div className="mt-auto pt-2 flex flex-wrap gap-2"> {/* Pushed to bottom, added pt-2 for spacing from content above */}
+          {photo.tags && photo.tags.length > 0 ? (
+            photo.tags.map((tag) => (
+              <span
+                key={tag.id}
+                className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs"
+              >
+                {tag.display_value}
+              </span>
+            ))
+          ) : (
+            <span className="text-xs text-gray-500 italic">No tags</span>
+          )}
+        </div>
       </div>
     </div>
   );
