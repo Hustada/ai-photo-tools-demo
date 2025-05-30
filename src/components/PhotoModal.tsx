@@ -56,7 +56,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
       const response = await fetch('/api/suggest-ai-tags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl: mainImageUri }),
+        body: JSON.stringify({ photoUrl: mainImageUri }),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response.' }));
@@ -66,11 +66,11 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
       }
       const data = await response.json();
       const existingTagValues = photo.tags?.map(t => t.display_value.toLowerCase()) || [];
-      const filteredSuggestions = data.tags.filter(
+      const filteredSuggestions = data.suggestedTags.filter(
         (tag: string) => !existingTagValues.includes(tag.toLowerCase())
       );
       setAiSuggestedTags(filteredSuggestions);
-      setAiSuggestedDescription(data.description || '');
+      setAiSuggestedDescription(data.suggestedDescription || '');
     } catch (error: unknown) {
       console.error('Failed to fetch AI suggestions:', error);
       // Type guard for error message

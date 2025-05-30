@@ -1,7 +1,37 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
+  "compilerOptions": {
+    // Common options
+    "strict": true,
+    "skipLibCheck": true, // Skips type checking of declaration files in node_modules
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true, // Enables compatibility with CommonJS modules
+    "baseUrl": ".",
+    "allowJs": true,
+
+    // --- API Routes (Vercel Serverless Functions - Node.js) ---
+    // These settings should take precedence for files in 'api/' due to Vercel's build process
+    "target": "ES2022", // Target modern ECMAScript for Node.js features
+    "module": "CommonJS", // Output CommonJS modules for Node.js
+    "moduleResolution": "node", // How modules are resolved for CommonJS
+    "lib": ["ES2022"], // Standard libraries available
+    "noEmit": false, // Vercel needs JavaScript files to be emitted for API routes
+    "downlevelIteration": true, // Ensures correct iteration for older targets if needed, safe to include
+
+    // --- Frontend (src - Vite will primarily use tsconfig.app.json) ---
+    // These are here for editor support if not overridden by tsconfig.app.json for 'src' files
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "api/**/*.ts",     // Vercel API routes
+    "src/**/*.ts",     // Frontend source files
+    "src/**/*.tsx",    // Frontend React components
+    "vite.config.ts"
+    // Add any other specific .ts files if necessary
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".vercel"
   ]
 }
