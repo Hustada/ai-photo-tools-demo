@@ -3,6 +3,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import https from 'https';
 import OpenAI from 'openai';
+import { Pinecone } from '@pinecone-database/pinecone';
 
 // Initialize OpenAI client
 // Ensure OPENAI_API_KEY is set in your .env file
@@ -50,14 +51,62 @@ interface AiSuggestions {
 
 // --- Stubs for future AI pipeline steps ---
 
-// Placeholder for embedding vector type
-type EmbeddingVector = number[];
+// Embedding vector type from OpenAI (e.g., text-embedding-3-small has 1536 dimensions)
+export type EmbeddingVector = number[];
 
 // Placeholder for memory chunk type retrieved from vector DB
 interface MemoryChunk {
   id: string;
   text: string; // Combined labels/description from a past similar photo
   similarity: number;
+}
+
+async function queryVectorMemory(
+  embedding: EmbeddingVector,
+  userId?: string
+): Promise<MemoryChunk[]> {
+  console.log(`Attempting to query Pinecone vector memory. UserID: ${userId}`);
+
+  const apiKey = process.env.PINECONE_API_KEY;
+  const environment = process.env.PINECONE_ENVIRONMENT;
+  const indexName = process.env.PINECONE_INDEX_NAME;
+
+  if (!apiKey || !environment || !indexName) {
+    console.error('Pinecone API key, environment, or index name is not configured in environment variables.');
+    return []; 
+  }
+
+  try {
+    const pinecone = new Pinecone(); // Automatically uses PINECONE_API_KEY and PINECONE_ENVIRONMENT from process.env for v6+
+
+    const index = pinecone.index<{
+      text: string; 
+      imageUrl?: string;
+      originalPhotoId?: string; 
+    }>(indexName);
+
+    const queryResponse = await index.query({
+      vector: embedding,
+      topK: 5, 
+      includeMetadata: true,
+    });
+
+    if (queryResponse.matches && queryResponse.matches.length > 0) {
+      console.log(`Found ${queryResponse.matches.length} matches in Pinecone.`);
+      const memoryChunksToReturn: MemoryChunk[] = queryResponse.matches.map(match => ({
+        id: match.id, 
+        text: match.metadata?.text || 'No text metadata found',
+        similarity: match.score || 0, 
+      }));
+      return memoryChunksToReturn;
+    } else {
+      console.log('No matches found in Pinecone for the given embedding.');
+      return [];
+    }
+  } catch (error) {
+    console.error('Error querying Pinecone:', error);
+    return []; 
+  }
 }
 
 // Placeholder for GPT prompt structure
@@ -77,16 +126,14 @@ async function generateEmbeddings(
     throw new Error('OpenAI API key not configured.');
   }
 
-  // Construct a single text string from labels and web entities for embedding
   const labelDescriptions = (labels || [])
-    .filter(label => label.description && (label.score || 0) > 0.6) // Filter by a confidence score threshold
+    .filter(label => label.description && (label.score || 0) > 0.6)
     .map(label => label.description!);
   
   const webEntityDescriptions = (webEntities || [])
-    .filter(entity => entity.description && (entity.score || 0) > 0.2) // Filter by a confidence score threshold
+    .filter(entity => entity.description && (entity.score || 0) > 0.2)
     .map(entity => entity.description!);
   
-  // Combine, ensuring uniqueness and prioritizing more confident items if necessary (though set handles uniqueness)
   const combinedTextItems = [...new Set([...labelDescriptions, ...webEntityDescriptions])];
   const inputText = combinedTextItems.join(', ').trim();
 
@@ -101,7 +148,6 @@ async function generateEmbeddings(
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: inputText,
-      // dimensions: 1536 // Optional for text-embedding-3-small as it defaults to 1536
     });
 
     if (embeddingResponse.data && embeddingResponse.data.length > 0 && embeddingResponse.data[0].embedding) {
@@ -121,28 +167,11 @@ async function generateEmbeddings(
   }
 }
 
-async function queryVectorMemory(
-  embedding: EmbeddingVector,
-  userId?: string
-): Promise<MemoryChunk[]> {
-  console.log('STUB: queryVectorMemory called with embedding. UserID:', userId);
-  // In a real implementation, query global and user-specific vector DB namespaces
-  // For now, return empty array or mock data
-  if (userId) {
-    return [
-      { id: 'user_mem_1', text: 'User-specific example: roofing repair job', similarity: 0.85 },
-    ];
-  }
-  return [
-    { id: 'global_mem_1', text: 'Global example: exterior siding inspection', similarity: 0.8 },
-  ];
-}
-
 async function assembleGptPrompt(
   visionResponse: GoogleVisionResponse,
   memoryChunks: MemoryChunk[]
 ): Promise<GptPrompt> {
-  console.log('STUB: assembleGptPrompt called with vision data and memory chunks:', memoryChunks);
+  console.log('STUB: assembleGptPrompt called with vision data and memory chunks:', memoryChunks.length);
   const systemMessage =
     'You are an expert construction photo analyst for CompanyCam. Your task is to suggest concise tags (3-5) and a one-sentence CompanyCam-style description based on the provided image labels and relevant past examples. Identify any checklist triggers if applicable.';
   
