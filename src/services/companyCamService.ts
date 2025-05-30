@@ -62,4 +62,61 @@ export const companyCamService = {
       throw error; // Re-throw other errors
     }
   },
+
+  listCompanyCamTags: async (apiKey: string): Promise<Tag[]> => {
+    console.log('[companyCamService] listCompanyCamTags called with:', { apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY' });
+    try {
+      console.log('[companyCamService] listCompanyCamTags - Making GET request to:', `${API_BASE_URL}/tags`);
+      // The API for listing all tags might be paginated. For simplicity, we'll assume it returns all tags
+      // or we'd need to implement pagination handling here if it's a large number of tags.
+      const response = await axios.get<Tag[]>(`${API_BASE_URL}/tags`, {
+        headers: getAuthHeaders(apiKey),
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('[companyCamService] listCompanyCamTags - Error fetching all tags:', error.isAxiosError ? error.toJSON() : error);
+      throw error;
+    }
+  },
+
+  createCompanyCamTagDefinition: async (apiKey: string, displayValue: string): Promise<Tag> => {
+    console.log('[companyCamService] createCompanyCamTagDefinition called with:', { apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY', displayValue });
+    try {
+      console.log('[companyCamService] createCompanyCamTagDefinition - Making POST request to:', `${API_BASE_URL}/tags`);
+      const response = await axios.post<Tag>(
+        `${API_BASE_URL}/tags`,
+        { tag: { display_value: displayValue } }, // Correct payload structure
+        {
+          headers: getAuthHeaders(apiKey),
+        },
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error(`[companyCamService] createCompanyCamTagDefinition - Error creating tag definition for '${displayValue}':`, error.isAxiosError ? error.toJSON() : error);
+      throw error;
+    }
+  },
+
+  addTagsToPhoto: async (apiKey: string, photoId: string, tagIds: string[]): Promise<any> => { // API returns 204 No Content on success
+    console.log('[companyCamService] addTagsToPhoto called with:', { apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY', photoId, tagIds });
+    if (tagIds.length === 0) {
+      console.log('[companyCamService] addTagsToPhoto - No tag IDs provided, skipping API call.');
+      return Promise.resolve({ message: 'No tags to add.' }); // Or handle as appropriate
+    }
+    try {
+      console.log('[companyCamService] addTagsToPhoto - Making POST request to:', `${API_BASE_URL}/photos/${photoId}/tags`);
+      const response = await axios.post(
+        `${API_BASE_URL}/photos/${photoId}/tags`,
+        { tag_ids: tagIds }, // Correct payload structure
+        {
+          headers: getAuthHeaders(apiKey),
+        },
+      );
+      // Successful response is typically 204 No Content, so response.data might be undefined or empty.
+      return response.data; // Or return a success status/message
+    } catch (error: any) {
+      console.error(`[companyCamService] addTagsToPhoto - Error adding tags to photo ${photoId}:`, error.isAxiosError ? error.toJSON() : error);
+      throw error;
+    }
+  },
 };

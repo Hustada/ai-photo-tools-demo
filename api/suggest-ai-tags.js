@@ -73,6 +73,7 @@ export default async function handler(event, context) {
         },
         features: [
           { type: 'LABEL_DETECTION', maxResults: 10 },
+          { type: 'WEB_DETECTION', maxResults: 5 }, // Added WEB_DETECTION
         ],
       },
     ],
@@ -147,12 +148,29 @@ export default async function handler(event, context) {
 
     console.log('Google Vision API call promise resolved/rejected. Processing response.');
     // @ts-ignore
-    const labels = visionResponseData.responses[0]?.labelAnnotations || [];
+    const visionAnnotations = visionResponseData.responses[0];
+    const labels = visionAnnotations?.labelAnnotations || [];
     // @ts-ignore
     const suggestedTags = labels.map(label => label.description).filter(Boolean);
-    console.log(`Successfully retrieved and processed tags: ${suggestedTags.length} tags found.`);
 
-    context.status(200).json({ suggestedTags });
+    let suggestedDescription = '';
+    const webDetection = visionAnnotations?.webDetection;
+    if (webDetection && webDetection.bestGuessLabels && webDetection.bestGuessLabels.length > 0) {
+      // Using the first best guess label as a primary description point.
+      // You could also join multiple, or use webEntities for more detail.
+      suggestedDescription = webDetection.bestGuessLabels[0]?.label || '';
+      if (suggestedDescription) {
+        // Capitalize the first letter
+        suggestedDescription = suggestedDescription.charAt(0).toUpperCase() + suggestedDescription.slice(1);
+      }
+    }
+    
+    console.log(`Successfully retrieved and processed tags: ${suggestedTags.length} tags found.`);
+    if (suggestedDescription) {
+      console.log(`Suggested description: ${suggestedDescription}`);
+    }
+
+    context.status(200).json({ suggestedTags, suggestedDescription });
     return;
 
   } catch (error) {

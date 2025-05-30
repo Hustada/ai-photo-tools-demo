@@ -104,6 +104,30 @@ const HomePage: React.FC = () => {
   const handleCloseModal = () => {
     setSelectedPhoto(null);
   };
+
+  const handleTagAddedToPhoto = (photoId: string, newTag: Tag) => {
+    setAllFetchedPhotos(prevPhotos =>
+      prevPhotos.map(p => {
+        if (p.id === photoId) {
+          const existingTags = p.tags || [];
+          if (!existingTags.find(t => t.id === newTag.id)) {
+            return { ...p, tags: [...existingTags, newTag] };
+          }
+        }
+        return p;
+      })
+    );
+    // Also update the selectedPhoto if it's the one being modified, to reflect in modal immediately
+    setSelectedPhoto(prevSelected => {
+      if (prevSelected && prevSelected.id === photoId) {
+        const existingTags = prevSelected.tags || [];
+        if (!existingTags.find(t => t.id === newTag.id)) {
+          return { ...prevSelected, tags: [...existingTags, newTag] };
+        }
+      }
+      return prevSelected;
+    });
+  };
   
   useEffect(() => {
     if (apiKey) {
@@ -197,7 +221,12 @@ const HomePage: React.FC = () => {
       )}
 
       {selectedPhoto && (
-        <PhotoModal photo={selectedPhoto} onClose={handleCloseModal} />
+        <PhotoModal 
+          photo={selectedPhoto} 
+          onClose={handleCloseModal} 
+          apiKey={apiKey}
+          onTagAdded={handleTagAddedToPhoto}
+        />
       )}
     </div>
   );
