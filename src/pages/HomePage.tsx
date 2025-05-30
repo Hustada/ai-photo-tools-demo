@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { companyCamService } from '../services/companyCamService';
 import type { Photo, Tag } from '../types';
 import PhotoModal from '../components/PhotoModal';
-import PhotoCard from '../components/PhotoCard';
+import PhotoCard, { type PhotoCardAiSuggestionState } from '../components/PhotoCard';
 
 const HomePage: React.FC = () => {
   const [apiKey] = useState<string>(import.meta.env.VITE_APP_COMPANYCAM_API_KEY || '');
@@ -16,6 +16,7 @@ const HomePage: React.FC = () => {
   const [hasMorePhotos, setHasMorePhotos] = useState<boolean>(true);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [activeTagIds, setActiveTagIds] = useState<string[]>([]);
+  const [aiSuggestionsCache, setAiSuggestionsCache] = useState<Record<string, PhotoCardAiSuggestionState>>({});
 
   const handlePhotoClick = (photo: Photo) => {
     setSelectedPhoto(photo);
@@ -151,6 +152,69 @@ const HomePage: React.FC = () => {
     return Array.from(uniqueTagsMap.values()).sort((a, b) => a.display_value.localeCompare(b.display_value));
   }, [allFetchedPhotos]);
 
+  const fetchAiSuggestionsForPhoto = useCallback(async (photoId: string, photoUrl: string) => {
+    if (!photoUrl) {
+      setAiSuggestionsCache(prev => ({
+        ...prev,
+        [photoId]: { tags: [], description: '', isLoading: false, error: 'Photo URL is missing.' },
+      }));
+      return;
+    }
+
+    setAiSuggestionsCache(prev => ({
+      ...prev,
+      [photoId]: { ...(prev[photoId] || { tags: [], description: '', error: null }), isLoading: true },
+    }));
+
+    try {
+      const response = await fetch('/api/suggest-ai-tags', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ photoUrl }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response.' })) as { message?: string };
+        throw new Error(
+          `HTTP error! status: ${response.status}, Message: ${errorData.message || response.statusText}`
+        );
+      }
+      const data = await response.json() as { suggestedTags: string[], suggestedDescription?: string };
+      const existingPhotoTags = allFetchedPhotos.find(p => p.id === photoId)?.tags?.map(t => t.display_value.toLowerCase()) || [];
+      const filteredSuggestions = data.suggestedTags.filter(
+        (tag: string) => !existingPhotoTags.includes(tag.toLowerCase())
+      );
+
+      setAiSuggestionsCache(prev => ({
+        ...prev,
+        [photoId]: {
+          tags: filteredSuggestions,
+          description: data.suggestedDescription || '',
+          isLoading: false,
+          error: null,
+        },
+      }));
+    } catch (error: unknown) {
+      let message = 'An unknown error occurred while fetching suggestions.';
+      if (error instanceof Error) {
+        message = error.message;
+      } else if (typeof error === 'string') {
+        message = error;
+      }
+      setAiSuggestionsCache(prev => ({
+        ...prev,
+        [photoId]: {
+          tags: [],
+          description: '',
+          isLoading: false,
+          error: message,
+        },
+      }));
+    }
+  }, [allFetchedPhotos]);
+
   const handleLoadMore = () => {
     if (hasMorePhotos && !isLoading) {
       fetchPhotosAndTheirTags(currentPage + 1);
@@ -225,11 +289,12 @@ const HomePage: React.FC = () => {
           <PhotoCard
             key={photo.id}
             photo={photo}
-            onPhotoClick={handlePhotoClick}
-            onTagClick={handleTagClick}
-            activeTagIds={activeTagIds}
-            mockTagsData={[]} 
             onAddTagToCompanyCam={handleAddTagRequest}
+            onTagClick={handleTagClick}
+            onPhotoClick={() => handlePhotoClick(photo)}
+            mockTagsData={[]} // For manually adding known tags, not AI ones
+            aiSuggestionData={aiSuggestionsCache[photo.id]}
+            onFetchAiSuggestions={fetchAiSuggestionsForPhoto}
           />
         ))}
       </div>
@@ -259,7 +324,9 @@ const HomePage: React.FC = () => {
           photo={selectedPhoto}
           onClose={handleCloseModal}
           apiKey={apiKey}
-          onTagAdded={handleTagAddedToPhoto} 
+          onTagAdded={handleTagAddedToPhoto}
+          aiSuggestionData={selectedPhoto ? aiSuggestionsCache[selectedPhoto.id] : undefined}
+          onFetchAiSuggestions={fetchAiSuggestionsForPhoto}
         />
       )}
     </div>
