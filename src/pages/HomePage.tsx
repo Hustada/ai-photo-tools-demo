@@ -1,6 +1,6 @@
 // © 2025 Mark Hustad — MIT License
 
-import React, { useState, useEffect, useMemo } from 'react'; 
+import React, { useState, useEffect, useMemo, useCallback } from 'react'; 
 import { companyCamService } from '../services/companyCamService';
 import type { Photo, Tag } from '../types'; 
 import PhotoModal from '../components/PhotoModal';
@@ -17,7 +17,7 @@ const HomePage: React.FC = () => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [activeTagIds, setActiveTagIds] = useState<string[]>([]); 
 
-  const fetchPhotosAndTheirTags = async (pageToFetch: number) => {
+  const fetchPhotosAndTheirTags = useCallback(async (pageToFetch: number) => {
     console.log('[HomePage] fetchPhotosAndTheirTags called for page:', pageToFetch);
     if (!apiKey) {
       setError('Please enter an API Key.');
@@ -55,7 +55,7 @@ const HomePage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [apiKey]); // Added apiKey as dependency for useCallback
 
   const handleTagClick = (tagId: string) => {
     setActiveTagIds(prev => 
@@ -63,7 +63,7 @@ const HomePage: React.FC = () => {
     );
   };
 
-  const applyClientSideFilters = () => {
+  const applyClientSideFilters = useCallback(() => {
     if (activeTagIds.length === 0) {
       setPhotos(allFetchedPhotos);
       return;
@@ -74,11 +74,11 @@ const HomePage: React.FC = () => {
       )
     );
     setPhotos(filtered);
-  };
+  }, [allFetchedPhotos, activeTagIds]); // Added dependencies for useCallback
 
   useEffect(() => {
     applyClientSideFilters();
-  }, [activeTagIds, allFetchedPhotos]);
+  }, [applyClientSideFilters]); // Now depends on the memoized function
 
   const uniqueFilterableTags = useMemo(() => {
     const allTagsWithDuplicates = allFetchedPhotos.flatMap(photo => photo.tags || []);
@@ -135,7 +135,7 @@ const HomePage: React.FC = () => {
     } else {
       setError('API Key not found. Please ensure VITE_APP_COMPANYCAM_API_KEY is set in your .env file and you have restarted the development server.');
     }
-  }, [apiKey]);
+  }, [apiKey, fetchPhotosAndTheirTags]); // Added fetchPhotosAndTheirTags
 
   return (
     <div className="p-5 font-sans">

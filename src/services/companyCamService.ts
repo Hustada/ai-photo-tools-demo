@@ -21,7 +21,7 @@ export const companyCamService = {
   ): Promise<Photo[]> => {
     console.log('[companyCamService] getPhotos called with:', { apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY', page, perPage, tagIds });
     try {
-      const params: Record<string, any> = {
+      const params: Record<string, string | number | string[] | undefined> = {
         page,
         per_page: perPage,
       };
@@ -34,8 +34,14 @@ export const companyCamService = {
         params,
       });
       return response.data;
-    } catch (error: any) {
-      console.error('[companyCamService] getPhotos - Error fetching photos:', error.isAxiosError ? error.toJSON() : error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('[companyCamService] getPhotos - Error fetching photos (Axios):', error.toJSON());
+      } else if (error instanceof Error) {
+        console.error('[companyCamService] getPhotos - Error fetching photos (Generic):', error.message);
+      } else {
+        console.error('[companyCamService] getPhotos - Unknown error fetching photos:', error);
+      }
       // Consider more sophisticated error handling
       throw error;
     }
@@ -52,12 +58,18 @@ export const companyCamService = {
         },
       );
       return response.data; // PhotoTagsResponse is Tag[]
-    } catch (error: any) {
-      console.error(`[companyCamService] getPhotoTags - Error fetching tags for photo ${photoId}:`, error.isAxiosError ? error.toJSON() : error);
-      // Handle 404 specifically: if a photo has no tags, the API might 404.
-      if (axios.isAxiosError(error) && error.response && error.response.status === 404) {
-        console.log(`[companyCamService] getPhotoTags - Photo ${photoId} has no tags (404). Returning empty array.`);
-        return []; // Return empty array if no tags found (404)
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error(`[companyCamService] getPhotoTags - Error fetching tags for photo ${photoId} (Axios):`, error.toJSON());
+        // Handle 404 specifically: if a photo has no tags, the API might 404.
+        if (error.response && error.response.status === 404) {
+          console.log(`[companyCamService] getPhotoTags - Photo ${photoId} has no tags (404). Returning empty array.`);
+          return []; // Return empty array if no tags found (404)
+        }
+      } else if (error instanceof Error) {
+        console.error(`[companyCamService] getPhotoTags - Error fetching tags for photo ${photoId} (Generic):`, error.message);
+      } else {
+        console.error(`[companyCamService] getPhotoTags - Unknown error fetching tags for photo ${photoId}:`, error);
       }
       throw error; // Re-throw other errors
     }
@@ -73,8 +85,14 @@ export const companyCamService = {
         headers: getAuthHeaders(apiKey),
       });
       return response.data;
-    } catch (error: any) {
-      console.error('[companyCamService] listCompanyCamTags - Error fetching all tags:', error.isAxiosError ? error.toJSON() : error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('[companyCamService] listCompanyCamTags - Error fetching all tags (Axios):', error.toJSON());
+      } else if (error instanceof Error) {
+        console.error('[companyCamService] listCompanyCamTags - Error fetching all tags (Generic):', error.message);
+      } else {
+        console.error('[companyCamService] listCompanyCamTags - Unknown error fetching all tags:', error);
+      }
       throw error;
     }
   },
@@ -91,21 +109,27 @@ export const companyCamService = {
         },
       );
       return response.data;
-    } catch (error: any) {
-      console.error(`[companyCamService] createCompanyCamTagDefinition - Error creating tag definition for '${displayValue}':`, error.isAxiosError ? error.toJSON() : error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error(`[companyCamService] createCompanyCamTagDefinition - Error creating tag definition for '${displayValue}' (Axios):`, error.toJSON());
+      } else if (error instanceof Error) {
+        console.error(`[companyCamService] createCompanyCamTagDefinition - Error creating tag definition for '${displayValue}' (Generic):`, error.message);
+      } else {
+        console.error(`[companyCamService] createCompanyCamTagDefinition - Unknown error creating tag definition for '${displayValue}':`, error);
+      }
       throw error;
     }
   },
 
-  addTagsToPhoto: async (apiKey: string, photoId: string, tagIds: string[]): Promise<any> => { // API returns 204 No Content on success
+  addTagsToPhoto: async (apiKey: string, photoId: string, tagIds: string[]): Promise<void> => { // API returns 204 No Content on success
     console.log('[companyCamService] addTagsToPhoto called with:', { apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY', photoId, tagIds });
     if (tagIds.length === 0) {
       console.log('[companyCamService] addTagsToPhoto - No tag IDs provided, skipping API call.');
-      return Promise.resolve({ message: 'No tags to add.' }); // Or handle as appropriate
+      return Promise.resolve(); // Or handle as appropriate
     }
     try {
       console.log('[companyCamService] addTagsToPhoto - Making POST request to:', `${API_BASE_URL}/photos/${photoId}/tags`);
-      const response = await axios.post(
+      await axios.post(
         `${API_BASE_URL}/photos/${photoId}/tags`,
         { tag_ids: tagIds }, // Correct payload structure
         {
@@ -113,9 +137,15 @@ export const companyCamService = {
         },
       );
       // Successful response is typically 204 No Content, so response.data might be undefined or empty.
-      return response.data; // Or return a success status/message
-    } catch (error: any) {
-      console.error(`[companyCamService] addTagsToPhoto - Error adding tags to photo ${photoId}:`, error.isAxiosError ? error.toJSON() : error);
+      return; // Or return a success status/message
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error(`[companyCamService] addTagsToPhoto - Error adding tags to photo ${photoId} (Axios):`, error.toJSON());
+      } else if (error instanceof Error) {
+        console.error(`[companyCamService] addTagsToPhoto - Error adding tags to photo ${photoId} (Generic):`, error.message);
+      } else {
+        console.error(`[companyCamService] addTagsToPhoto - Unknown error adding tags to photo ${photoId}:`, error);
+      }
       throw error;
     }
   },

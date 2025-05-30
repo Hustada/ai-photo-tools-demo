@@ -1,5 +1,11 @@
 // © 2025 Mark Hustad — MIT License
 
+export interface Coordinate {
+  latitude: number;
+  longitude: number;
+  altitude?: number; // Optional altitude
+}
+
 export interface ImageURI {
   type: 'original' | 'web' | 'thumbnail' | string; // Allow for other types if they exist
   uri: string;
@@ -28,7 +34,7 @@ export interface Photo {
     | 'processed'
     | 'processing_error'
     | 'duplicate';
-  coordinates: any[]; // Define Coordinate type if needed later
+  coordinates: Coordinate[];
   uris: ImageURI[];
   hash: string;
   description: string | null;
