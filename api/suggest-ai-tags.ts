@@ -169,21 +169,47 @@ async function generateEmbeddings(
 
 async function assembleGptPrompt(
   visionResponse: GoogleVisionResponse,
-  memoryChunks: MemoryChunk[]
+  memoryChunks: MemoryChunk[],
+  photoUrl: string // Added photoUrl here
 ): Promise<GptPrompt> {
-  console.log('STUB: assembleGptPrompt called with vision data and memory chunks:', memoryChunks.length);
-  const systemMessage =
-    'You are an expert construction photo analyst for CompanyCam. Your task is to suggest concise tags (3-5) and a one-sentence CompanyCam-style description based on the provided image labels and relevant past examples. Identify any checklist triggers if applicable.';
-  
-  const userMessages: Array<{ type: 'text'; text: string }> = [
-    { type: 'text', text: `Image Labels: ${visionResponse.labelAnnotations?.map(l => l.description).join(', ') || 'None'}` },
-    { type: 'text', text: `Web Entities: ${visionResponse.webDetection?.webEntities?.map(e => e.description).join(', ') || 'None'}` },
+  console.log(
+    `Assembling GPT prompt. Vision labels: ${visionResponse.labelAnnotations?.length || 0}, Web entities: ${visionResponse.webDetection?.webEntities?.length || 0}, Memory chunks: ${memoryChunks.length}`
+  );
+
+  const systemMessage = `You are an expert construction photo analyst for CompanyCam. Your task is to analyze the provided image information (labels, web entities, and relevant past examples) and the image itself.
+Respond with a JSON object containing the following keys:
+- "suggested_tags": An array of 3-5 concise and relevant string tags.
+- "suggested_description": A single, CompanyCam-style descriptive sentence for the photo.
+- "checklist_triggers": An optional array of strings if any specific checklist items are triggered by the photo's content. If none, this can be an empty array or omitted.
+Focus on terms and scenarios common in construction and field services.`;
+
+  const userMessages: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'low' | 'high' | 'auto' } }> = [
+    {
+      type: 'text',
+      text: `Analyze the following image and its associated metadata to generate suggestions.
+Image URL (for your reference if needed, but prioritize labels/entities/memories for text generation): ${photoUrl}
+Image Labels: ${visionResponse.labelAnnotations?.map((l) => l.description).join(', ') || 'None'}
+Web Entities: ${visionResponse.webDetection?.webEntities?.map((e) => e.description).join(', ') || 'None'}`, 
+    },
   ];
 
   if (memoryChunks.length > 0) {
-    userMessages.push({ type: 'text', text: `Relevant Examples from Memory:\n${memoryChunks.map(m => `- ${m.text} (similarity: ${m.similarity.toFixed(2)})`).join('\n')}` });
+    userMessages.push({
+      type: 'text',
+      text: `Relevant Examples from Past Projects (use these for context and style):\n${memoryChunks
+        .map((m) => `- "${m.text}" (similarity: ${m.similarity.toFixed(2)})`)
+        .join('\n')}`,
+    });
   }
-  userMessages.push({ type: 'text', text: 'Based on all the above, provide your suggestions.' });
+
+  userMessages.push({
+    type: 'text',
+    text: 'Based on all the provided information (image, labels, web entities, and past examples), generate your suggestions strictly in the specified JSON format.',
+  });
+  
+  // If using a model like gpt-4o that can directly process image URLs in the prompt:
+  // userMessages.unshift({ type: 'image_url', image_url: { url: photoUrl, detail: 'auto' } });
+
 
   return {
     systemMessage,
@@ -193,21 +219,90 @@ async function assembleGptPrompt(
 
 async function callGptForSuggestions(
   prompt: GptPrompt,
-  photoUrl: string // photoUrl might be needed if GPT-4o vision is used directly
+  photoUrl: string // photoUrl might be used if sending image data directly or for logging
 ): Promise<AiSuggestions> {
-  console.log('STUB: callGptForSuggestions called with prompt for photo:', photoUrl, prompt);
-  // In a real implementation, call OpenAI GPT-4o /chat/completions
-  // For now, return a mock response based on the prompt or simple echo
-  const mockTags = prompt.userMessages
-    .find(msg => msg.text?.startsWith('Image Labels:'))?.text
-    ?.replace('Image Labels: ', '').split(', ').slice(0,5) || ['mockTag1', 'mockTag2'];
-  
-  return {
-    suggestedTags: mockTags.map(t => t.trim()).filter(t => t.length > 0),
-    suggestedDescription: 'Mock CompanyCam-style description based on labels.',
-    checklistTriggers: ['Check for safety harness (mock)'],
-    debugInfo: { promptSent: prompt }
-  };
+  console.log('Attempting to call OpenAI GPT for suggestions. PhotoURL:', photoUrl);
+
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('OpenAI API key not configured.');
+    throw new Error('OpenAI API key not configured.');
+  }
+
+  try {
+    const modelForSuggestions = 'gpt-4o'; 
+
+    console.log(`Calling OpenAI ${modelForSuggestions} with prompt:`, JSON.stringify(prompt.userMessages, null, 2).substring(0, 500) + '...');
+
+    const messagesForApi: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+      { role: 'system', content: prompt.systemMessage },
+    ];
+    prompt.userMessages.forEach(msg => {
+      // Based on assembleGptPrompt, all user messages currently have type: 'text' and defined text.
+      if (msg.text) { // Check if text is defined, though it should be.
+        messagesForApi.push({ role: 'user', content: msg.text });
+      }
+    });
+
+    const completion = await openai.chat.completions.create({
+      model: modelForSuggestions,
+      messages: messagesForApi,
+      temperature: 0.3, 
+      max_tokens: 500,  
+      response_format: { type: 'json_object' }, 
+    });
+
+    const content = completion.choices[0]?.message?.content;
+
+    if (!content) {
+      console.error('OpenAI response content is null or undefined.');
+      throw new Error('No content in OpenAI response.');
+    }
+
+    console.log('Raw GPT JSON response:', content);
+
+    let parsedGptJson: {
+        suggested_tags?: string[];
+        suggested_description?: string;
+        checklist_triggers?: string[];
+        [key: string]: any; // Allow other properties if GPT adds more
+    };
+    try {
+      parsedGptJson = JSON.parse(content);
+    } catch (parseError: any) {
+      console.error('Failed to parse JSON response from GPT:', parseError);
+      console.error('GPT Raw Content that failed parsing:', content);
+      throw new Error('Failed to parse JSON response from GPT.');
+    }
+    
+    const finalSuggestions: AiSuggestions = {
+      suggestedTags: parsedGptJson.suggested_tags || [],
+      suggestedDescription: parsedGptJson.suggested_description || 'No description generated.',
+      checklistTriggers: parsedGptJson.checklist_triggers || [],
+      debugInfo: {
+        gptModel: modelForSuggestions,
+        rawGptResponse: content, 
+        promptMessages: prompt.userMessages.map(m => m.text || ''), // Ensure text is not undefined
+      },
+    };
+
+    console.log('Successfully parsed suggestions from GPT:', finalSuggestions);
+    return finalSuggestions;
+
+  } catch (error: any) {
+    let errorMessage = 'Error calling OpenAI Chat Completions API.';
+    if (error.response && error.response.data && error.response.data.error && error.response.data.error.message) {
+      errorMessage = error.response.data.error.message;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    console.error(errorMessage, error.stack);
+     return {
+      suggestedTags: [],
+      suggestedDescription: 'Error generating AI suggestions.',
+      checklistTriggers: [],
+      debugInfo: { error: errorMessage, rawError: error },
+    };
+  }
 }
 
 // --- Main Handler Function ---
@@ -337,12 +432,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const memoryChunks = await queryVectorMemory(embedding, userId);
 
     // 4. Assemble system + dynamic prompt (STUBBED)
-    const gptPrompt = await assembleGptPrompt(visionApiResponse, memoryChunks);
+    const gptPrompt = await assembleGptPrompt(visionApiResponse, memoryChunks, photoUrl);
 
     // 5. Call GPT-4o for final tags/description (STUBBED)
     const finalSuggestions = await callGptForSuggestions(gptPrompt, photoUrl);
     
-    console.log('Successfully generated AI suggestions (stubbed pipeline).');
+    console.log('Successfully generated AI suggestions.');
     return res.status(200).json(finalSuggestions);
 
   } catch (error: any) {
