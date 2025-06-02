@@ -1,6 +1,6 @@
 // src/components/PhotoModal.tsx
 // 2025 Mark Hustad — MIT License
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { Photo, Tag } from '../types';
 import { companyCamService } from '../services/companyCamService';
 
@@ -9,10 +9,17 @@ import type { PhotoCardAiSuggestionState } from './PhotoCard'; // Import the sha
 interface PhotoModalProps {
   photo: Photo;
   onClose: () => void;
-  apiKey: string; // Keep for now, handleAddAiTag uses it directly
-  onTagAdded: (photoId: string, newTag: Tag) => void; // Keep for now
+  apiKey: string;
+  onAddTagToCompanyCam: (photoId: string, tagDisplayValue: string) => void | Promise<void>;
   aiSuggestionData?: PhotoCardAiSuggestionState;
   onFetchAiSuggestions: (photoId: string, photoUrl: string, projectId?: string) => Promise<void>;
+  // Navigation props
+  onShowNextPhoto: () => void;
+  onShowPreviousPhoto: () => void;
+  canNavigateNext: boolean;
+  canNavigatePrevious: boolean;
+  currentIndex: number;
+  totalPhotos: number;
 }
 
 const formatDate = (timestamp: number): string => {
@@ -35,7 +42,20 @@ const formatDate = (timestamp: number): string => {
   }
 };
 
-const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAdded, aiSuggestionData, onFetchAiSuggestions }) => {
+const PhotoModal: React.FC<PhotoModalProps> = ({
+  photo,
+  onClose,
+  apiKey,
+  onAddTagToCompanyCam,
+  aiSuggestionData,
+  onFetchAiSuggestions,
+  onShowNextPhoto,
+  onShowPreviousPhoto,
+  canNavigateNext,
+  canNavigatePrevious,
+  currentIndex,
+  totalPhotos,
+}) => {
   // Local state for 'addingTag' can remain if its UX is specific to the modal
   const [addingTag, setAddingTag] = useState<string | null>(null);
   // aiError specific to the modal's add tag operation can also remain if distinct from fetch errors
@@ -77,7 +97,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
       }
       if (targetTag) {
         await companyCamService.addTagsToPhoto(apiKey, photo.id, [targetTag.id]);
-        onTagAdded(photo.id, targetTag);
+        // Call the prop from HomePage to handle tag addition, which will update CompanyCam and then local state
+        await onAddTagToCompanyCam(photo.id, suggestedTagValue);
         // No longer need to manually update local aiSuggestedTags, 
         // as filteredAiSuggestedTags will re-calculate based on props and photo.tags
       } else {
@@ -98,6 +119,25 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
     }
   };
 
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      onClose();
+    }
+    if (event.key === 'ArrowRight' && canNavigateNext) {
+      onShowNextPhoto();
+    }
+    if (event.key === 'ArrowLeft' && canNavigatePrevious) {
+      onShowPreviousPhoto();
+    }
+  }, [onClose, canNavigateNext, onShowNextPhoto, canNavigatePrevious, onShowPreviousPhoto]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
   if (!photo) return null;
 
   return (
@@ -109,15 +149,43 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
         className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-xl sm:rounded-lg sm:max-h-[90vh] max-sm:h-screen max-sm:max-w-full max-sm:rounded-none"
         onClick={(e) => e.stopPropagation()} // Prevent backdrop click from triggering when clicking on modal content
       >
-        {/* Header / Close Button */}
-        <div className="flex justify-between items-center p-3 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-800">{photo.description || 'Photo Details'}</h2>
+        {/* Header / Navigation / Close Button */}
+        <div className="flex justify-between items-center p-3 border-b border-gray-200 bg-gray-50">
+          {/* Navigation Arrows and Counter */}
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={onShowPreviousPhoto}
+              disabled={!canNavigatePrevious}
+              className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              aria-label="Previous photo"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            {totalPhotos > 0 && (
+              <span className="text-sm text-gray-600">
+                {currentIndex + 1} / {totalPhotos}
+              </span>
+            )}
+            <button
+              onClick={onShowNextPhoto}
+              disabled={!canNavigateNext}
+              className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              aria-label="Next photo"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
+          </div>
+
+          {/* Title (Optional - can be removed if too cluttered) */}
+          {/* <h2 className="text-lg font-semibold text-gray-800 truncate hidden sm:block">{photo.description || 'Photo Details'}</h2> */}
+
+          {/* Close Button */}
           <button 
             onClick={onClose} 
-            className="text-gray-500 hover:text-gray-700 text-2xl leading-none bg-transparent border-none cursor-pointer p-1"
+            className="p-2 rounded-full hover:bg-gray-200 text-gray-600 hover:text-gray-800 transition-colors"
             aria-label="Close"
           >
-            &times;
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
 

@@ -17,7 +17,7 @@ const HomePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [hasMorePhotos, setHasMorePhotos] = useState<boolean>(true);
-  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [activeTagIds, setActiveTagIds] = useState<string[]>([]);
   const [aiSuggestionsCache, setAiSuggestionsCache] = useState<Record<string, PhotoCardAiSuggestionState>>({});
 
@@ -30,11 +30,31 @@ const HomePage: React.FC = () => {
   } = useUserContext();
 
   const handlePhotoClick = (photo: Photo) => {
-    setSelectedPhoto(photo);
+    const index = photos.findIndex(p => p.id === photo.id);
+    if (index !== -1) {
+      setSelectedPhotoIndex(index);
+    } else {
+      // Fallback for safety, though this shouldn't happen if photo is from `photos` array
+      const allIndex = allFetchedPhotos.findIndex(p => p.id === photo.id);
+      if (allIndex !== -1) {
+        // This case is tricky because `photos` might be filtered.
+        // For simplicity, we'll only allow navigation within the currently *displayed* `photos`.
+        // If the clicked photo isn't in the filtered `photos` list, modal might not open or nav would be weird.
+        // Best to ensure `photo` comes from the `photos` array passed to `PhotoCard`.
+        console.warn('Clicked photo not found in currently displayed (filtered) photos. Modal might behave unexpectedly for navigation.');
+        // Attempt to set it anyway if found in allFetchedPhotos, but navigation will be based on `photos` array.
+        // This might be an edge case if a photo is clicked that's not in the current `photos` filter set.
+        // A more robust solution might involve re-evaluating filters or always using allFetchedPhotos for modal index.
+        // For now, prioritize index from `photos`.
+        setSelectedPhotoIndex(null); // Or handle this scenario differently
+      } else {
+        setSelectedPhotoIndex(null);
+      }
+    }
   };
 
   const handleCloseModal = () => {
-    setSelectedPhoto(null);
+    setSelectedPhotoIndex(null);
   };
 
   const handleTagAddedToPhoto = useCallback((photoId: string, newTag: Tag) => {
@@ -49,14 +69,13 @@ const HomePage: React.FC = () => {
         return p;
       })
     );
-    setSelectedPhoto(prevSelected => {
-      if (prevSelected && prevSelected.id === photoId) {
-        const existingTags = prevSelected.tags || [];
-        if (!existingTags.find(t => t.id === newTag.id)) {
-          return { ...prevSelected, tags: [...existingTags, newTag] };
-        }
-      }
-      return prevSelected;
+    setSelectedPhotoIndex(prevIndex => {
+      // The photo object at photos[prevIndex] (if prevIndex is not null)
+      // will be updated automatically because the `photos` array is derived
+      // from `allFetchedPhotos`, which was just updated by setAllFetchedPhotos.
+      // The modal, if open and showing photos[prevIndex], will re-render
+      // with the new tag information. So, we just return prevIndex.
+      return prevIndex;
     });
   }, []);
 
@@ -283,6 +302,18 @@ const HomePage: React.FC = () => {
     fetchPhotosAndTheirTags(1);
   };
 
+  const handleShowNextPhoto = () => {
+    if (selectedPhotoIndex !== null && selectedPhotoIndex < photos.length - 1) {
+      setSelectedPhotoIndex(selectedPhotoIndex + 1);
+    }
+  };
+
+  const handleShowPreviousPhoto = () => {
+    if (selectedPhotoIndex !== null && selectedPhotoIndex > 0) {
+      setSelectedPhotoIndex(selectedPhotoIndex - 1);
+    }
+  };
+
   const handleLogout = () => {
     console.log('HomePage: Logging out.');
     localStorage.removeItem('companyCamApiKey');
@@ -296,9 +327,9 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <div className="flex justify-between items-center p-4 bg-gray-900 text-white">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center p-4 bg-gray-900 text-white space-y-4 md:space-y-0">
         {/* Left side: App Title */}
-        <div>
+        <div className="text-center md:text-left">
           <h1 className="text-2xl sm:text-3xl font-bold text-sky-400">CompanyCam AI Photo Inspirations</h1>
         </div>
 
@@ -429,14 +460,21 @@ const HomePage: React.FC = () => {
           <p className="text-center text-gray-400 mt-6 italic">Loading more photos...</p>
         )}
 
-        {selectedPhoto && (
+        {selectedPhotoIndex !== null && photos[selectedPhotoIndex] && (
           <PhotoModal
-            photo={selectedPhoto}
+            photo={photos[selectedPhotoIndex!]}
             onClose={handleCloseModal}
-            apiKey={localStorage.getItem('companyCamApiKey') || ''} // Ensure string or empty string
-            onTagAdded={handleTagAddedToPhoto}
-            aiSuggestionData={selectedPhoto ? aiSuggestionsCache[selectedPhoto.id] : undefined}
+            apiKey={localStorage.getItem('companyCamApiKey') || ''}
+            onAddTagToCompanyCam={handleAddTagRequest} // Corrected prop name
+            aiSuggestionData={aiSuggestionsCache[photos[selectedPhotoIndex!].id]}
             onFetchAiSuggestions={fetchAiSuggestionsForPhoto}
+            // Navigation props
+            onShowNextPhoto={handleShowNextPhoto}
+            onShowPreviousPhoto={handleShowPreviousPhoto}
+            canNavigateNext={selectedPhotoIndex !== null && selectedPhotoIndex < photos.length - 1}
+            canNavigatePrevious={selectedPhotoIndex !== null && selectedPhotoIndex > 0}
+            currentIndex={selectedPhotoIndex !== null ? selectedPhotoIndex : -1}
+            totalPhotos={photos.length}
           />
         )}
       </div>
