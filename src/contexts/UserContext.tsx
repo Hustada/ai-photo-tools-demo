@@ -8,6 +8,7 @@ import React, {
   useCallback,
   ReactNode,
 } from 'react';
+import { useLocation } from 'react-router-dom';
 import type {
   CurrentUser,
   CompanyDetails,
@@ -28,11 +29,36 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
-  const apiKey = import.meta.env.VITE_APP_COMPANYCAM_API_KEY;
+  const location = useLocation(); // Get location object
+  // API key will be retrieved from localStorage within fetchUserContext
 
   const fetchUserContext = useCallback(async () => {
-    if (!apiKey) {
+    const apiKeyFromStorage = localStorage.getItem('companyCamApiKey');
+    console.log('[UserContext] Attempting to fetch user context. API Key from localStorage:', apiKeyFromStorage ? 'Found' : 'Not Found');
+
+    if (!apiKeyFromStorage) {
+      // setError('API key not found in local storage. Please login.'); // User should be redirected by ProtectedRoute
+      // setLoading(false);
+      // console.warn('[UserContext] CompanyCam API key is missing from localStorage.');
+      // setCurrentUser(null); // Clear user data if no key
+      // setCompanyDetails(null);
+      // setProjects([]);
+      // setLoading(false); // Ensure loading is false if we don't fetch
+      // The ProtectedRoute should handle redirection, so this context might not even load
+      // if no key. If it does load, it will simply have no user data.
+      // For robustness, ensure loading is false and no data is present if no key.
+      setCurrentUser(null);
+      setCompanyDetails(null);
+      setProjects([]);
+      setError('No API Key found. Please log in.'); // Informative error if context somehow loads without key
+      setLoading(false);
+      return;
+    }
+
+    // Use apiKeyFromStorage for the rest of the function
+    const apiKey = apiKeyFromStorage; // Shadowing for minimal changes below
+
+    if (!apiKey) { // This check is now somewhat redundant due to above but kept for safety / structure
       setError('API key is not configured.');
       setLoading(false);
       console.error('[UserContext] CompanyCam API key is missing.');
@@ -60,16 +86,21 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
       console.log('[UserContext] Projects fetched:', userProjects);
 
     } catch (err: any) {
-      console.error('[UserContext] Error fetching user context:', err); 
+      console.error('[UserContext] Error fetching user context:', err);
       setError(err.message || 'Failed to fetch user context');
+      // Clear data on error to prevent stale display
+      setCurrentUser(null);
+      setCompanyDetails(null);
+      setProjects([]);
     } finally {
       setLoading(false);
     }
-  }, [apiKey]);
+  }, []); // Dependency array is now empty as apiKey is read inside the callback
 
   useEffect(() => {
+    console.log('[UserContext] useEffect triggered due to fetchUserContext or location change. Pathname:', location.pathname);
     fetchUserContext();
-  }, [fetchUserContext]);
+  }, [fetchUserContext, location.pathname]); // Add location.pathname as a dependency
 
   return (
     <UserContext.Provider
