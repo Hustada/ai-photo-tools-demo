@@ -1,8 +1,9 @@
-// © 2025 Mark Hustad — MIT License
+// &#169; 2025 Mark Hustad — MIT License
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import https from 'https';
 import OpenAI from 'openai';
+import existingCompanyCamTagsFromFile from './companycam-standard-tags.json';
 import { Pinecone } from '@pinecone-database/pinecone';
 
 // Initialize OpenAI client
@@ -10,6 +11,14 @@ import { Pinecone } from '@pinecone-database/pinecone';
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+
+
+// Define the structure for GPT prompt components
+interface GptPrompt {
+  systemMessage: string;
+  userMessages: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'low' | 'high' | 'auto' } }>;
+}
 
 // --- Interfaces for Request and Response ---
 interface SuggestAiTagsRequestBody {
@@ -109,12 +118,6 @@ async function queryVectorMemory(
   }
 }
 
-// Placeholder for GPT prompt structure
-interface GptPrompt {
-  systemMessage: string;
-  userMessages: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string } }>;
-}
-
 async function generateEmbeddings(
   labels: GoogleVisionLabelAnnotation[],
   webEntities: GoogleVisionWebEntity[]
@@ -168,48 +171,96 @@ async function generateEmbeddings(
 }
 
 async function assembleGptPrompt(
-  visionResponse: GoogleVisionResponse,
+  photoUrl: string,
+  visionResponse: GoogleVisionResponse | null,
   memoryChunks: MemoryChunk[],
-  photoUrl: string // Added photoUrl here
+  standardTags: string[]
 ): Promise<GptPrompt> {
   console.log(
-    `Assembling GPT prompt. Vision labels: ${visionResponse.labelAnnotations?.length || 0}, Web entities: ${visionResponse.webDetection?.webEntities?.length || 0}, Memory chunks: ${memoryChunks.length}`
+    `Assembling GPT prompt. Vision labels: ${visionResponse?.labelAnnotations?.length || 0}, Web entities: ${visionResponse?.webDetection?.webEntities?.length || 0}, Memory chunks: ${memoryChunks.length}`
   );
 
-  const systemMessage = `You are an expert construction photo analyst for CompanyCam. Your task is to analyze the provided image information (labels, web entities, and relevant past examples) and the image itself.
-Respond with a JSON object containing the following keys:
-- "suggested_tags": An array of 3-5 concise and relevant string tags.
-- "suggested_description": A single, CompanyCam-style descriptive sentence for the photo.
-- "checklist_triggers": An optional array of strings if any specific checklist items are triggered by the photo's content. If none, this can be an empty array or omitted.
-Focus on terms and scenarios common in construction and field services.`;
+  const systemMessage = `You are "CamIntellect," an advanced AI assistant deeply integrated within CompanyCam, the leading photo documentation platform for contractors in field-service industries. Your primary function is to act as an expert partner to users, helping them create rich, accurate, and highly useful photo documentation with minimal effort.
+
+**Understanding CompanyCam: Your Foundation**
+*   **Core Mission:** CompanyCam is the leading photo documentation platform designed to help contractors work more efficiently, communicate better, and protect their businesses by creating a transparent, visual record of their projects from start to finish.
+*   **Key User Activities:** Users rely on CompanyCam for daily progress tracking, creating detailed photo reports, collaborating seamlessly between field and office teams, resolving potential disputes with clear visual evidence, and showcasing completed work. Photos are typically organized by project, can be annotated with comments, drawings, and voice notes, and are easily shareable.
+*   **The Power of Tags:** Tags are a cornerstone of organization within CompanyCam. They enable powerful filtering, streamlined reporting, and are essential for integrating CompanyCam data with other business systems. Your suggested tags should aim to maximize this organizational power.
+*   **Integration & Data Value:** CompanyCam is often a central hub for project visuals and data. It offers a robust API, facilitating connections with other critical business software. This underscores the importance of your suggestions in creating structured, accurate, and valuable data.
+
+**Your Core Directives:**
+1.  **Understand the User's World:** CompanyCam users are professionals in trades such as roofing, construction (all phases), plumbing, HVAC, electrical, restoration, home inspection, and property management. Your suggestions must reflect an understanding of their common tasks, materials, environments, and documentation needs.
+2.  **Promote Clarity and Detail:** Generate descriptions and tags that are not just generic labels but add real value for project tracking, issue identification, client communication, and creating comprehensive project timelines.
+3.  **Emphasize Actionable Insights:** Where possible, frame suggestions to highlight progress, identify potential issues, or note critical stages (e.g., "Pre-drywall inspection of living room," "Water damage observed on subfloor," "Final installation of HVAC unit complete").
+4.  **CompanyCam Style:**
+    *   **Descriptions:** Aim for clear, concise, and informative single sentences. Start with the subject or key activity if possible.
+    *   **Tags:** Provide 3-7 highly relevant tags. Tags should be a mix of:
+        *   **Object/Component:** (e.g., "roof vent," "sump pump," "concrete slab")
+        *   **Activity/Phase:** (e.g., "demolition," "installation," "progress," "final inspection")
+        *   **Issue/Condition:** (e.g., "leak," "crack," "corrosion," "safety hazard")
+        *   **Location (if discernible and relevant):** (e.g., "kitchen," "attic," "exterior south wall")
+5.  **Leverage Provided Context:** You will receive image labels, web entities, and sometimes relevant examples from past projects (memory chunks). Prioritize these as strong indicators, but also use your general knowledge of the trades. The image itself (via URL) is your primary source of truth.
+6.  **Utilize Standard CompanyCam Tags:** You will be provided with a list of standard CompanyCam tags. When relevant, prioritize suggesting these tags to maintain consistency. However, if the image content strongly warrants a more specific or nuanced new tag not on the list, feel free to suggest it. The goal is comprehensive and accurate documentation.
+7.  **Output Format:** Respond STRICTLY with a JSON object containing these keys:
+    *   "suggested_tags": An array of strings.
+    *   "suggested_description": A single string.
+    *   "checklist_triggers": (Optional) An array of strings if specific, predefined checklist items are clearly identifiable or triggered by the photo's content. If none, omit this key or provide an empty array.
+
+**Examples of Good CompanyCam Documentation (for your learning):**
+
+*   **Scenario:** Photo of a newly installed window.
+    *   **Ideal Description:** "Installation of new energy-efficient window in master bedroom complete."
+    *   **Ideal Tags:** ["window", "installation", "master bedroom", "energy-efficient", "progress"]
+
+*   **Scenario:** Photo showing a water stain on a ceiling.
+    *   **Ideal Description:** "Water stain observed on ceiling in hallway, potential leak source above."
+    *   **Ideal Tags:** ["water stain", "ceiling", "hallway", "leak", "issue", "damage assessment"]
+
+*   **Scenario:** Photo of a team member wearing safety harness on a roof.
+    *   **Ideal Description:** "Team member correctly utilizing fall protection safety harness on south roof slope."
+    *   **Ideal Tags:** ["safety", "fall protection", "harness", "roofing", "compliance"]
+
+Remember, your suggestions directly impact the quality of project records for thousands of contractors. Strive for excellence and relevance in every suggestion.`;
+
+  const userMessageParts = [
+    `Analyze the following image and its associated metadata to generate suggestions.`,
+    `Image URL (for your reference if needed, but prioritize labels/entities/memories for text generation): ${photoUrl}`,
+  ];
+
+  if (standardTags && standardTags.length > 0) {
+    userMessageParts.push(
+      `Standard CompanyCam Tags (consider these for consistency; suggest new ones if more appropriate):\n${standardTags.map(tag => `- ${tag}`).join('\n')}`
+    );
+  }
+
+  if (visionResponse) {
+    userMessageParts.push(
+      `Image Labels: ${visionResponse.labelAnnotations?.map((l) => l.description).join(', ') || 'None'}`,
+      `Web Entities: ${visionResponse.webDetection?.webEntities?.map((e) => e.description).join(', ') || 'None'}`,
+    );
+  }
+
+  if (memoryChunks.length > 0) {
+    userMessageParts.push(
+      `Relevant Examples from Past Projects (use these for context and style):\n${memoryChunks
+        .map((m) => `- "${m.text}" (similarity: ${m.similarity.toFixed(2)})`)
+        .join('\n')}`,
+    );
+  }
+
+  userMessageParts.push(
+    'Based on all the provided information (image, labels, web entities, past examples, and standard CompanyCam tags), generate your suggestions strictly in the specified JSON format.'
+  );
 
   const userMessages: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'low' | 'high' | 'auto' } }> = [
     {
       type: 'text',
-      text: `Analyze the following image and its associated metadata to generate suggestions.
-Image URL (for your reference if needed, but prioritize labels/entities/memories for text generation): ${photoUrl}
-Image Labels: ${visionResponse.labelAnnotations?.map((l) => l.description).join(', ') || 'None'}
-Web Entities: ${visionResponse.webDetection?.webEntities?.map((e) => e.description).join(', ') || 'None'}`, 
+      text: userMessageParts.join('\n'),
     },
   ];
 
-  if (memoryChunks.length > 0) {
-    userMessages.push({
-      type: 'text',
-      text: `Relevant Examples from Past Projects (use these for context and style):\n${memoryChunks
-        .map((m) => `- "${m.text}" (similarity: ${m.similarity.toFixed(2)})`)
-        .join('\n')}`,
-    });
-  }
-
-  userMessages.push({
-    type: 'text',
-    text: 'Based on all the provided information (image, labels, web entities, and past examples), generate your suggestions strictly in the specified JSON format.',
-  });
-  
   // If using a model like gpt-4o that can directly process image URLs in the prompt:
   // userMessages.unshift({ type: 'image_url', image_url: { url: photoUrl, detail: 'auto' } });
-
 
   return {
     systemMessage,
@@ -218,7 +269,7 @@ Web Entities: ${visionResponse.webDetection?.webEntities?.map((e) => e.descripti
 }
 
 async function callGptForSuggestions(
-  prompt: GptPrompt,
+  gptPrompt: GptPrompt,
   photoUrl: string // photoUrl might be used if sending image data directly or for logging
 ): Promise<AiSuggestions> {
   console.log('Attempting to call OpenAI GPT for suggestions. PhotoURL:', photoUrl);
@@ -231,12 +282,12 @@ async function callGptForSuggestions(
   try {
     const modelForSuggestions = 'gpt-4o'; 
 
-    console.log(`Calling OpenAI ${modelForSuggestions} with prompt:`, JSON.stringify(prompt.userMessages, null, 2).substring(0, 500) + '...');
+    console.log(`Calling OpenAI ${modelForSuggestions} with prompt:`, JSON.stringify(gptPrompt.userMessages, null, 2).substring(0, 500) + '...');
 
     const messagesForApi: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-      { role: 'system', content: prompt.systemMessage },
+      { role: 'system', content: gptPrompt.systemMessage },
     ];
-    prompt.userMessages.forEach(msg => {
+    gptPrompt.userMessages.forEach((msg: { type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'low' | 'high' | 'auto' } }) => {
       // Based on assembleGptPrompt, all user messages currently have type: 'text' and defined text.
       if (msg.text) { // Check if text is defined, though it should be.
         messagesForApi.push({ role: 'user', content: msg.text });
@@ -281,7 +332,7 @@ async function callGptForSuggestions(
       debugInfo: {
         gptModel: modelForSuggestions,
         rawGptResponse: content, 
-        promptMessages: prompt.userMessages.map(m => m.text || ''), // Ensure text is not undefined
+        promptMessages: gptPrompt.userMessages.map((msg: { type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'low' | 'high' | 'auto' } }) => msg.text || ''),
       },
     };
 
@@ -432,10 +483,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const memoryChunks = await queryVectorMemory(embedding, userId);
 
     // 4. Assemble system + dynamic prompt (STUBBED)
-    const gptPrompt = await assembleGptPrompt(visionApiResponse, memoryChunks, photoUrl);
+    const { systemMessage, userMessages } = await assembleGptPrompt(
+      photoUrl,
+      visionApiResponse,
+      memoryChunks,
+      existingCompanyCamTagsFromFile // Use the statically imported tags
+    );
 
     // 5. Call GPT-4o for final tags/description (STUBBED)
-    const finalSuggestions = await callGptForSuggestions(gptPrompt, photoUrl);
+    const finalSuggestions = await callGptForSuggestions({ systemMessage, userMessages }, photoUrl);
     
     console.log('Successfully generated AI suggestions.');
     return res.status(200).json(finalSuggestions);
