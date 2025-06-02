@@ -1,6 +1,7 @@
 // 2025 Mark Hustad — MIT License
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useUserContext } from '../contexts/UserContext';
 import { companyCamService } from '../services/companyCamService';
 import type { Photo, Tag } from '../types';
 import PhotoModal from '../components/PhotoModal';
@@ -17,6 +18,14 @@ const HomePage: React.FC = () => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [activeTagIds, setActiveTagIds] = useState<string[]>([]);
   const [aiSuggestionsCache, setAiSuggestionsCache] = useState<Record<string, PhotoCardAiSuggestionState>>({});
+
+  const {
+    currentUser,
+    companyDetails,
+    projects: userProjects, // Alias to avoid conflict if 'projects' is used elsewhere
+    loading: userContextLoading,
+    error: userContextError,
+  } = useUserContext();
 
   const handlePhotoClick = (photo: Photo) => {
     setSelectedPhoto(photo);
@@ -152,7 +161,7 @@ const HomePage: React.FC = () => {
     return Array.from(uniqueTagsMap.values()).sort((a, b) => a.display_value.localeCompare(b.display_value));
   }, [allFetchedPhotos]);
 
-  const fetchAiSuggestionsForPhoto = useCallback(async (photoId: string, photoUrl: string) => {
+  const fetchAiSuggestionsForPhoto = useCallback(async (photoId: string, photoUrl: string, projectId?: string) => {
     if (!photoUrl) {
       setAiSuggestionsCache(prev => ({
         ...prev,
@@ -172,7 +181,12 @@ const HomePage: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ photoUrl }),
+        body: JSON.stringify({
+          photoId,
+          photoUrl,
+          projectId,
+          userId: currentUser?.id || 'unknown_user_id', // Use ID from context
+        }),
       });
 
       if (!response.ok) {
@@ -228,25 +242,64 @@ const HomePage: React.FC = () => {
   }, [apiKey, fetchPhotosAndTheirTags]);
 
   return (
-    <div className="p-5 font-sans bg-gray-900 text-gray-100 min-h-screen">
-      <h1 className="text-4xl font-bold mb-8 text-center text-sky-400">CompanyCam AI Photo Inspirations</h1>
+    <div className="bg-gray-900 text-gray-100 min-h-screen">
+      {/* New Header Section */}
+    {/* New Header Section with Integrated Title */}
+    <div className="w-full bg-gray-800 text-gray-200 px-6 py-4 mb-8 shadow-lg min-h-[6rem] flex items-center justify-between">
+      {/* Left side: App Title */}
+      <div>
+        <h1 className="text-3xl font-bold text-sky-400">CompanyCam AI Photo Inspirations</h1>
+      </div>
 
-      {uniqueFilterableTags.length > 0 && (
-        <div className="mb-6 p-4 border border-gray-700 rounded-lg bg-gray-800 shadow-md">
-          <h2 className="text-xl font-semibold mb-3 text-sky-300">Filter by Tags:</h2>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {uniqueFilterableTags.map(tag => (
-              <button
-                key={tag.id}
-                onClick={() => handleTagClick(tag.id)}
-                className={`px-3 py-1.5 rounded-full text-sm transition-all duration-150 ease-in-out transform hover:scale-105
-                  ${activeTagIds.includes(tag.id)
-                    ? 'bg-sky-500 text-white shadow-lg'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}`}
-              >
-                {tag.display_value} ({allFetchedPhotos.filter(p => p.tags?.some(t => t.id === tag.id)).length})
-              </button>
-            ))}
+      {/* Right side: User Info / Loading / Error */}
+      <div className="text-right">
+        {userContextLoading && (
+          <p className="text-md animate-pulse">Loading user...</p>
+        )}
+        {userContextError && !userContextLoading && (
+          <div>
+            <p className="text-red-400 font-semibold text-sm">User data unavailable</p>
+            {/* <p className="text-red-400 text-xs mt-1">{userContextError}</p> */}
+          </div>
+        )}
+        {currentUser && !userContextLoading && !userContextError && (
+          <div>
+            <h2 className="text-lg font-light">
+              Welcome, <span className="font-semibold">{currentUser.first_name || currentUser.email_address}</span>!
+            </h2>
+            {companyDetails && (
+              <p className="text-sm text-gray-300">
+                {companyDetails.name}
+              </p>
+            )}
+            {userProjects.length > 0 && (
+              <p className="text-xs text-gray-400">
+                {userProjects.length} project{userProjects.length === 1 ? '' : 's'}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+      <div className="p-5 font-sans">
+        {/* Title is now in the header */}
+
+        {uniqueFilterableTags.length > 0 && (
+          <div className="mb-6 p-4 border border-gray-700 rounded-lg bg-gray-800 shadow-md">
+            <h2 className="text-xl font-semibold mb-3 text-sky-300">Filter by Tags:</h2>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {uniqueFilterableTags.map(tag => (
+                <button
+                  key={tag.id}
+                  onClick={() => handleTagClick(tag.id)}
+                  className={`px-3 py-1.5 rounded-full text-sm transition-all duration-150 ease-in-out transform hover:scale-105
+                    ${activeTagIds.includes(tag.id)
+                      ? 'bg-sky-500 text-white shadow-lg'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}`}
+                >
+                  {tag.display_value} ({allFetchedPhotos.filter(p => p.tags?.some(t => t.id === tag.id)).length})
+                </button>
+              ))}
           </div>
           {activeTagIds.length > 0 && (
             <div className="mt-3 flex items-center">
@@ -330,6 +383,7 @@ const HomePage: React.FC = () => {
         />
       )}
     </div>
+  </div>
   );
 };
 

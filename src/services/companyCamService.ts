@@ -1,7 +1,7 @@
 // 2025 Mark Hustad — MIT License
 
 import axios from 'axios';
-import type { Photo, PhotosResponse, Tag, PhotoTagsResponse } from '../types';
+import type { Photo, PhotosResponse, Tag, PhotoTagsResponse, CurrentUser, CompanyDetails, Project } from '../types';
 
 const API_BASE_URL = 'https://api.companycam.com/v2';
 
@@ -145,6 +145,73 @@ export const companyCamService = {
         console.error(`[companyCamService] addTagsToPhoto - Error adding tags to photo ${photoId} (Generic):`, error.message);
       } else {
         console.error(`[companyCamService] addTagsToPhoto - Unknown error adding tags to photo ${photoId}:`, error);
+      }
+      throw error;
+    }
+  },
+
+  getCurrentUser: async (apiKey: string): Promise<CurrentUser> => {
+    console.log('[companyCamService] getCurrentUser called with:', { apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY' });
+    try {
+      console.log('[companyCamService] getCurrentUser - Making GET request to:', `${API_BASE_URL}/users/current`);
+      const response = await axios.get<CurrentUser>(`${API_BASE_URL}/users/current`, {
+        headers: getAuthHeaders(apiKey),
+      });
+      return response.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('[companyCamService] getCurrentUser - Error fetching current user (Axios):', error.toJSON());
+      } else if (error instanceof Error) {
+        console.error('[companyCamService] getCurrentUser - Error fetching current user (Generic):', error.message);
+      } else {
+        console.error('[companyCamService] getCurrentUser - Unknown error fetching current user:', error);
+      }
+      throw error;
+    }
+  },
+
+  getCompanyDetails: async (apiKey: string, companyId: string): Promise<CompanyDetails> => {
+    console.log('[companyCamService] getCompanyDetails called with:', { apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY', companyId });
+    try {
+      console.log('[companyCamService] getCompanyDetails - Making GET request to:', `${API_BASE_URL}/companies/${companyId}`);
+      const response = await axios.get<CompanyDetails>(`${API_BASE_URL}/companies/${companyId}`, {
+        headers: getAuthHeaders(apiKey),
+      });
+      return response.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error(`[companyCamService] getCompanyDetails - Error fetching company ${companyId} (Axios):`, error.toJSON());
+      } else if (error instanceof Error) {
+        console.error(`[companyCamService] getCompanyDetails - Error fetching company ${companyId} (Generic):`, error.message);
+      } else {
+        console.error(`[companyCamService] getCompanyDetails - Unknown error fetching company ${companyId}:`, error);
+      }
+      throw error;
+    }
+  },
+
+  getProjects: async (apiKey: string, page: number = 1, perPage: number = 50): Promise<Project[]> => {
+    console.log('[companyCamService] getProjects called with:', { apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY', page, perPage });
+    try {
+      const params: Record<string, string | number> = {
+        page,
+        per_page: perPage,
+      };
+      console.log('[companyCamService] getProjects - Making GET request to:', `${API_BASE_URL}/projects`, 'with params:', params);
+      // Assuming the response data is directly an array of Project objects.
+      // If the API wraps it (e.g., { projects: [...] }), this needs adjustment.
+      const response = await axios.get<Project[]>(`${API_BASE_URL}/projects`, {
+        headers: getAuthHeaders(apiKey),
+        params,
+      });
+      return response.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('[companyCamService] getProjects - Error fetching projects (Axios):', error.toJSON());
+      } else if (error instanceof Error) {
+        console.error('[companyCamService] getProjects - Error fetching projects (Generic):', error.message);
+      } else {
+        console.error('[companyCamService] getProjects - Unknown error fetching projects:', error);
       }
       throw error;
     }

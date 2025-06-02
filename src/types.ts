@@ -53,3 +53,48 @@ export type PhotosResponse = Photo[];
 
 // For the response from GET /photos/{photo_id}/tags which is an array of Tag objects
 export type PhotoTagsResponse = Tag[];
+
+export interface Address {
+  street_address_1?: string;
+  street_address_2?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+}
+
+export interface CurrentUser {
+  id: string;
+  company_id: string;
+  email_address: string;
+  first_name?: string;
+  last_name?: string;
+  status: 'active' | 'deleted' | string; // Allow for other statuses if they exist
+  profile_image?: ImageURI[]; // Assuming profile image might have multiple URIs like company logo
+  // Add other user fields as needed based on API response
+}
+
+export interface CompanyDetails {
+  id: string;
+  name: string;
+  status: 'active' | 'cancelled' | 'deleted' | string;
+  address?: Address;
+  logo?: ImageURI[];
+  // Add other company fields as needed
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  // Add other project fields as needed, e.g., address, creator_id, created_at
+  // For now, keeping it simple for the UserContext
+}
+
+export interface UserContextType {
+  currentUser: CurrentUser | null;
+  companyDetails: CompanyDetails | null;
+  projects: Project[];
+  loading: boolean;
+  error: string | null;
+  fetchUserContext: () => Promise<void>; // Function to trigger data fetching
+}

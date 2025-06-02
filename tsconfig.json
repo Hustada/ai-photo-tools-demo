@@ -24,10 +24,9 @@
   },
   "include": [
     "api/**/*.ts",     // Vercel API routes
-    "src/**/*.ts",     // Frontend source files
-    "src/**/*.tsx",    // Frontend React components
     "vite.config.ts"
     // Add any other specific .ts files if necessary
+    // 'src' directory is handled by tsconfig.app.json
   ],
   "exclude": [
     "node_modules",

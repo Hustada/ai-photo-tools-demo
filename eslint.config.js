@@ -10,7 +10,12 @@ export default tseslint.config(
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
-      ecmaVersion: 2020,
+      parser: tseslint.parser,
+      parserOptions: {
+        project: './tsconfig.app.json', // or true if it should find the closest tsconfig
+        ecmaVersion: 2020,
+        sourceType: 'module',
+      },
       globals: globals.browser,
     },
     plugins: {

@@ -12,7 +12,7 @@ interface PhotoModalProps {
   apiKey: string; // Keep for now, handleAddAiTag uses it directly
   onTagAdded: (photoId: string, newTag: Tag) => void; // Keep for now
   aiSuggestionData?: PhotoCardAiSuggestionState;
-  onFetchAiSuggestions: (photoId: string, photoUrl: string) => Promise<void>;
+  onFetchAiSuggestions: (photoId: string, photoUrl: string, projectId?: string) => Promise<void>;
 }
 
 const formatDate = (timestamp: number): string => {
@@ -54,7 +54,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
       // Optionally, set a specific modal error or rely on HomePage's error handling
       return;
     }
-    onFetchAiSuggestions(photo.id, mainImageUri);
+    onFetchAiSuggestions(photo.id, mainImageUri, photo.project_id);
   };
 
   // Filter AI suggested tags to exclude already existing tags on the photo
@@ -180,8 +180,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
             )}
 
             {/* Button to initiate suggestions (shown if not loading AND (no successful data yet OR error fetching suggestions)) */}
-            {!aiSuggestionData?.isLoading && 
-              ((!aiSuggestionData?.description && !(aiSuggestionData?.tags && aiSuggestionData.tags.length > 0)) || aiSuggestionData?.error) && (
+            {(!aiSuggestionData || 
+                (aiSuggestionData && !aiSuggestionData.isLoading && 
+                  (aiSuggestionData.error || (!aiSuggestionData.description && !(aiSuggestionData.tags && aiSuggestionData.tags.length > 0))))
+              ) && (
               <button 
                 onClick={handleFetchAiSuggestionsFromProp} 
                 className="w-full sm:w-auto mt-1 px-5 py-2.5 bg-blue-600 text-white rounded-md cursor-pointer hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
@@ -200,7 +202,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
             {modalAiError && <p className="text-red-500 text-sm mt-2">Error: {modalAiError}</p>}
 
             {/* Display AI Suggested Description */}
-            {aiSuggestionData?.description && !aiSuggestionData.isLoading && !aiSuggestionData.error && (
+            {aiSuggestionData?.description && !aiSuggestionData?.isLoading && !aiSuggestionData?.error && (
               <div className="mt-3">
                 <h4 className="text-md font-semibold text-gray-700 mb-1">AI Suggested Description:</h4>
                 <p className="text-sm text-gray-600 italic bg-gray-50 p-2 rounded">{aiSuggestionData.description}</p>
@@ -208,7 +210,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
             )}
 
             {/* Display Filtered AI Suggested Tags */}
-            {filteredAiSuggestedTags.length > 0 && !aiSuggestionData.isLoading && !aiSuggestionData.error && (
+            {filteredAiSuggestedTags.length > 0 && !aiSuggestionData?.isLoading && !aiSuggestionData?.error && (
               <div className="mt-3">
                 <h4 className="text-md font-semibold text-gray-700 mb-1">AI Suggested Tags (click to add):</h4>
                 <div className="flex flex-wrap gap-2">
