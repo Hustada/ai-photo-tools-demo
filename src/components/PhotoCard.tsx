@@ -157,6 +157,11 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             </div>
           )}
 
+          {/* Divider between description and tags */}
+          {aiSuggestionData?.description && aiSuggestionData?.tags && aiSuggestionData.tags.length > 0 && !aiSuggestionData.isLoading && !aiSuggestionData.error && (
+            <hr className="my-3 border-gray-600" />
+          )}
+
           {aiSuggestionData?.tags && aiSuggestionData.tags.length > 0 && !aiSuggestionData?.isLoading && !aiSuggestionData?.error && (
             <div className="mt-2 py-2"> {/* Added py-2 for vertical padding */}
               <p className="text-xs font-semibold text-gray-300 dark:text-gray-200 mb-1">AI Suggested Tags:</p>

@@ -149,31 +149,15 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-xl sm:rounded-lg sm:max-h-[90vh] max-sm:h-screen max-sm:max-w-full max-sm:rounded-none"
         onClick={(e) => e.stopPropagation()} // Prevent backdrop click from triggering when clicking on modal content
       >
-        {/* Header / Navigation / Close Button */}
+        {/* Header / Counter / Close Button */}
         <div className="flex justify-between items-center p-3 border-b border-gray-200 bg-gray-50">
-          {/* Navigation Arrows and Counter */}
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={onShowPreviousPhoto}
-              disabled={!canNavigatePrevious}
-              className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              aria-label="Previous photo"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-            </button>
+          {/* Counter */}
+          <div className="flex items-center">
             {totalPhotos > 0 && (
               <span className="text-sm text-gray-600">
                 {currentIndex + 1} / {totalPhotos}
               </span>
             )}
-            <button
-              onClick={onShowNextPhoto}
-              disabled={!canNavigateNext}
-              className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              aria-label="Next photo"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-            </button>
           </div>
 
           {/* Title (Optional - can be removed if too cluttered) */}
@@ -189,13 +173,33 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           </button>
         </div>
 
-        {/* Image Container with Locked Aspect Ratio */}
-        <div className="w-full aspect-video overflow-hidden bg-gray-100">
+        {/* Image Container with Navigation Arrows */}
+        <div className="relative w-full aspect-video overflow-hidden bg-gray-100 group">
           {mainImageUri ? (
             <img src={mainImageUri} alt={photo.description || 'Photo'} className="w-full h-full object-contain" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-500">No image available</div>
           )}
+
+          {/* Previous Button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onShowPreviousPhoto(); }}
+            disabled={!canNavigatePrevious}
+            className="absolute top-1/2 left-2 sm:left-4 transform -translate-y-1/2 z-10 p-2 sm:p-3 bg-black bg-opacity-30 hover:bg-opacity-50 text-white rounded-full disabled:opacity-0 disabled:cursor-not-allowed transition-all duration-150 opacity-0 group-hover:opacity-100 focus:opacity-100"
+            aria-label="Previous photo"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          </button>
+
+          {/* Next Button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onShowNextPhoto(); }}
+            disabled={!canNavigateNext}
+            className="absolute top-1/2 right-2 sm:right-4 transform -translate-y-1/2 z-10 p-2 sm:p-3 bg-black bg-opacity-30 hover:bg-opacity-50 text-white rounded-full disabled:opacity-0 disabled:cursor-not-allowed transition-all duration-150 opacity-0 group-hover:opacity-100 focus:opacity-100"
+            aria-label="Next photo"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          </button>
         </div>
 
         {/* Scrollable Info Section */}
