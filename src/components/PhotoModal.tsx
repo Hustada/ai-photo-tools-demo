@@ -1,6 +1,6 @@
 // src/components/PhotoModal.tsx
 // 2025 Mark Hustad — MIT License
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { Photo, Tag } from '../types';
 import { companyCamService } from '../services/companyCamService';
 
@@ -9,10 +9,17 @@ import type { PhotoCardAiSuggestionState } from './PhotoCard'; // Import the sha
 interface PhotoModalProps {
   photo: Photo;
   onClose: () => void;
-  apiKey: string; // Keep for now, handleAddAiTag uses it directly
-  onTagAdded: (photoId: string, newTag: Tag) => void; // Keep for now
+  apiKey: string;
+  onAddTagToCompanyCam: (photoId: string, tagDisplayValue: string) => void | Promise<void>;
   aiSuggestionData?: PhotoCardAiSuggestionState;
-  onFetchAiSuggestions: (photoId: string, photoUrl: string) => Promise<void>;
+  onFetchAiSuggestions: (photoId: string, photoUrl: string, projectId?: string) => Promise<void>;
+  // Navigation props
+  onShowNextPhoto: () => void;
+  onShowPreviousPhoto: () => void;
+  canNavigateNext: boolean;
+  canNavigatePrevious: boolean;
+  currentIndex: number;
+  totalPhotos: number;
 }
 
 const formatDate = (timestamp: number): string => {
@@ -35,7 +42,20 @@ const formatDate = (timestamp: number): string => {
   }
 };
 
-const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAdded, aiSuggestionData, onFetchAiSuggestions }) => {
+const PhotoModal: React.FC<PhotoModalProps> = ({
+  photo,
+  onClose,
+  apiKey,
+  onAddTagToCompanyCam,
+  aiSuggestionData,
+  onFetchAiSuggestions,
+  onShowNextPhoto,
+  onShowPreviousPhoto,
+  canNavigateNext,
+  canNavigatePrevious,
+  currentIndex,
+  totalPhotos,
+}) => {
   // Local state for 'addingTag' can remain if its UX is specific to the modal
   const [addingTag, setAddingTag] = useState<string | null>(null);
   // aiError specific to the modal's add tag operation can also remain if distinct from fetch errors
@@ -54,7 +74,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
       // Optionally, set a specific modal error or rely on HomePage's error handling
       return;
     }
-    onFetchAiSuggestions(photo.id, mainImageUri);
+    onFetchAiSuggestions(photo.id, mainImageUri, photo.project_id);
   };
 
   // Filter AI suggested tags to exclude already existing tags on the photo
@@ -77,7 +97,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
       }
       if (targetTag) {
         await companyCamService.addTagsToPhoto(apiKey, photo.id, [targetTag.id]);
-        onTagAdded(photo.id, targetTag);
+        // Call the prop from HomePage to handle tag addition, which will update CompanyCam and then local state
+        await onAddTagToCompanyCam(photo.id, suggestedTagValue);
         // No longer need to manually update local aiSuggestedTags, 
         // as filteredAiSuggestedTags will re-calculate based on props and photo.tags
       } else {
@@ -98,6 +119,25 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
     }
   };
 
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      onClose();
+    }
+    if (event.key === 'ArrowRight' && canNavigateNext) {
+      onShowNextPhoto();
+    }
+    if (event.key === 'ArrowLeft' && canNavigatePrevious) {
+      onShowPreviousPhoto();
+    }
+  }, [onClose, canNavigateNext, onShowNextPhoto, canNavigatePrevious, onShowPreviousPhoto]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
   if (!photo) return null;
 
   return (
@@ -109,25 +149,57 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
         className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-xl sm:rounded-lg sm:max-h-[90vh] max-sm:h-screen max-sm:max-w-full max-sm:rounded-none"
         onClick={(e) => e.stopPropagation()} // Prevent backdrop click from triggering when clicking on modal content
       >
-        {/* Header / Close Button */}
-        <div className="flex justify-between items-center p-3 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-800">{photo.description || 'Photo Details'}</h2>
+        {/* Header / Counter / Close Button */}
+        <div className="flex justify-between items-center p-3 border-b border-gray-200 bg-gray-50">
+          {/* Counter */}
+          <div className="flex items-center">
+            {totalPhotos > 0 && (
+              <span className="text-sm text-gray-600">
+                {currentIndex + 1} / {totalPhotos}
+              </span>
+            )}
+          </div>
+
+          {/* Title (Optional - can be removed if too cluttered) */}
+          {/* <h2 className="text-lg font-semibold text-gray-800 truncate hidden sm:block">{photo.description || 'Photo Details'}</h2> */}
+
+          {/* Close Button */}
           <button 
             onClick={onClose} 
-            className="text-gray-500 hover:text-gray-700 text-2xl leading-none bg-transparent border-none cursor-pointer p-1"
+            className="p-2 rounded-full hover:bg-gray-200 text-gray-600 hover:text-gray-800 transition-colors"
             aria-label="Close"
           >
-            &times;
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
 
-        {/* Image Container with Locked Aspect Ratio */}
-        <div className="w-full aspect-video overflow-hidden bg-gray-100">
+        {/* Image Container with Navigation Arrows */}
+        <div className="relative w-full aspect-video overflow-hidden bg-gray-100 group">
           {mainImageUri ? (
             <img src={mainImageUri} alt={photo.description || 'Photo'} className="w-full h-full object-contain" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-500">No image available</div>
           )}
+
+          {/* Previous Button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onShowPreviousPhoto(); }}
+            disabled={!canNavigatePrevious}
+            className="absolute top-1/2 left-2 sm:left-4 transform -translate-y-1/2 z-10 p-2 sm:p-3 bg-black bg-opacity-30 hover:bg-opacity-50 text-white rounded-full disabled:opacity-0 disabled:cursor-not-allowed transition-all duration-150 opacity-0 group-hover:opacity-100 focus:opacity-100"
+            aria-label="Previous photo"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          </button>
+
+          {/* Next Button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onShowNextPhoto(); }}
+            disabled={!canNavigateNext}
+            className="absolute top-1/2 right-2 sm:right-4 transform -translate-y-1/2 z-10 p-2 sm:p-3 bg-black bg-opacity-30 hover:bg-opacity-50 text-white rounded-full disabled:opacity-0 disabled:cursor-not-allowed transition-all duration-150 opacity-0 group-hover:opacity-100 focus:opacity-100"
+            aria-label="Next photo"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          </button>
         </div>
 
         {/* Scrollable Info Section */}
@@ -180,8 +252,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
             )}
 
             {/* Button to initiate suggestions (shown if not loading AND (no successful data yet OR error fetching suggestions)) */}
-            {!aiSuggestionData?.isLoading && 
-              ((!aiSuggestionData?.description && !(aiSuggestionData?.tags && aiSuggestionData.tags.length > 0)) || aiSuggestionData?.error) && (
+            {(!aiSuggestionData || 
+                (aiSuggestionData && !aiSuggestionData.isLoading && 
+                  (aiSuggestionData.error || (!aiSuggestionData.description && !(aiSuggestionData.tags && aiSuggestionData.tags.length > 0))))
+              ) && (
               <button 
                 onClick={handleFetchAiSuggestionsFromProp} 
                 className="w-full sm:w-auto mt-1 px-5 py-2.5 bg-blue-600 text-white rounded-md cursor-pointer hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
@@ -200,7 +274,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
             {modalAiError && <p className="text-red-500 text-sm mt-2">Error: {modalAiError}</p>}
 
             {/* Display AI Suggested Description */}
-            {aiSuggestionData?.description && !aiSuggestionData.isLoading && !aiSuggestionData.error && (
+            {aiSuggestionData?.description && !aiSuggestionData?.isLoading && !aiSuggestionData?.error && (
               <div className="mt-3">
                 <h4 className="text-md font-semibold text-gray-700 mb-1">AI Suggested Description:</h4>
                 <p className="text-sm text-gray-600 italic bg-gray-50 p-2 rounded">{aiSuggestionData.description}</p>
@@ -208,7 +282,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({ photo, onClose, apiKey, onTagAd
             )}
 
             {/* Display Filtered AI Suggested Tags */}
-            {filteredAiSuggestedTags.length > 0 && !aiSuggestionData.isLoading && !aiSuggestionData.error && (
+            {filteredAiSuggestedTags.length > 0 && !aiSuggestionData?.isLoading && !aiSuggestionData?.error && (
               <div className="mt-3">
                 <h4 className="text-md font-semibold text-gray-700 mb-1">AI Suggested Tags (click to add):</h4>
                 <div className="flex flex-wrap gap-2">

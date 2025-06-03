@@ -22,7 +22,9 @@ interface GptPrompt {
 
 // --- Interfaces for Request and Response ---
 interface SuggestAiTagsRequestBody {
+  photoId: string;
   photoUrl: string;
+  projectId?: string;
   userId?: string; // Optional for now, for phased implementation
 }
 
@@ -174,13 +176,17 @@ async function assembleGptPrompt(
   photoUrl: string,
   visionResponse: GoogleVisionResponse | null,
   memoryChunks: MemoryChunk[],
-  standardTags: string[]
+  standardTags: string[],
+  userName?: string,
+  projectName?: string
 ): Promise<GptPrompt> {
   console.log(
-    `Assembling GPT prompt. Vision labels: ${visionResponse?.labelAnnotations?.length || 0}, Web entities: ${visionResponse?.webDetection?.webEntities?.length || 0}, Memory chunks: ${memoryChunks.length}`
+    `Assembling GPT prompt. User: ${userName || 'N/A'}, Project: ${projectName || 'N/A'}. Vision labels: ${visionResponse?.labelAnnotations?.length || 0}, Web entities: ${visionResponse?.webDetection?.webEntities?.length || 0}, Memory chunks: ${memoryChunks.length}`
   );
 
   const systemMessage = `You are "CamIntellect," an advanced AI assistant deeply integrated within CompanyCam, the leading photo documentation platform for contractors in field-service industries. Your primary function is to act as an expert partner to users, helping them create rich, accurate, and highly useful photo documentation with minimal effort.
+
+${userName ? `You are currently assisting User '${userName}'.` : ''} ${projectName ? `The photo is related to Project '${projectName}'.` : ''}
 
 **Understanding CompanyCam: Your Foundation**
 *   **Core Mission:** CompanyCam is the leading photo documentation platform designed to help contractors work more efficiently, communicate better, and protect their businesses by creating a transparent, visual record of their projects from start to finish.
@@ -270,9 +276,10 @@ Remember, your suggestions directly impact the quality of project records for th
 
 async function callGptForSuggestions(
   gptPrompt: GptPrompt,
-  photoUrl: string // photoUrl might be used if sending image data directly or for logging
+  photoUrl: string,
+  userId: string
 ): Promise<AiSuggestions> {
-  console.log('Attempting to call OpenAI GPT for suggestions. PhotoURL:', photoUrl);
+  console.log('Attempting to call OpenAI GPT for suggestions. PhotoURL:', photoUrl, 'UserID:', userId);
 
   if (!process.env.OPENAI_API_KEY) {
     console.error('OpenAI API key not configured.');
@@ -356,57 +363,130 @@ async function callGptForSuggestions(
   }
 }
 
+// --- Helper functions to fetch CompanyCam User and Project Details ---
+async function fetchCompanyCamUserDetails(userId: string, apiKey: string): Promise<{ name?: string } | null> {
+  if (!userId || !apiKey) return null;
+  const options = {
+    hostname: 'api.companycam.com',
+    path: `/v2/users/${userId}`,
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'X-CompanyCam-Source': 'cc-ai-photo-inspirations-backend;vercel-serverless',
+    },
+  };
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            const parsedData = JSON.parse(data);
+            resolve({ name: parsedData.name || `${parsedData.first_name} ${parsedData.last_name}`.trim() });
+          } catch (e) {
+            console.error('Error parsing user details response:', e);
+            resolve(null); // Resolve with null if parsing fails
+          }
+        } else {
+          console.error(`Error fetching user details: ${res.statusCode}, ${data}`);
+          resolve(null); // Resolve with null on non-2xx status
+        }
+      });
+    });
+    req.on('error', (e) => {
+      console.error('Request error fetching user details:', e);
+      resolve(null); // Resolve with null on request error
+    });
+    req.end();
+  });
+}
+
+async function fetchCompanyCamProjectDetails(projectId: string, apiKey: string): Promise<{ name?: string } | null> {
+  if (!projectId || !apiKey) return null;
+  const options = {
+    hostname: 'api.companycam.com',
+    path: `/v2/projects/${projectId}`,
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'X-CompanyCam-Source': 'cc-ai-photo-inspirations-backend;vercel-serverless',
+    },
+  };
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            const parsedData = JSON.parse(data);
+            resolve({ name: parsedData.name });
+          } catch (e) {
+            console.error('Error parsing project details response:', e);
+            resolve(null); // Resolve with null if parsing fails
+          }
+        } else {
+          console.error(`Error fetching project details: ${res.statusCode}, ${data}`);
+          resolve(null); // Resolve with null on non-2xx status
+        }
+      });
+    });
+    req.on('error', (e) => {
+      console.error('Request error fetching project details:', e);
+      resolve(null); // Resolve with null on request error
+    });
+    req.end();
+  });
+}
+
 // --- Main Handler Function ---
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const companyCamApiKey = process.env.COMPANYCAM_API_KEY || process.env.VITE_APP_COMPANYCAM_API_KEY;
+  if (!companyCamApiKey) {
+    console.error('CompanyCam API key is not configured.');
+    return res.status(500).json({ message: 'Server configuration error: CompanyCam API key missing.' });
+  }
   console.log('--- suggest-ai-tags.ts (TypeScript) function invoked ---');
 
   // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Adjust for production
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Or replace * with your frontend's domain for production
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS preflight request.');
-    return res.status(204).end();
+    return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
-    console.log(`Responding with 405 Method Not Allowed for method: ${req.method}`);
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const apiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY;
-  if (!apiKey) {
-    console.error('ERROR: GOOGLE_CLOUD_VISION_API_KEY is not set.');
-    return res.status(500).json({ error: 'Server configuration error: API key missing.' });
+  const googleApiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY;
+  if (!googleApiKey) {
+    console.error('Google Cloud Vision API key is not configured.');
+    return res.status(500).json({ error: 'Server configuration error: Google API key missing.' });
   }
 
-  let requestBody: SuggestAiTagsRequestBody;
   try {
+    let requestBody: SuggestAiTagsRequestBody;
     // Vercel automatically parses the body for 'application/json'
     if (typeof req.body === 'object' && req.body !== null) {
       requestBody = req.body as SuggestAiTagsRequestBody;
     } else {
-      // Fallback for environments where body might not be pre-parsed (e.g. local dev without Vercel CLI behavior)
-      // Or if content-type was not application/json initially
       console.log('Request body not pre-parsed, attempting JSON.parse on raw body string.');
       requestBody = JSON.parse(req.body || '{}') as SuggestAiTagsRequestBody;
     }
     
-    if (!requestBody.photoUrl) {
-      throw new Error('Missing photoUrl in request body');
+    const { photoId, photoUrl, projectId, userId } = requestBody;
+
+    if (!photoUrl || !photoId) { // photoId is now also essential
+      throw new Error('Missing photoId or photoUrl in request body');
     }
+    console.log(`Received request for AI suggestions. PhotoID: ${photoId}, Photo URL: ${photoUrl}, ProjectID: ${projectId || 'N/A'}, UserID: ${userId || 'N/A'}`);
 
-  } catch (e: any) {
-    console.error('ERROR parsing JSON body or missing photoUrl:', e.message);
-    return res.status(400).json({ error: 'Invalid request body', details: e.message });
-  }
-
-  const { photoUrl, userId } = requestBody;
-  console.log(`Image URL: ${photoUrl}, User ID: ${userId || 'Not provided'}`);
-
-  // --- Modular AI Pipeline ---
-  try {
     // 1. Get Google Vision labels (and other detections)
     const visionApiPayload = {
       requests: [
@@ -415,8 +495,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           features: [
             { type: 'LABEL_DETECTION', maxResults: 15 },
             { type: 'WEB_DETECTION', maxResults: 10 },
-            // Consider adding { type: 'OBJECT_LOCALIZATION', maxResults: 5 } for more detail
-            // Consider adding { type: 'TEXT_DETECTION' } if text in images is important
           ],
         },
       ],
@@ -424,7 +502,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const visionOptions = {
       hostname: 'vision.googleapis.com',
-      path: `/v1/images:annotate?key=${apiKey}`,
+      path: `/v1/images:annotate?key=${googleApiKey}`,
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Connection': 'keep-alive' },
       timeout: 25000,
@@ -440,8 +518,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           try {
             if (httpsRes.statusCode && httpsRes.statusCode >= 200 && httpsRes.statusCode < 300) {
               const parsedData = JSON.parse(data);
-              // The response is an array of responses, one for each image request.
-              // We only send one image, so we take the first element.
               resolve(parsedData.responses && parsedData.responses[0] ? parsedData.responses[0] : {});
             } else {
               console.error('Google Vision API returned an error status:', httpsRes.statusCode, data);
@@ -471,27 +547,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error(`Vision API Error: ${visionApiResponse.error.message} (Code: ${visionApiResponse.error.code})`);
     }
     console.log('Google Vision API call successful.');
-    // console.log('Vision API Full Response:', JSON.stringify(visionApiResponse, null, 2));
 
-    // 2. Generate embedding from the label set (STUBBED)
+    // 2. Generate embedding from the label set
     const embedding = await generateEmbeddings(
       visionApiResponse.labelAnnotations || [], 
       visionApiResponse.webDetection?.webEntities || []
     );
 
-    // 3. Query global + user-specific vector memory (STUBBED)
+    // 3. Query global + user-specific vector memory
     const memoryChunks = await queryVectorMemory(embedding, userId);
 
-    // 4. Assemble system + dynamic prompt (STUBBED)
-    const { systemMessage, userMessages } = await assembleGptPrompt(
+    // 4. Fetch User and Project details for prompt assembly
+    let userName: string | undefined;
+    let projectName: string | undefined;
+
+    if (userId && companyCamApiKey) {
+      const userDetails = await fetchCompanyCamUserDetails(userId, companyCamApiKey);
+      userName = userDetails?.name;
+    }
+    if (projectId && companyCamApiKey) {
+      const projectDetails = await fetchCompanyCamProjectDetails(projectId, companyCamApiKey);
+      projectName = projectDetails?.name;
+    }
+
+    // 5. Assemble GPT prompt
+    const gptPrompt = await assembleGptPrompt(
       photoUrl,
       visionApiResponse,
       memoryChunks,
-      existingCompanyCamTagsFromFile // Use the statically imported tags
+      existingCompanyCamTagsFromFile, // Use the statically imported tags
+      userName,
+      projectName
     );
 
-    // 5. Call GPT-4o for final tags/description (STUBBED)
-    const finalSuggestions = await callGptForSuggestions({ systemMessage, userMessages }, photoUrl);
+    // 6. Call GPT-4o for final tags/description
+    const finalSuggestions = await callGptForSuggestions(gptPrompt, photoUrl, userId!); // userId is asserted as non-null if it reaches here and is used by GPT call
     
     console.log('Successfully generated AI suggestions.');
     return res.status(200).json(finalSuggestions);
