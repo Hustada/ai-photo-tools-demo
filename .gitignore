@@ -25,3 +25,4 @@ dist-ssr
 .env
 .vercel
 fetch-cc-tags.js
+fetch-my-projects.js

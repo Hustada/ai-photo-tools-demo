@@ -13,6 +13,7 @@
   "dependencies": {
     "@google-cloud/vision": "^5.1.0",
     "@pinecone-database/pinecone": "^6.0.1",
+    "@vercel/kv": "^3.0.0",
     "axios": "^1.9.0",
     "openai": "^5.0.1",
     "pnpm": "^10.11.0",
