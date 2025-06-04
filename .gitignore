@@ -31,3 +31,4 @@ fetch-my-projects.js
 # Compiled Vercel API route files
 api/**/*.js
 api/**/*.js.map
+vite.config.js
