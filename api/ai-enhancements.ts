@@ -1,6 +1,12 @@
 // api/ai-enhancements.ts
-import { kv } from '@vercel/kv';
+import createKv from '@vercel/kv'; // Import createKv as a default export
 import type { NextApiRequest, NextApiResponse } from 'next'; // Using Next.js types for Vercel Functions
+
+// Manually initialize kv with Vercel-provided environment variable names
+const kv = createKv({
+  url: process.env.KV_KV_REST_API_URL,
+  token: process.env.KV_KV_REST_API_TOKEN,
+});
 
 // Define the structure for our AI enhancement data
 interface PhotoAiEnhancement {
@@ -89,6 +95,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (typeof tagToAdd === 'string' && tagToAdd.trim() !== '') {
         if (!enhancement.accepted_ai_tags.includes(tagToAdd)) {
+          enhancement.accepted_ai_tags.forEach((tag: string) => {
+            // No action needed here, just added explicit type to 'tag' parameter
+          });
           enhancement.accepted_ai_tags.push(tagToAdd);
         }
       }
@@ -135,7 +144,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (typeof tagToRemove === 'string' && tagToRemove.trim() !== '') {
         const initialLength = enhancement.accepted_ai_tags.length;
         enhancement.accepted_ai_tags = enhancement.accepted_ai_tags.filter(
-          (tag) => tag !== tagToRemove
+          (tag: string) => tag !== tagToRemove
         );
         if (enhancement.accepted_ai_tags.length !== initialLength) modified = true;
       }
