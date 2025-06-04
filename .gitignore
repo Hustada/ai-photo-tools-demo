@@ -32,3 +32,4 @@ fetch-my-projects.js
 api/**/*.js
 api/**/*.js.map
 vite.config.js
+*.tsbuildinfo
