@@ -5,6 +5,17 @@ import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../contexts/UserContext';
 import { companyCamService } from '../services/companyCamService';
 import type { Photo, Tag } from '../types';
+
+// Local type for the expected API response structure for AI enhancements
+interface ApiPhotoEnhancement {
+  photo_id: string;
+  user_id: string;
+  ai_description?: string; // Optional as it might not always be present
+  accepted_ai_tags: string[];
+  created_at: string; // Assuming string from JSON
+  updated_at: string; // Assuming string from JSON
+  suggestion_source?: string;
+}
 import PhotoModal from '../components/PhotoModal';
 import PhotoCard, { type PhotoCardAiSuggestionState } from '../components/PhotoCard';
 
@@ -192,6 +203,73 @@ const HomePage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchPhotosAndTheirTags]); // fetchPhotosAndTheirTags is memoized
 
+  const handleSaveAiDescription = async (photoId: string, description: string) => {
+    setAiSuggestionsCache(prev => ({
+      ...prev,
+      [photoId]: {
+        ...(prev[photoId] || {
+          suggestedTags: [],
+          suggestedDescription: '',
+          isSuggesting: false,
+          suggestionError: null,
+          persistedDescription: undefined,
+          persistedAcceptedTags: [],
+          persistedError: null,
+        }),
+        isLoadingPersisted: true, // Indicate loading while saving
+        persistedError: null,
+      },
+    }));
+
+    try {
+      const response = await fetch('/api/ai-enhancements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          photoId: photoId, 
+          userId: currentUser?.id || 'vite_user_id_placeholder', // Fallback, ensure currentUser.id is usually present
+          description,
+          suggestionSource: 'user_edit_modal_v1.0'
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to save AI description (status: ${response.status})`);
+      }
+
+      const savedData = await response.json(); // Expecting { photoId, description, acceptedTags? } or similar
+      console.log('API response from POST /api/ai-enhancements:', savedData);
+
+      setAiSuggestionsCache(prev => ({
+        ...prev,
+        [photoId]: {
+          ...prev[photoId],
+          persistedDescription: savedData.ai_description, // Use ai_description from response
+          // If API also returns acceptedTags and you want to update them here, do so.
+          // For now, only updating description based on this save operation.
+          isLoadingPersisted: false,
+          persistedError: null,
+          // Optionally, clear the *suggested* description if it was just saved
+          // suggestedDescription: '', 
+        },
+      }));
+      console.log(`Successfully saved AI description for photo ${photoId}`);
+    } catch (error: any) {
+      console.error(`Error saving AI description for photo ${photoId}:`, error);
+      setAiSuggestionsCache(prev => ({
+        ...prev,
+        [photoId]: {
+          ...prev[photoId],
+          isLoadingPersisted: false,
+          persistedError: error.message || 'An unknown error occurred while saving description.',
+        },
+      }));
+    }
+  };
+
   const uniqueFilterableTags = useMemo(() => {
     const allTagsWithDuplicates = allFetchedPhotos.flatMap(photo => photo.tags || []);
     const uniqueTagsMap = new Map<string, Tag>();
@@ -204,62 +282,155 @@ const HomePage: React.FC = () => {
   }, [allFetchedPhotos]);
 
   const fetchAiSuggestionsForPhoto = useCallback(async (photoId: string, photoUrl: string, projectId?: string) => {
+    console.log(`FETCH_AI_SUGGESTIONS: Called for photoId: ${photoId}, URL: ${photoUrl ? 'present' : 'missing'}`);
     if (!photoUrl) {
       setAiSuggestionsCache(prev => ({
         ...prev,
-        [photoId]: { tags: [], description: '', isLoading: false, error: 'Photo URL is missing.' },
+        [photoId]: {
+          suggestedTags: [],
+          suggestedDescription: '',
+          isSuggesting: false,
+          suggestionError: 'Photo URL is missing.',
+          persistedDescription: undefined,
+          persistedAcceptedTags: [],
+          isLoadingPersisted: false,
+          persistedError: null,
+        },
       }));
       return;
     }
 
+    // Initialize/update cache entry for loading states
     setAiSuggestionsCache(prev => ({
       ...prev,
-      [photoId]: { ...(prev[photoId] || { tags: [], description: '', error: null }), isLoading: true },
+      [photoId]: {
+        ...(prev[photoId] || {
+          suggestedTags: [],
+          suggestedDescription: '',
+          suggestionError: null,
+          persistedDescription: undefined,
+          persistedAcceptedTags: [],
+          persistedError: null,
+        }),
+        isSuggesting: true,
+        isLoadingPersisted: true,
+        suggestionError: null, // Explicitly clear previous errors
+        persistedError: null,  // Explicitly clear previous errors
+      },
     }));
 
     try {
-      const response = await fetch('/api/suggest-ai-tags', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          photoId,
-          photoUrl,
-          projectId,
-          userId: currentUser?.id || 'unknown_user_id', // Use ID from context
+      const [suggestionsResult, persistedResult] = await Promise.allSettled([
+        // Fetch new AI suggestions
+        fetch('/api/suggest-ai-tags', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            photoId,
+            photoUrl,
+            projectId,
+            userId: currentUser?.id || 'unknown_user_id',
+          }),
+        }).then(async res => {
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ message: 'Failed to parse error from suggest-ai-tags.' }));
+            throw new Error(`HTTP error ${res.status}: ${errorData.message || res.statusText}`);
+          }
+          return res.json() as unknown as { suggestedTags: string[], suggestedDescription?: string };
         }),
+
+        // Fetch persisted AI enhancements
+        fetch(`/api/ai-enhancements?photoId=${photoId}`).then(async res => {
+          if (!res.ok) {
+            if (res.status === 404) { // 404 means no data, not necessarily a displayable error
+              return { ai_description: undefined, accepted_ai_tags: [] }; // Default empty state
+            }
+            const errorData = await res.json().catch(() => ({ message: 'Failed to parse error from ai-enhancements.' }));
+            throw new Error(`HTTP error ${res.status}: ${errorData.message || res.statusText}`);
+          }
+          return (await res.json()) as ApiPhotoEnhancement;
+        })
+      ]);
+
+    console.log(`FETCH_AI_SUGGESTIONS_DEBUG: For photoId ${photoId} - Persisted Result Full:`, JSON.stringify(persistedResult, null, 2));
+    if (persistedResult.status === 'fulfilled') {
+      console.log(`FETCH_AI_SUGGESTIONS_DEBUG: For photoId ${photoId} - Persisted Value:`, JSON.stringify(persistedResult.value, null, 2));
+    } else {
+      console.error(`FETCH_AI_SUGGESTIONS_DEBUG: For photoId ${photoId} - Persisted Reason:`, JSON.stringify(persistedResult.reason, null, 2));
+    }
+
+      // Process results and update cache
+      setAiSuggestionsCache(prev => {
+        const currentPhotoCache = prev[photoId] || {
+          suggestedTags: [], suggestedDescription: '', isSuggesting: false, suggestionError: null,
+          persistedDescription: undefined, persistedAcceptedTags: [], isLoadingPersisted: false, persistedError: null,
+        } as PhotoCardAiSuggestionState; // Ensure type safety for initial empty state
+
+        let newSuggestedTags = currentPhotoCache.suggestedTags;
+        let newSuggestedDescription = currentPhotoCache.suggestedDescription;
+        let newSuggestionError = currentPhotoCache.suggestionError;
+        let newIsSuggesting = currentPhotoCache.isSuggesting;
+
+        let newPersistedDescription = currentPhotoCache.persistedDescription;
+        let newPersistedAcceptedTags = currentPhotoCache.persistedAcceptedTags;
+        let newPersistedError = currentPhotoCache.persistedError;
+        let newIsLoadingPersisted = currentPhotoCache.isLoadingPersisted;
+
+        // Process suggestions result
+        if (suggestionsResult.status === 'fulfilled') {
+          const data = suggestionsResult.value;
+          const existingPhotoTags = allFetchedPhotos.find(p => p.id === photoId)?.tags?.map(t => t.display_value.toLowerCase()) || [];
+          newSuggestedTags = data.suggestedTags.filter(tag => !existingPhotoTags.includes(tag.toLowerCase()));
+          newSuggestedDescription = data.suggestedDescription || '';
+          newSuggestionError = null;
+        } else {
+          newSuggestionError = suggestionsResult.reason?.message || 'Failed to fetch AI suggestions.';
+        }
+        newIsSuggesting = false;
+
+        // Process persisted enhancements result
+        if (persistedResult.status === 'fulfilled') {
+          newPersistedDescription = persistedResult.value.ai_description;
+          newPersistedAcceptedTags = persistedResult.value.accepted_ai_tags || [];
+          newPersistedError = null;
+        } else {
+          // Don't show an error for 404, as it just means no data saved yet
+          if (!persistedResult.reason?.message?.includes('HTTP error 404')) {
+            newPersistedError = persistedResult.reason?.message || 'Failed to load saved AI enhancements.';
+          }
+        }
+        newIsLoadingPersisted = false;
+
+        return {
+          ...prev,
+          [photoId]: {
+            ...currentPhotoCache, // spread old values first
+            suggestedTags: newSuggestedTags,
+            suggestedDescription: newSuggestedDescription,
+            isSuggesting: newIsSuggesting,
+            suggestionError: newSuggestionError,
+            persistedDescription: newPersistedDescription,
+            persistedAcceptedTags: newPersistedAcceptedTags,
+            isLoadingPersisted: newIsLoadingPersisted,
+            persistedError: newPersistedError,
+          },
+        };
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response.' })) as { message?: string };
-        throw new Error(
-          `HTTP error! status: ${response.status}, Message: ${errorData.message || response.statusText}`
-        );
-      }
-      const data = await response.json() as { suggestedTags: string[], suggestedDescription?: string };
-      const existingPhotoTags = allFetchedPhotos.find(p => p.id === photoId)?.tags?.map(t => t.display_value.toLowerCase()) || [];
-      const filteredSuggestions = data.suggestedTags.filter(
-        (tag: string) => !existingPhotoTags.includes(tag.toLowerCase())
-      );
-
+    } catch (error) { // Catch errors from Promise.allSettled or other unexpected issues
+      console.error(`Critical error in fetchAiSuggestionsForPhoto for ${photoId}:`, error);
       setAiSuggestionsCache(prev => ({
         ...prev,
         [photoId]: {
-          tags: filteredSuggestions,
-          description: data.suggestedDescription || '',
-          isLoading: false,
-          error: null,
-        },
-      }));
-    } catch (err: any) {
-      console.error(`Error fetching AI suggestions for photo ${photoId}:`, err);
-      setAiSuggestionsCache(prev => ({
-        ...prev,
-        [photoId]: { tags: [], description: '', isLoading: false, error: err.message || 'Failed to fetch AI suggestions' },
+          ...(prev[photoId] || { suggestedTags: [], suggestedDescription: '', persistedDescription: undefined, persistedAcceptedTags: [] }),
+          isSuggesting: false,
+          isLoadingPersisted: false,
+          suggestionError: prev[photoId]?.suggestionError || 'An unexpected error occurred fetching suggestions.',
+          persistedError: prev[photoId]?.persistedError || 'An unexpected error occurred loading saved enhancements.',
+        } as PhotoCardAiSuggestionState, // Ensure type safety for initial empty state
       }));
     }
-  }, [allFetchedPhotos, currentUser]);
+  }, [currentUser, allFetchedPhotos, setAiSuggestionsCache]);
 
   const handleLoadMore = useCallback(() => {
     if (hasMorePhotos && !isLoading) {
@@ -462,6 +633,7 @@ const HomePage: React.FC = () => {
 
         {selectedPhotoIndex !== null && photos[selectedPhotoIndex] && (
           <PhotoModal
+            onSaveAiDescription={handleSaveAiDescription}
             photo={photos[selectedPhotoIndex!]}
             onClose={handleCloseModal}
             apiKey={localStorage.getItem('companyCamApiKey') || ''}

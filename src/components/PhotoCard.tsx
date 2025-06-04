@@ -10,10 +10,17 @@ interface MockTag {
 }
 
 export interface PhotoCardAiSuggestionState {
-  tags: string[];
-  description: string;
-  isLoading: boolean;
-  error: string | null;
+  // Fields for newly generated AI suggestions
+  suggestedTags: string[];         // Renamed from 'tags'
+  suggestedDescription: string;  // Renamed from 'description'
+  isSuggesting: boolean;         // Renamed from 'isLoading' (true when fetching NEW suggestions)
+  suggestionError: string | null;  // Renamed from 'error' (error related to NEW suggestions)
+
+  // New fields for persisted data from /api/ai-enhancements
+  persistedDescription?: string;    // Optional, as it might not exist in KV store
+  persistedAcceptedTags?: string[]; // Optional, might be empty or not exist in KV store
+  isLoadingPersisted: boolean;      // True when fetching persisted data from KV store
+  persistedError?: string | null;   // Error related to fetching persisted data
 }
 
 interface PhotoCardProps {
@@ -114,8 +121,61 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
         {/* AI Suggestions Section */}
         <div className="mt-3 pt-3 border-t border-gray-600">
-          {/* Loading State */}
-          {aiSuggestionData?.isLoading && (
+          {/* Persisted AI Enhancements Section */}
+          {aiSuggestionData?.isLoadingPersisted && (
+            <div className="mt-2 flex items-center justify-center text-gray-300 py-1.5">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Loading saved AI enhancements...</span>
+            </div>
+          )}
+          {aiSuggestionData?.persistedError && !aiSuggestionData?.isLoadingPersisted && (
+            <p className="mt-2 text-xs text-red-500">Error loading saved enhancements: {aiSuggestionData.persistedError}</p>
+          )}
+          {!aiSuggestionData?.isLoadingPersisted && !aiSuggestionData?.persistedError && (
+            <>
+              {aiSuggestionData?.persistedDescription && (
+                <div className="mt-2 py-2">
+                  <p className="text-xs text-gray-300 dark:text-gray-200">
+                    <span className="font-semibold mr-1">Saved AI Description:</span>
+                    <span className="text-gray-100 ml-1 whitespace-pre-wrap">{aiSuggestionData.persistedDescription}</span>
+                  </p>
+                </div>
+              )}
+              {aiSuggestionData?.persistedAcceptedTags && aiSuggestionData.persistedAcceptedTags.length > 0 && (
+                <>
+                  {aiSuggestionData?.persistedDescription && <hr className="my-2 border-gray-700" />}
+                  <div className="mt-2 py-2">
+                    <p className="text-xs font-semibold text-gray-300 dark:text-gray-200 mb-1">Saved AI Tags:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {aiSuggestionData.persistedAcceptedTags.map((tag: string, index: number) => (
+                        <span
+                          key={`persisted-ai-tag-${index}`}
+                          className="px-2.5 py-1 bg-green-700 text-white text-xs rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {/* Divider before new suggestions if persisted data was shown and there are new suggestions to show or a button to fetch them */}
+          {(!aiSuggestionData?.isLoadingPersisted && !aiSuggestionData?.persistedError && 
+            (aiSuggestionData?.persistedDescription || (aiSuggestionData?.persistedAcceptedTags && aiSuggestionData.persistedAcceptedTags.length > 0))) &&
+            (aiSuggestionData?.isSuggesting || 
+             ((!aiSuggestionData?.suggestedDescription && !(aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0)) || aiSuggestionData?.suggestionError) || 
+             (aiSuggestionData?.suggestedDescription || (aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0))) && (
+            <hr className="my-4 border-gray-600" />
+          )}
+
+          {/* Loading State for New Suggestions */}
+          {aiSuggestionData?.isSuggesting && (
             <div className="mt-2 flex items-center justify-center text-gray-300 py-1.5">
               <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -125,9 +185,9 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             </div>
           )}
 
-          {/* Button to initiate suggestions (shown if not loading AND (no successful data yet OR error)) */}
-          {!aiSuggestionData?.isLoading && 
-            ((!aiSuggestionData?.description && !(aiSuggestionData?.tags && aiSuggestionData.tags.length > 0)) || aiSuggestionData?.error) && (
+          {/* Button to initiate NEW suggestions (shown if not suggesting AND (no successful new data yet OR new suggestion error)) */}
+          {!aiSuggestionData?.isSuggesting && 
+            ((!aiSuggestionData?.suggestedDescription && !(aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0)) || aiSuggestionData?.suggestionError) && (
             <div className="flex justify-center">
               <button
               onClick={handleSuggestAiTags}
@@ -141,32 +201,35 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             </div>
           )}
 
-          {aiSuggestionData?.error && !aiSuggestionData?.isLoading && (
-            <p className="mt-2 text-xs text-red-500">Error: {aiSuggestionData.error}</p>
+          {/* Error for New Suggestions */}
+          {aiSuggestionData?.suggestionError && !aiSuggestionData?.isSuggesting && (
+            <p className="mt-2 text-xs text-red-500">Error: {aiSuggestionData.suggestionError}</p>
           )}
 
-          {aiSuggestionData?.description && !aiSuggestionData?.isLoading && !aiSuggestionData?.error && (
+          {/* Display New Suggested Description */}
+          {aiSuggestionData?.suggestedDescription && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
             <div className="mt-2 py-2"> {/* Added py-2 for vertical padding */}
               <p className="text-xs text-gray-600 dark:text-gray-300">
               <span className="font-semibold text-gray-300 dark:text-gray-200 mr-1">AI Suggested Description:
               <span className="text-gray-400 dark:text-gray-100 ml-1">
-                  {aiSuggestionData.description}
+                  {aiSuggestionData.suggestedDescription}
               </span>
               </span>
               </p>
             </div>
           )}
 
-          {/* Divider between description and tags */}
-          {aiSuggestionData?.description && aiSuggestionData?.tags && aiSuggestionData.tags.length > 0 && !aiSuggestionData.isLoading && !aiSuggestionData.error && (
+          {/* Divider between New description and New tags */}
+          {aiSuggestionData?.suggestedDescription && aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData.isSuggesting && !aiSuggestionData.suggestionError && (
             <hr className="my-3 border-gray-600" />
           )}
 
-          {aiSuggestionData?.tags && aiSuggestionData.tags.length > 0 && !aiSuggestionData?.isLoading && !aiSuggestionData?.error && (
+          {/* Display New Suggested Tags */}
+          {aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
             <div className="mt-2 py-2"> {/* Added py-2 for vertical padding */}
               <p className="text-xs font-semibold text-gray-300 dark:text-gray-200 mb-1">AI Suggested Tags:</p>
               <div className="flex flex-wrap gap-1">
-                {aiSuggestionData.tags.map((tag: string, index: number) => (
+                {aiSuggestionData.suggestedTags.map((tag: string, index: number) => (
                   <button
                     key={`ai-tag-${index}`}
                     onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {

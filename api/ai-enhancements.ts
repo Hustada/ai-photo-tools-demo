@@ -16,6 +16,7 @@ interface PhotoAiEnhancement {
 const getEnhancementKey = (photoId: string): string => `photo_enhancement:${photoId}`;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.log('API_AI_ENHANCEMENTS_HANDLER: File execution started. Method:', req.method, 'Query:', req.query);
   const { photoId } = req.query; // For GET requests
   const body = req.body; // For POST/DELETE requests
 
@@ -24,8 +25,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Photo ID is required as a query parameter.' });
     }
     try {
+      console.log(`API_GET_ENHANCEMENT: Received photoId from query: '${photoId}'`);
       const key = getEnhancementKey(photoId);
+      console.log(`API_GET_ENHANCEMENT: Generated key: '${key}'`);
       const enhancement = await kv.get<PhotoAiEnhancement>(key);
+      console.log(`API_GET_ENHANCEMENT: kv.get('${key}') returned:`, JSON.stringify(enhancement, null, 2));
       if (enhancement) {
         return res.status(200).json(enhancement);
       } else {
@@ -38,6 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'POST') {
+      console.log('API_POST_ENHANCEMENT: Received POST request. Body:', JSON.stringify(body, null, 2));
     const {
       photoId: bodyPhotoId,
       userId,
@@ -56,6 +61,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
       const key = getEnhancementKey(bodyPhotoId);
+      console.log(`API_POST_ENHANCEMENT: Generated key: '${key}' for photoId: '${bodyPhotoId}'`); // Added log
+
       let enhancement = await kv.get<PhotoAiEnhancement>(key);
       const now = new Date().toISOString();
 
@@ -90,10 +97,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         enhancement.suggestion_source = suggestionSource;
       }
 
-      await kv.set(key, enhancement);
+      console.log('API_POST_ENHANCEMENT: Full enhancement data to save:', JSON.stringify(enhancement, null, 2)); // Added log
+      const setResult = await kv.set(key, enhancement);
+      console.log(`API_POST_ENHANCEMENT: kv.set('${key}') result:`, JSON.stringify(setResult, null, 2)); // Added log
+      
       return res.status(200).json(enhancement);
     } catch (error) {
-      console.error('Error saving enhancement:', error);
+      console.error('API_POST_ENHANCEMENT_ERROR: Error saving enhancement:', error); // Enhanced error log
       return res.status(500).json({ error: 'Failed to save enhancement.' });
     }
   }
