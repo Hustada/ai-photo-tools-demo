@@ -27,3 +27,7 @@ dist-ssr
 fetch-cc-tags.js
 fetch-my-user-data.js
 fetch-my-projects.js
+
+# Compiled Vercel API route files
+api/**/*.js
+api/**/*.js.map
