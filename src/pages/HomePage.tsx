@@ -32,6 +32,63 @@ const HomePage: React.FC = () => {
   const [activeTagIds, setActiveTagIds] = useState<string[]>([]);
   const [aiSuggestionsCache, setAiSuggestionsCache] = useState<Record<string, PhotoCardAiSuggestionState>>({});
 
+  // Define ApiPhotoEnhancement interface if not already defined globally or imported
+  // interface ApiPhotoEnhancement { ... } // Assuming it's defined at the top of the file as per previous view
+
+  const fetchPersistedAiEnhancements = useCallback(async (photoId: string) => {
+    console.log(`[HomePage] Fetching persisted AI enhancements for photoId: ${photoId}`);
+    try {
+      const response = await fetch(`/api/ai-enhancements?photoId=${photoId}`);
+      if (response.ok) {
+        const persistedData: ApiPhotoEnhancement = await response.json();
+        console.log(`[HomePage] Persisted AI data received for ${photoId}:`, persistedData);
+        setAiSuggestionsCache(prevCache => ({
+          ...prevCache,
+          [photoId]: {
+            ...prevCache[photoId], // Preserve other suggestion-related state
+            persistedDescription: persistedData.ai_description || undefined,
+            persistedAcceptedTags: persistedData.accepted_ai_tags || [],
+            isLoadingPersisted: false, // Assuming this was true before fetch
+            persistedError: null,
+          },
+        }));
+      } else if (response.status === 404) {
+        console.log(`[HomePage] No persisted AI enhancements found for photoId: ${photoId}`);
+        setAiSuggestionsCache(prevCache => ({
+          ...prevCache,
+          [photoId]: {
+            ...prevCache[photoId],
+            persistedDescription: undefined, // Explicitly no persisted description
+            persistedAcceptedTags: [],
+            isLoadingPersisted: false,
+            persistedError: null,
+          },
+        }));
+      } else {
+        const errorData = await response.text();
+        console.error(`[HomePage] Error fetching persisted AI enhancements for ${photoId}: ${response.status}`, errorData);
+        setAiSuggestionsCache(prevCache => ({
+          ...prevCache,
+          [photoId]: {
+            ...prevCache[photoId],
+            isLoading: false,
+            error: `Failed to load saved suggestions. Status: ${response.status}`,
+          },
+        }));
+      }
+    } catch (err) {
+      console.error(`[HomePage] Network or other error fetching persisted AI enhancements for ${photoId}:`, err);
+      setAiSuggestionsCache(prevCache => ({
+        ...prevCache,
+        [photoId]: {
+          ...prevCache[photoId],
+          isLoading: false,
+          error: 'Network error loading saved suggestions.',
+        },
+      }));
+    }
+  }, []);
+
   const {
     currentUser,
     companyDetails,
@@ -147,6 +204,32 @@ const HomePage: React.FC = () => {
         })
       );
       console.log('Photos processed with their actual CompanyCam tags:', photosWithRealTags);
+
+      // Fetch persisted AI enhancements for these photos
+      photosWithRealTags.forEach(photo => {
+        // Check if we already have some AI data (e.g. from a previous fetch or user interaction)
+        // to avoid unnecessary fetches if data is already loaded or being actively generated.
+        // This condition can be refined based on how `aiSuggestionsCache` is managed for ongoing AI requests.
+        const existingEntry = aiSuggestionsCache[photo.id];
+        // Fetch if no entry, or if persistedDescription hasn't been loaded yet.
+        // Add isLoadingPersisted check to avoid re-fetching if already in progress.
+        if (!existingEntry || (existingEntry.persistedDescription === undefined && !existingEntry.isLoadingPersisted)) {
+            // Set isLoadingPersisted before fetching
+            setAiSuggestionsCache(prevCache => ({
+              ...prevCache,
+              [photo.id]: {
+                ...prevCache[photo.id],
+                suggestedTags: prevCache[photo.id]?.suggestedTags || [], // Ensure suggestedTags is initialized
+                suggestedDescription: prevCache[photo.id]?.suggestedDescription || '', // Ensure suggestedDescription is initialized
+                isSuggesting: prevCache[photo.id]?.isSuggesting || false, // Ensure isSuggesting is initialized
+                suggestionError: prevCache[photo.id]?.suggestionError || null, // Ensure suggestionError is initialized
+                isLoadingPersisted: true,
+              }
+            }));
+            fetchPersistedAiEnhancements(photo.id);
+        }
+      });
+
 
       setAllFetchedPhotos(prevAllPhotos => {
         if (pageToFetch === 1) {

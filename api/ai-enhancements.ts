@@ -1,12 +1,9 @@
 // api/ai-enhancements.ts
-import { createClient } from '@vercel/kv'; // Import createClient
+import { kv } from '@vercel/kv'; // Import the default kv client
 import type { NextApiRequest, NextApiResponse } from 'next'; // Using Next.js types for Vercel Functions
 
-// Manually initialize kv with Vercel-provided environment variable names
-const kv = createClient({
-  url: process.env.KV_KV_REST_API_URL,
-  token: process.env.KV_KV_REST_API_TOKEN,
-});
+// The 'kv' object is now automatically configured with KV_REST_API_URL and KV_REST_API_TOKEN.
+// No need for createClient or manual configuration here.
 
 // Define the structure for our AI enhancement data
 interface PhotoAiEnhancement {
@@ -28,22 +25,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'GET') {
     if (!photoId || typeof photoId !== 'string') {
-      return res.status(400).json({ error: 'Photo ID is required as a query parameter.' });
+      console.log('[AI Enhancements GET] Missing or invalid photoId:', photoId);
+      return res.status(400).json({ error: 'Missing or invalid photoId' });
     }
+
+    const key = getEnhancementKey(photoId);
+    console.log(`[AI Enhancements GET] Attempting to fetch data for key: ${key}`);
+
     try {
-      console.log(`API_GET_ENHANCEMENT: Received photoId from query: '${photoId}'`);
-      const key = getEnhancementKey(photoId);
-      console.log(`API_GET_ENHANCEMENT: Generated key: '${key}'`);
       const enhancement = await kv.get<PhotoAiEnhancement>(key);
-      console.log(`API_GET_ENHANCEMENT: kv.get('${key}') returned:`, JSON.stringify(enhancement, null, 2));
+
       if (enhancement) {
+        console.log(`[AI Enhancements GET] Data found for key ${key}:`, enhancement);
         return res.status(200).json(enhancement);
       } else {
+        console.log(`[AI Enhancements GET] No data found for key ${key}.`);
         return res.status(404).json({ message: 'No enhancements found for this photo.' });
       }
-    } catch (error) {
-      console.error('Error fetching enhancement:', error);
-      return res.status(500).json({ error: 'Failed to fetch enhancement.' });
+    } catch (error: any) { // Added :any to access error.message safely
+      console.error(`[AI Enhancements GET] Error fetching data for key ${key}:`, error.message, error); // Log message and full error
+      return res.status(500).json({ error: 'Failed to fetch enhancement.', details: error.message }); // Add details
     }
   }
 
