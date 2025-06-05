@@ -237,75 +237,180 @@ const HomePage: React.FC = () => {
 
 
 
-  const fetchPhotosAndTheirTags = useCallback(async (pageToFetch: number) => {
-    console.log('fetchPhotosAndTheirTags called for page:', pageToFetch);
+  // Define ApiPhotoEnhancement interface if not already defined globally or imported
+// This should match the structure of data returned by /api/ai-enhancements for a GET request.
+interface ApiPhotoEnhancement {
+  photo_id: string;
+  user_id: string;
+  ai_description: string | null;
+  accepted_ai_tags: string[]; // Array of tag display_values
+  created_at: string;
+  updated_at: string;
+  suggestion_source?: string;
+}
+
+const fetchPhotosAndTheirTags = useCallback(
+  async (pageToFetch: number) => {
+    console.log(`[HomePage] fetchPhotosAndTheirTags called for page: ${pageToFetch}`);
     const apiKeyFromStorage = localStorage.getItem('companyCamApiKey');
     if (!apiKeyFromStorage) {
       setError('Please enter an API Key.');
+      setIsLoading(false); // Stop loading if no API key
       return;
     }
     setIsLoading(true);
-    setError(null);
+    setError(null); // Clear previous errors for this specific fetch operation
+
     try {
-      const fetchedPhotosData = await companyCamService.getPhotos(apiKeyFromStorage, pageToFetch, 20);
-      console.log('Fetched photos raw from API:', fetchedPhotosData);
+      const fetchedBasicPhotos: Photo[] = await companyCamService.getPhotos(apiKeyFromStorage, pageToFetch, 20 /* perPage */);
 
-      const photosWithRealTags = await Promise.all(
-        fetchedPhotosData.map(async (photo) => {
+      console.log(`[HomePage] Fetched ${fetchedBasicPhotos.length} basic photos for page ${pageToFetch}.`);
+
+      const photosWithDetailsPromises = fetchedBasicPhotos.map(
+        async (basicPhoto) => {
+          let photoDataForCacheUpdate: Partial<PhotoCardAiSuggestionState> = {
+            isLoadingPersisted: true,
+          };
+          // Optimistically update cache to show loading state for persisted data
+          setAiSuggestionsCache(prevCache => ({
+            ...prevCache,
+            [basicPhoto.id]: {
+              ...(prevCache[basicPhoto.id] || {
+                suggestedTags: [],
+                suggestedDescription: '',
+                isSuggesting: false,
+                suggestionError: null,
+                // Ensure all fields of PhotoAiSuggestionCacheEntry are initialized if not present
+                persistedDescription: undefined,
+                persistedAcceptedTags: [],
+                isLoadingPersisted: false, // Will be set to true immediately after
+                persistedError: null,
+              }),
+              ...photoDataForCacheUpdate, // This sets isLoadingPersisted: true
+            },
+          }));
+
+          // 1. Fetch CompanyCam Tags for this photo
+          // Using existing companyCamService.getPhotoTags, which needs apiKey
+          const companyCamTags = await companyCamService.getPhotoTags(apiKeyFromStorage, basicPhoto.id);
+          let processedPhoto = { // This structure is based on what PhotoCard expects
+            ...basicPhoto,
+            tags: companyCamTags.map(tag => ({
+              ...tag,
+              id: tag.id.toString(), 
+              isAiEnhanced: false, 
+            })),
+          };
+          
+          let finalDescription = processedPhoto.description; 
+          let finalTags = [...processedPhoto.tags]; 
+
+          // 2. Fetch Persisted AI Enhancements from KV for this photo
           try {
-            const tagsFromApi = await companyCamService.getPhotoTags(apiKeyFromStorage, photo.id);
-            return { ...photo, tags: tagsFromApi || [] };
-          } catch (tagError) {
-            console.warn(`Failed to fetch tags for photo ${photo.id}. It will be shown with no tags.`, tagError);
-            return { ...photo, tags: [] };
-          }
-        })
-      );
-      console.log('Photos processed with their actual CompanyCam tags:', photosWithRealTags);
+            const response = await fetch(`/api/ai-enhancements?photoId=${basicPhoto.id}`);
+            if (response.ok) {
+              const persistedAiData: ApiPhotoEnhancement = await response.json();
+              console.log(`[HomePage] Persisted AI data for ${basicPhoto.id}:`, persistedAiData);
 
-      // Fetch persisted AI enhancements for these photos
-      photosWithRealTags.forEach(photo => {
-        // Check if we already have some AI data (e.g. from a previous fetch or user interaction)
-        // to avoid unnecessary fetches if data is already loaded or being actively generated.
-        // This condition can be refined based on how `aiSuggestionsCache` is managed for ongoing AI requests.
-        const existingEntry = aiSuggestionsCache[photo.id];
-        // Fetch if no entry, or if persistedDescription hasn't been loaded yet.
-        // Add isLoadingPersisted check to avoid re-fetching if already in progress.
-        if (!existingEntry || (existingEntry.persistedDescription === undefined && !existingEntry.isLoadingPersisted)) {
-            // Set isLoadingPersisted before fetching
-            setAiSuggestionsCache(prevCache => ({
-              ...prevCache,
-              [photo.id]: {
-                ...prevCache[photo.id],
-                suggestedTags: prevCache[photo.id]?.suggestedTags || [], // Ensure suggestedTags is initialized
-                suggestedDescription: prevCache[photo.id]?.suggestedDescription || '', // Ensure suggestedDescription is initialized
-                isSuggesting: prevCache[photo.id]?.isSuggesting || false, // Ensure isSuggesting is initialized
-                suggestionError: prevCache[photo.id]?.suggestionError || null, // Ensure suggestionError is initialized
-                isLoadingPersisted: true,
+              if (persistedAiData.ai_description) {
+                finalDescription = persistedAiData.ai_description;
               }
-            }));
-            fetchPersistedAiEnhancements(photo.id);
-        }
-      });
 
+              photoDataForCacheUpdate = {
+                ...photoDataForCacheUpdate,
+                persistedDescription: persistedAiData.ai_description || undefined, // Handles null by converting to undefined
+                persistedAcceptedTags: persistedAiData.accepted_ai_tags || [],
+              };
+
+              if (persistedAiData.accepted_ai_tags && persistedAiData.accepted_ai_tags.length > 0) {
+                const persistedAiDisplayValues = persistedAiData.accepted_ai_tags
+                  .map(tagValue => tagValue.trim())
+                  .filter(Boolean); 
+
+                persistedAiDisplayValues.forEach(aiTagValue => {
+                  const aiTagValueLower = aiTagValue.toLowerCase();
+                  const matchingExistingTag = finalTags.find(t => t.display_value.toLowerCase() === aiTagValueLower);
+
+                  if (matchingExistingTag) {
+                    matchingExistingTag.isAiEnhanced = true;
+                  } else {
+                    finalTags.push({
+                      display_value: aiTagValue,
+                      isAiEnhanced: true,
+                      id: `ai_${basicPhoto.id}_${aiTagValue.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}`,
+                      company_id: 'AI_TAG', // Placeholder for non-CompanyCam tags
+                      value: aiTagValue,    // Often mirrors display_value
+                      created_at: Date.now(), // Use current timestamp
+                      updated_at: Date.now(), // Use current timestamp
+                    });
+                  }
+                });
+              }
+              photoDataForCacheUpdate.isLoadingPersisted = false;
+              photoDataForCacheUpdate.persistedError = null;
+
+            } else if (response.status === 404) {
+              console.log(`[HomePage] No persisted AI enhancements for ${basicPhoto.id} (404).`);
+              photoDataForCacheUpdate.isLoadingPersisted = false;
+              photoDataForCacheUpdate.persistedError = null;
+              photoDataForCacheUpdate.persistedDescription = undefined;
+              photoDataForCacheUpdate.persistedAcceptedTags = [];
+            } else {
+              const errorText = await response.text();
+              console.error(`[HomePage] Error fetching persisted AI for ${basicPhoto.id}: ${response.status} ${errorText}`);
+              photoDataForCacheUpdate.isLoadingPersisted = false;
+              photoDataForCacheUpdate.persistedError = `Failed: ${response.status}`;
+            }
+          } catch (err: any) {
+            console.error(`[HomePage] Network error fetching persisted AI for ${basicPhoto.id}:`, err);
+            photoDataForCacheUpdate.isLoadingPersisted = false;
+            photoDataForCacheUpdate.persistedError = err.message || 'Network error';
+          }
+          
+          setAiSuggestionsCache(prevCache => ({
+            ...prevCache,
+            [basicPhoto.id]: {
+              ...(prevCache[basicPhoto.id] || { /* default structure */ }),
+              ...photoDataForCacheUpdate,
+            },
+          }));
+
+          return {
+            ...processedPhoto, 
+            description: finalDescription, 
+            tags: finalTags, 
+          };
+        }
+      );
+
+      const fullyProcessedPhotos = await Promise.all(photosWithDetailsPromises);
+      console.log('[HomePage] Fully processed photos with CC tags and AI enhancements:', fullyProcessedPhotos);
 
       setAllFetchedPhotos(prevAllPhotos => {
         if (pageToFetch === 1) {
-          return photosWithRealTags;
+          return fullyProcessedPhotos;
         }
         const existingPhotoIds = new Set(prevAllPhotos.map(p => p.id));
-        const newUniquePhotos = photosWithRealTags.filter(p => !existingPhotoIds.has(p.id));
+        const newUniquePhotos = fullyProcessedPhotos.filter(p => !existingPhotoIds.has(p.id));
         return [...prevAllPhotos, ...newUniquePhotos];
       });
+
       setCurrentPage(pageToFetch);
-      setHasMorePhotos(fetchedPhotosData.length === 20);
-    } catch (err) {
-      console.error('Error in fetchPhotosAndTheirTags:', err);
-      setError('Failed to fetch photos. Check API Key and console for details.');
+      setHasMorePhotos(fetchedBasicPhotos.length === 20 /* perPage */); 
+    } catch (err: any) {
+      console.error('[HomePage] Error in fetchPhotosAndTheirTags:', err);
+      setError(err.message || 'Failed to fetch photos.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  },
+  [
+    activeTagIds,
+    companyCamService,
+    setAiSuggestionsCache,
+    // setError, setIsLoading, setAllFetchedPhotos, setCurrentPage, setHasMorePhotos are stable
+  ]
+);
 
   const handleTagClick = (tagId: string) => {
     setActiveTagIds(prev =>
@@ -378,7 +483,7 @@ const HomePage: React.FC = () => {
       ...prevCache,
       [photoId]: {
         ...prevCache[photoId],
-        persistedDescription: description, // Optimistically update UI if it uses this
+        persistedDescription: description || undefined, // Optimistically update UI if it uses this
         isLoadingPersisted: true, // Indicate that a save operation is in progress
         persistedError: null,
       }
@@ -471,23 +576,33 @@ const HomePage: React.FC = () => {
     }
 
     // Initialize/update cache entry for loading states
-    setAiSuggestionsCache(prev => ({
-      ...prev,
-      [photoId]: {
-        ...(prev[photoId] || {
-          suggestedTags: [],
-          suggestedDescription: '',
-          suggestionError: null,
-          persistedDescription: undefined,
-          persistedAcceptedTags: [],
-          persistedError: null,
-        }),
-        isSuggesting: true,
-        isLoadingPersisted: true,
-        suggestionError: null, // Explicitly clear previous errors
-        persistedError: null,  // Explicitly clear previous errors
-      },
-    }));
+    setAiSuggestionsCache(prev => {
+      const existingEntry = prev[photoId];
+      // Define a complete default structure for PhotoCardAiSuggestionState
+      const defaultEntry: PhotoCardAiSuggestionState = {
+        suggestedTags: [],
+        suggestedDescription: '',
+        isSuggesting: false, // Default to false, will be overridden
+        suggestionError: null,
+        persistedDescription: undefined,
+        persistedAcceptedTags: [],
+        isLoadingPersisted: false, // Default to false, will be overridden
+        persistedError: null,
+      };
+
+      const baseEntry = existingEntry || defaultEntry;
+
+      return {
+        ...prev,
+        [photoId]: {
+          ...baseEntry,
+          // Ensure persistedDescription from baseEntry is correctly handled (even if redundant)
+          persistedDescription: baseEntry.persistedDescription || undefined,
+          isSuggesting: true, // Explicitly set for this operation
+          isLoadingPersisted: true, // Explicitly set for this operation (assuming combined fetch)
+        },
+      };
+    });
 
     try {
       const [suggestionsResult, persistedResult] = await Promise.allSettled([
@@ -560,7 +675,7 @@ const HomePage: React.FC = () => {
 
         // Process persisted enhancements result
         if (persistedResult.status === 'fulfilled') {
-          newPersistedDescription = persistedResult.value.ai_description;
+          newPersistedDescription = persistedResult.value.ai_description || undefined;
           newPersistedAcceptedTags = persistedResult.value.accepted_ai_tags || [];
           newPersistedError = null;
         } else {
@@ -579,7 +694,7 @@ const HomePage: React.FC = () => {
             suggestedDescription: newSuggestedDescription,
             isSuggesting: newIsSuggesting,
             suggestionError: newSuggestionError,
-            persistedDescription: newPersistedDescription,
+            persistedDescription: newPersistedDescription || undefined,
             persistedAcceptedTags: newPersistedAcceptedTags,
             isLoadingPersisted: newIsLoadingPersisted,
             persistedError: newPersistedError,
