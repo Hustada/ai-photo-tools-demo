@@ -1,9 +1,9 @@
 // api/ai-enhancements.ts
-import createKv from '@vercel/kv'; // Import createKv as a default export
+import { createClient } from '@vercel/kv'; // Import createClient
 import type { NextApiRequest, NextApiResponse } from 'next'; // Using Next.js types for Vercel Functions
 
 // Manually initialize kv with Vercel-provided environment variable names
-const kv = createKv({
+const kv = createClient({
   url: process.env.KV_KV_REST_API_URL,
   token: process.env.KV_KV_REST_API_TOKEN,
 });
