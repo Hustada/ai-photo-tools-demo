@@ -79,12 +79,17 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
       </div>
 
       <div className="flex flex-col flex-grow">
-        <h3 className="text-lg font-semibold text-gray-100 mb-1 mt-2 truncate">
-          {photo.description || `Photo ID: ${photo.id}`}
+        <h3 className="text-lg font-semibold text-gray-100 mb-1 mt-2 truncate" title={`Photo ID: ${photo.id}`}>
+          {`Photo ID: ${photo.id}`}
         </h3>
-        <p className="text-sm text-gray-400 mb-2 truncate">
+        <p className="text-sm text-gray-400 mb-1 truncate">
           By: {photo.creator_name || 'Unknown Creator'}
         </p>
+        {photo.description && (
+          <p className="text-sm text-gray-300 mt-1 mb-2 line-clamp-2" title={photo.description}>
+            {photo.description}
+          </p>
+        )}
 
         <div className="mt-auto pt-2 flex flex-wrap gap-2 mb-3">
           {photo.tags && Array.isArray(photo.tags) && photo.tags.length > 0 ? (
@@ -102,13 +107,17 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                   }}
                   className={`px-2 py-1 rounded-full text-xs transition-colors duration-150 ease-in-out 
                     ${onTagClick ? 'cursor-pointer' : 'cursor-default'} 
-                    ${isActive
-                      ? 'bg-blue-500 text-white hover:bg-blue-600'
-                      : onTagClick
-                        ? 'bg-gray-600 text-gray-200 hover:bg-gray-500'
-                        : 'bg-gray-700 text-gray-400'
+                    ${tag.isAiEnhanced
+                      ? isActive
+                        ? 'bg-teal-500 text-white hover:bg-teal-600' // AI tag + Active filter
+                        : 'bg-teal-600 text-teal-100 hover:bg-teal-500' // AI tag (not active filter)
+                      : isActive
+                        ? 'bg-blue-500 text-white hover:bg-blue-600' // Normal tag + Active filter
+                        : onTagClick
+                          ? 'bg-gray-600 text-gray-200 hover:bg-gray-500' // Normal tag (not active filter, clickable)
+                          : 'bg-gray-700 text-gray-400' // Normal tag (not active filter, not clickable)
                     }`}
-                  title={onTagClick ? `Filter by: ${tag.display_value}` : tag.display_value}
+                  title={onTagClick ? `Filter by: ${tag.display_value}${tag.isAiEnhanced ? ' (AI)' : ''}` : `${tag.display_value}${tag.isAiEnhanced ? ' (AI)' : ''}`}
                 >
                   {tag.display_value}
                 </span>
@@ -119,61 +128,8 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
           )}
         </div>
 
-        {/* AI Suggestions Section */}
+        {/* AI Suggestions Section (for NEW, ephemeral suggestions) */}
         <div className="mt-3 pt-3 border-t border-gray-600">
-          {/* Persisted AI Enhancements Section */}
-          {aiSuggestionData?.isLoadingPersisted && (
-            <div className="mt-2 flex items-center justify-center text-gray-300 py-1.5">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span>Loading saved AI enhancements...</span>
-            </div>
-          )}
-          {aiSuggestionData?.persistedError && !aiSuggestionData?.isLoadingPersisted && (
-            <p className="mt-2 text-xs text-red-500">Error loading saved enhancements: {aiSuggestionData.persistedError}</p>
-          )}
-          {!aiSuggestionData?.isLoadingPersisted && !aiSuggestionData?.persistedError && (
-            <>
-              {aiSuggestionData?.persistedDescription && (
-                <div className="mt-2 py-2">
-                  <p className="text-xs text-gray-300 dark:text-gray-200">
-                    <span className="font-semibold mr-1">Saved AI Description:</span>
-                    <span className="text-gray-100 ml-1 whitespace-pre-wrap">{aiSuggestionData.persistedDescription}</span>
-                  </p>
-                </div>
-              )}
-              {aiSuggestionData?.persistedAcceptedTags && aiSuggestionData.persistedAcceptedTags.length > 0 && (
-                <>
-                  {aiSuggestionData?.persistedDescription && <hr className="my-2 border-gray-700" />}
-                  <div className="mt-2 py-2">
-                    <p className="text-xs font-semibold text-gray-300 dark:text-gray-200 mb-1">Saved AI Tags:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {aiSuggestionData.persistedAcceptedTags.map((tag: string, index: number) => (
-                        <span
-                          key={`persisted-ai-tag-${index}`}
-                          className="px-2.5 py-1 bg-green-700 text-white text-xs rounded-full"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-
-          {/* Divider before new suggestions if persisted data was shown and there are new suggestions to show or a button to fetch them */}
-          {(!aiSuggestionData?.isLoadingPersisted && !aiSuggestionData?.persistedError && 
-            (aiSuggestionData?.persistedDescription || (aiSuggestionData?.persistedAcceptedTags && aiSuggestionData.persistedAcceptedTags.length > 0))) &&
-            (aiSuggestionData?.isSuggesting || 
-             ((!aiSuggestionData?.suggestedDescription && !(aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0)) || aiSuggestionData?.suggestionError) || 
-             (aiSuggestionData?.suggestedDescription || (aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0))) && (
-            <hr className="my-4 border-gray-600" />
-          )}
-
           {/* Loading State for New Suggestions */}
           {aiSuggestionData?.isSuggesting && (
             <div className="mt-2 flex items-center justify-center text-gray-300 py-1.5">

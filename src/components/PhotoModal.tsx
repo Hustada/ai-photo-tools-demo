@@ -66,14 +66,15 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [isSavingDescription, setIsSavingDescription] = useState<boolean>(false);
 
   useEffect(() => {
-    if (aiSuggestionData?.persistedDescription) {
-      setEditableDescription(aiSuggestionData.persistedDescription);
+    if (photo.description) {
+      setEditableDescription(photo.description);
     } else if (aiSuggestionData?.suggestedDescription) {
+      // If there's an active new suggestion, prioritize it for editing if main description is empty
       setEditableDescription(aiSuggestionData.suggestedDescription);
     } else {
-      setEditableDescription(''); // Default to empty if no suggestion or persisted data
+      setEditableDescription(''); // Default to empty
     }
-  }, [aiSuggestionData?.suggestedDescription, aiSuggestionData?.persistedDescription, photo.id]);
+  }, [photo.id, photo.description, aiSuggestionData?.suggestedDescription]);
 
   const mainImageUri =
     photo.uris.find(uri => uri.type === 'web')?.uri ||
@@ -230,9 +231,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           <div>
             <h3 className="text-md font-semibold text-gray-700 mb-1">Description:</h3>
             {photo.description ? (
-              <p className="text-sm text-gray-600 italic whitespace-pre-wrap">{photo.description}</p>
+              <p className="text-sm text-gray-600 whitespace-pre-wrap">{photo.description}</p>
             ) : (
-              <p className="text-sm text-gray-500 italic">No description yet.</p>
+              <p className="text-sm text-gray-500 italic">No description provided.</p>
             )}
           </div>
 
@@ -240,11 +241,17 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             <h3 className="text-md font-semibold text-gray-700 mb-2">Tags:</h3>
             {photo.tags && photo.tags.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {photo.tags.map((tag) => (
-                  <span key={tag.id} className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">
-                    {tag.display_value}
-                  </span>
-                ))}
+                {photo.tags.map((tag) => {
+                  const isAiTag = tag.isAiEnhanced;
+                  const tagStyle = isAiTag
+                    ? 'bg-teal-100 text-teal-700 border border-teal-300'
+                    : 'bg-gray-200 text-gray-700';
+                  return (
+                    <span key={tag.id} className={`px-3 py-1 rounded-full text-sm ${tagStyle}`}>
+                      {tag.display_value}{isAiTag ? ' (AI)' : ''}
+                    </span>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-sm text-gray-500 italic">No tags yet.</p>
@@ -254,58 +261,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           <hr className="my-3"/>
 
           <div>
-            {/* Persisted AI Enhancements Section */}
-            {aiSuggestionData?.isLoadingPersisted && (
-              <div className="mt-2 flex items-center justify-center text-gray-500 py-1.5">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Loading saved AI enhancements...</span>
-              </div>
-            )}
-            {aiSuggestionData?.persistedError && !aiSuggestionData?.isLoadingPersisted && (
-              <p className="text-red-500 text-sm mt-2">Error loading saved enhancements: {aiSuggestionData.persistedError}</p>
-            )}
-            {!aiSuggestionData?.isLoadingPersisted && !aiSuggestionData?.persistedError && (
-              <>
-                {aiSuggestionData?.persistedDescription && (
-                  <div className="mt-3">
-                    <h4 className="text-md font-semibold text-gray-700 mb-1">Saved AI Description:</h4>
-                    <p className="text-sm text-gray-600 italic bg-gray-50 p-2 rounded whitespace-pre-wrap">{aiSuggestionData.persistedDescription}</p>
-                  </div>
-                )}
-                {aiSuggestionData?.persistedAcceptedTags && aiSuggestionData.persistedAcceptedTags.length > 0 && (
-                  <>
-                    {aiSuggestionData?.persistedDescription && <hr className="my-2 border-gray-200" />}
-                    <div className="mt-3">
-                      <h4 className="text-md font-semibold text-gray-700 mb-1">Saved AI Tags:</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {aiSuggestionData.persistedAcceptedTags.map((tag: string, index: number) => (
-                          <span
-                            key={`persisted-modal-ai-tag-${index}`}
-                            className="px-3 py-1 bg-green-600 text-white rounded-full text-sm"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-
-            {/* Divider before new suggestions if persisted data was shown */}
-            {(!aiSuggestionData?.isLoadingPersisted && !aiSuggestionData?.persistedError && 
-              (aiSuggestionData?.persistedDescription || (aiSuggestionData?.persistedAcceptedTags && aiSuggestionData.persistedAcceptedTags.length > 0))) &&
-              (aiSuggestionData?.isSuggesting || 
-               ((!aiSuggestionData?.suggestedDescription && !(aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0)) || aiSuggestionData?.suggestionError) || 
-               (aiSuggestionData?.suggestedDescription || (aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0))) && (
-              <hr className="my-3"/>
-            )}
-
-            {/* Loading State for New AI Suggestions */}
+            {/* Loading State for New AI Suggestions (Ephemeral) */}
             {aiSuggestionData?.isSuggesting && (
               <div className="mt-2 flex items-center justify-center text-gray-500 py-1.5">
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -337,17 +293,17 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             {/* Display error from adding a tag (modal specific) */}
             {modalAiError && <p className="text-red-500 text-sm mt-2">Error: {modalAiError}</p>}
 
-            {/* Editable AI Description Section */}
-            {(aiSuggestionData?.suggestedDescription || aiSuggestionData?.persistedDescription || editableDescription) && !aiSuggestionData?.isSuggesting && (
+            {/* Editable Description Section (Unified) */}
+            {!aiSuggestionData?.isSuggesting && (
               <div className="mt-3">
                 <h4 className="text-md font-semibold text-gray-700 mb-1">
-                  {aiSuggestionData?.persistedDescription ? 'Saved AI Description (Editable):' : 'AI Suggested Description (Editable):'}
+                  Edit Description:
                 </h4>
                 <textarea
                   value={editableDescription}
                   onChange={(e) => setEditableDescription(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md text-sm text-gray-700 focus:ring-blue-500 focus:border-blue-500 min-h-[80px] bg-white"
-                  placeholder="Enter or edit AI description..."
+                  placeholder="Enter or edit description..."
                   rows={3}
                 />
                 <button
@@ -361,7 +317,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     }
                     setIsSavingDescription(false);
                   }}
-                  disabled={isSavingDescription || editableDescription === (aiSuggestionData?.persistedDescription || '')}
+                  disabled={isSavingDescription || editableDescription === (photo.description || '')}
                   className="mt-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 transition-colors text-sm"
                 >
                   {isSavingDescription ? 'Saving...' : 'Save Description'}

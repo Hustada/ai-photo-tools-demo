@@ -42,13 +42,39 @@ const HomePage: React.FC = () => {
       if (response.ok) {
         const persistedData: ApiPhotoEnhancement = await response.json();
         console.log(`[HomePage] Persisted AI data received for ${photoId}:`, persistedData);
+        // Update allFetchedPhotos directly with the persisted data
+        setAllFetchedPhotos(prevAllPhotos => 
+          prevAllPhotos.map(photo => {
+            if (photo.id === photoId) {
+              const updatedPhoto = { ...photo };
+              if (persistedData.ai_description) {
+                updatedPhoto.description = persistedData.ai_description;
+              }
+              if (persistedData.accepted_ai_tags && persistedData.accepted_ai_tags.length > 0) {
+                const lowercasedAcceptedAiTags = persistedData.accepted_ai_tags.map(t => t.toLowerCase());
+                updatedPhoto.tags = (updatedPhoto.tags || []).map(tag => {
+                  if (tag.display_value && lowercasedAcceptedAiTags.includes(tag.display_value.toLowerCase())) {
+                    return { ...tag, isAiEnhanced: true };
+                  }
+                  return tag;
+                });
+              }
+              return updatedPhoto;
+            }
+            return photo;
+          })
+        );
+
+        // Update cache primarily for loading/error state, canonical data is now in allFetchedPhotos
         setAiSuggestionsCache(prevCache => ({
           ...prevCache,
           [photoId]: {
-            ...prevCache[photoId], // Preserve other suggestion-related state
-            persistedDescription: persistedData.ai_description || undefined,
+            ...prevCache[photoId],
+            // persistedDescription and persistedAcceptedTags in cache are now less critical
+            // but can be kept for reference or if PhotoCard/Modal still use them directly for some transitional UI
+            persistedDescription: persistedData.ai_description || undefined, 
             persistedAcceptedTags: persistedData.accepted_ai_tags || [],
-            isLoadingPersisted: false, // Assuming this was true before fetch
+            isLoadingPersisted: false,
             persistedError: null,
           },
         }));
@@ -125,28 +151,26 @@ const HomePage: React.FC = () => {
     setSelectedPhotoIndex(null);
   };
 
-  const handleTagAddedToPhoto = useCallback((photoId: string, newTag: Tag) => {
+  const handleTagAddedToPhoto = useCallback((photoId: string, newTagData: Tag, isFromAiSuggestion: boolean = false) => {
+    // Mark the tag as AI-enhanced if it's coming from an AI suggestion flow
+    const tagToAdd: Tag = isFromAiSuggestion ? { ...newTagData, isAiEnhanced: true } : newTagData;
+
     setAllFetchedPhotos(prevPhotos =>
       prevPhotos.map(p => {
         if (p.id === photoId) {
           const existingTags = p.tags || [];
-          if (!existingTags.find(t => t.id === newTag.id)) {
-            return { ...p, tags: [...existingTags, newTag] };
+          // Prevent duplicate tags by ID
+          if (!existingTags.find(t => t.id === tagToAdd.id)) {
+            return { ...p, tags: [...existingTags, tagToAdd] };
           }
         }
         return p;
       })
     );
-    setSelectedPhotoIndex(prevIndex => {
-      // The photo object at photos[prevIndex] (if prevIndex is not null)
-      // will be updated automatically because the `photos` array is derived
-      // from `allFetchedPhotos`, which was just updated by setAllFetchedPhotos.
-      // The modal, if open and showing photos[prevIndex], will re-render
-      // with the new tag information. So, we just return prevIndex.
-      return prevIndex;
-    });
+    // No need to update selectedPhotoIndex directly; derived state `photos` will update the modal.
   }, []);
 
+  // Update handleAddTagRequest to pass the isFromAiSuggestion flag
   const handleAddTagRequest = useCallback(async (photoId: string, tagDisplayValue: string): Promise<void> => {
     const apiKeyFromStorage = localStorage.getItem('companyCamApiKey');
     if (!apiKeyFromStorage) {
@@ -154,7 +178,7 @@ const HomePage: React.FC = () => {
       setError('API Key is required to add tags.');
       return;
     }
-    console.log(`handleAddTagRequest: Adding tag '${tagDisplayValue}' to photo '${photoId}'`);
+    console.log(`handleAddTagRequest: Adding AI tag '${tagDisplayValue}' to photo '${photoId}'`);
     try {
       let targetTag: Tag | undefined;
       const existingCompanyCamTags = await companyCamService.listCompanyCamTags(apiKeyFromStorage);
@@ -172,12 +196,46 @@ const HomePage: React.FC = () => {
 
       await companyCamService.addTagsToPhoto(apiKeyFromStorage, photoId, [targetTag.id]);
       console.log(`Successfully added tag '${targetTag.display_value}' (ID: ${targetTag.id}) to photo '${photoId}'.`);
-      handleTagAddedToPhoto(photoId, targetTag);
+      // Pass true for isFromAiSuggestion when calling from here
+      handleTagAddedToPhoto(photoId, targetTag, true);
+
+      // Persist this newly accepted AI tag to Vercel KV
+      // Fetch current persisted data, add this tag, then POST back
+      const currentPersisted = aiSuggestionsCache[photoId];
+      const existingAcceptedTags = currentPersisted?.persistedAcceptedTags || [];
+      const newAcceptedAiTags = Array.from(new Set([...existingAcceptedTags, targetTag.display_value]));
+
+      if (currentUser?.id) {
+        await fetch('/api/ai-enhancements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            photoId,
+            userId: currentUser.id,
+            // aiDescription: currentPersisted?.persistedDescription, // Send current description if needed
+            acceptedAiTags: newAcceptedAiTags,
+          }),
+        });
+        console.log(`[HomePage] Persisted accepted AI tags for photo ${photoId}:`, newAcceptedAiTags);
+        // Update cache with new accepted tags
+        setAiSuggestionsCache(prevCache => ({
+          ...prevCache,
+          [photoId]: {
+            ...prevCache[photoId],
+            persistedAcceptedTags: newAcceptedAiTags,
+          }
+        }));
+      } else {
+        console.warn('[HomePage] User ID not available, cannot persist accepted AI tags to backend.');
+      }
+
     } catch (err: any) {
       console.error(`Error in handleAddTagRequest for photo ${photoId} and tag ${tagDisplayValue}:`, err);
       setError(`Failed to add tag '${tagDisplayValue}'. ${err.message || ''}`);
     }
-  }, [handleTagAddedToPhoto]);
+  }, [handleTagAddedToPhoto, currentUser, aiSuggestionsCache]); // Added currentUser and aiSuggestionsCache to dependencies
+
+
 
   const fetchPhotosAndTheirTags = useCallback(async (pageToFetch: number) => {
     console.log('fetchPhotosAndTheirTags called for page:', pageToFetch);
@@ -287,69 +345,98 @@ const HomePage: React.FC = () => {
   }, [fetchPhotosAndTheirTags]); // fetchPhotosAndTheirTags is memoized
 
   const handleSaveAiDescription = async (photoId: string, description: string) => {
-    setAiSuggestionsCache(prev => ({
-      ...prev,
+    console.log(`[HomePage] Saving AI description for photo ${photoId}:`, description);
+    const apiKeyFromStorage = localStorage.getItem('companyCamApiKey');
+    const userId = currentUser?.id;
+
+    if (!apiKeyFromStorage || !userId) {
+      console.error('[HomePage] API Key or User ID is missing. Cannot save description.');
+      setError('API Key and User ID are required to save AI enhancements.');
+      setAiSuggestionsCache(prevCache => ({
+        ...prevCache,
+        [photoId]: {
+          ...prevCache[photoId],
+          persistedError: 'API Key or User ID missing.',
+          isLoadingPersisted: false,
+        }
+      }));
+      return;
+    }
+
+    // Optimistically update the local state in allFetchedPhotos
+    setAllFetchedPhotos(prevAllPhotos =>
+      prevAllPhotos.map(p => {
+        if (p.id === photoId) {
+          return { ...p, description: description };
+        }
+        return p;
+      })
+    );
+
+    // Update aiSuggestionsCache to reflect the save attempt
+    setAiSuggestionsCache(prevCache => ({
+      ...prevCache,
       [photoId]: {
-        ...(prev[photoId] || {
-          suggestedTags: [],
-          suggestedDescription: '',
-          isSuggesting: false,
-          suggestionError: null,
-          persistedDescription: undefined,
-          persistedAcceptedTags: [],
-          persistedError: null,
-        }),
-        isLoadingPersisted: true, // Indicate loading while saving
+        ...prevCache[photoId],
+        persistedDescription: description, // Optimistically update UI if it uses this
+        isLoadingPersisted: true, // Indicate that a save operation is in progress
         persistedError: null,
-      },
+      }
     }));
 
     try {
       const response = await fetch('/api/ai-enhancements', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          photoId: photoId, 
-          userId: currentUser?.id || 'vite_user_id_placeholder', // Fallback, ensure currentUser.id is usually present
-          description,
-          suggestionSource: 'user_edit_modal_v1.0'
+          photoId,
+          userId,
+          aiDescription: description,
+          // acceptedAiTags are managed by handleAddTagRequest and fetchPersistedAiEnhancements
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to save AI description (status: ${response.status})`);
+        const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
+        console.error(`[HomePage] API error saving description for ${photoId}: ${response.status}`, errorData);
+        throw new Error(errorData.error || `API error: ${response.status}`);
       }
+      
+      const responseData = await response.json(); // Assuming API returns the saved entity or a success message
+      console.log(`[HomePage] Successfully saved AI description for photo ${photoId} to backend:`, responseData);
 
-      const savedData = await response.json(); // Expecting { photoId, description, acceptedTags? } or similar
-      console.log('API response from POST /api/ai-enhancements:', savedData);
-
-      setAiSuggestionsCache(prev => ({
-        ...prev,
+      // Update cache on successful save
+      setAiSuggestionsCache(prevCache => ({
+        ...prevCache,
         [photoId]: {
-          ...prev[photoId],
-          persistedDescription: savedData.ai_description, // Use ai_description from response
-          // If API also returns acceptedTags and you want to update them here, do so.
-          // For now, only updating description based on this save operation.
+          ...prevCache[photoId],
           isLoadingPersisted: false,
           persistedError: null,
-          // Optionally, clear the *suggested* description if it was just saved
-          // suggestedDescription: '', 
-        },
+          // persistedDescription is already optimistically set
+        }
       }));
-      console.log(`Successfully saved AI description for photo ${photoId}`);
+
     } catch (error: any) {
-      console.error(`Error saving AI description for photo ${photoId}:`, error);
-      setAiSuggestionsCache(prev => ({
-        ...prev,
-        [photoId]: {
-          ...prev[photoId],
-          isLoadingPersisted: false,
-          persistedError: error.message || 'An unknown error occurred while saving description.',
-        },
-      }));
+      console.error(`[HomePage] Failed to save AI description for photo ${photoId}:`, error.message);
+      setError(`Failed to save description for photo ${photoId}. ${error.message}`);
+      
+      // Update cache with error and revert optimistic persistedDescription if necessary, or rely on next fetch
+      setAiSuggestionsCache(prevCache => {
+        const originalPersistedDescription = prevCache[photoId]?.persistedDescription;
+        // Decide if you want to revert the optimistic update in the cache or not.
+        // For now, just mark error and stop loading.
+        return {
+          ...prevCache,
+          [photoId]: {
+            ...prevCache[photoId],
+            isLoadingPersisted: false,
+            persistedError: error.message || 'Failed to save description.',
+            // If reverting: persistedDescription: originalPersistedDescription (if it was different from current input 'description')
+          }
+        };
+      });
+      // Note: Reverting allFetchedPhotos is more complex as it requires storing the original state before optimistic update.
+      // For now, we're not reverting allFetchedPhotos on error, relying on subsequent fetches or user actions.
     }
   };
 

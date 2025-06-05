@@ -19,6 +19,7 @@ export interface Tag {
   value: string; // lowercase display_value
   created_at: number;
   updated_at: number;
+  isAiEnhanced?: boolean; // Flag to indicate if the tag originated from AI
 }
 
 export interface Photo {
