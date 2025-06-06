@@ -1,13 +1,9 @@
 // © 2025 Mark Hustad — MIT License
-import '@testing-library/jest-dom'
+// Test setup for API tests (Node.js environment)
 
-// Global test setup
+import { beforeEach, vi } from 'vitest'
+
 beforeEach(() => {
-  // Clear localStorage before each test (only in browser-like environments)
-  if (typeof localStorage !== 'undefined') {
-    localStorage.clear()
-  }
-  
   // Clear any console warnings/errors for clean test output
   vi.clearAllMocks()
 })
@@ -16,7 +12,6 @@ beforeEach(() => {
 Object.defineProperty(process, 'env', {
   value: {
     ...process.env,
-    // Add any default test environment variables here
     NODE_ENV: 'test',
   },
 })
