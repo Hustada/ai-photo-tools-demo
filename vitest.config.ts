@@ -8,6 +8,13 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     globals: true,
+    isolate: true, // Ensure test files run in isolation
+    pool: 'forks', // Use process forks for better isolation
+    maxConcurrency: 1, // Run one test file at a time
+    singleThread: true, // Disable threading for complete isolation
+    sequence: {
+      shuffle: false, // Disable shuffling to maintain order
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
