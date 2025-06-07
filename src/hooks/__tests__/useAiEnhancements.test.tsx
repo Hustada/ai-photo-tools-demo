@@ -68,9 +68,9 @@ describe('useAiEnhancements', () => {
   }
 
   const mockAiSuggestionResponse = {
-    suggested_tags: ['roofing', 'repair'],
-    suggested_description: 'AI generated description',
-    checklist_triggers: ['safety_check'],
+    suggestedTags: ['roofing', 'repair'],
+    suggestedDescription: 'AI generated description',
+    checklistTriggers: ['safety_check'],
   }
 
   const mockPersistedEnhancement = {
@@ -90,7 +90,7 @@ describe('useAiEnhancements', () => {
       ok: true,
       status: 200,
       json: () => Promise.resolve(mockAiSuggestionResponse),
-      text: () => Promise.resolve(''),
+      text: () => Promise.resolve(JSON.stringify(mockAiSuggestionResponse)),
     } as Response)
     vi.mocked(companyCamService.createCompanyCamTagDefinition).mockResolvedValue({
       id: 'new-tag-id',
@@ -237,15 +237,16 @@ describe('useAiEnhancements', () => {
 
     it('should filter out existing tags from suggestions', async () => {
       const responseWithExistingTag = {
-        suggested_tags: ['roofing', 'existing tag', 'repair'], // 'existing tag' matches photo tag
-        suggested_description: 'AI description',
-        checklist_triggers: [],
+        suggestedTags: ['roofing', 'existing tag', 'repair'], // 'existing tag' matches photo tag
+        suggestedDescription: 'AI description',
+        checklistTriggers: [],
       }
       
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
         status: 200,
         json: () => Promise.resolve(responseWithExistingTag),
+        text: () => Promise.resolve(JSON.stringify(responseWithExistingTag)),
       } as Response)
 
       const onPhotoUpdate = vi.fn()
@@ -433,7 +434,7 @@ describe('useAiEnhancements', () => {
       )
 
       await act(async () => {
-        await result.current.saveAiDescription('photo-1', 'Updated description')
+        await result.current.saveAiDescription('photo-1', 'Updated description', mockPhoto)
       })
 
       expect(onPhotoUpdate).toHaveBeenCalledWith(
@@ -447,8 +448,12 @@ describe('useAiEnhancements', () => {
 
   describe('AI Tag Management', () => {
     it('should add AI tag successfully', async () => {
-      // Mock API responses
+      // Mock API responses - first fetch (404 for no existing data), then save
       vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        } as Response) // For existing AI tags fetch (none found)
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
@@ -461,18 +466,12 @@ describe('useAiEnhancements', () => {
         await result.current.addAiTag('photo-1', 'New AI Tag')
       })
 
-      // Should create CompanyCam tag
-      expect(companyCamService.createCompanyCamTagDefinition).toHaveBeenCalledWith(
-        'test-api-key',
-        'New AI Tag'
-      )
+      // Should NOT call CompanyCam service (backend-only approach)
+      expect(companyCamService.createCompanyCamTagDefinition).not.toHaveBeenCalled()
+      expect(companyCamService.addTagsToPhoto).not.toHaveBeenCalled()
 
-      // Should add tag to photo
-      expect(companyCamService.addTagsToPhoto).toHaveBeenCalledWith(
-        'test-api-key',
-        'photo-1',
-        ['new-tag-id']
-      )
+      // Should fetch existing AI tags first
+      expect(fetch).toHaveBeenCalledWith('/api/ai-enhancements?photoId=photo-1')
 
       // Should save to AI enhancements
       expect(fetch).toHaveBeenCalledWith('/api/ai-enhancements', {
@@ -487,9 +486,17 @@ describe('useAiEnhancements', () => {
     })
 
     it('should handle AI tag addition error', async () => {
-      vi.mocked(companyCamService.createCompanyCamTagDefinition).mockRejectedValue(
-        new Error('Tag creation failed')
-      )
+      // Mock fetch to fail on the save call
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        } as Response) // For existing AI tags fetch (none found)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          text: () => Promise.resolve('Server error'),
+        } as Response) // For AI enhancement save failure
 
       const { result } = renderHook(() => useAiEnhancements(mockUser))
 
@@ -497,27 +504,31 @@ describe('useAiEnhancements', () => {
         await act(async () => {
           await result.current.addAiTag('photo-1', 'Failed Tag')
         })
-      }).rejects.toThrow('Tag creation failed')
+      }).rejects.toThrow('Failed to save AI tag to enhancements: 500 Server error')
     })
 
-    it('should handle missing API key for tag operations', async () => {
-      mockLocalStorage.getItem.mockReturnValue(null)
-
-      const { result } = renderHook(() => useAiEnhancements(mockUser))
+    it('should handle missing user for tag operations', async () => {
+      const { result } = renderHook(() => useAiEnhancements(null))
 
       await expect(async () => {
         await act(async () => {
           await result.current.addAiTag('photo-1', 'Test Tag')
         })
-      }).rejects.toThrow('API key not found')
+      }).rejects.toThrow('User not available for adding AI tag')
     })
 
     it('should update photo with new AI tag when callback provided', async () => {
-      vi.mocked(fetch).mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ success: true }),
-      } as Response)
+      // Mock API responses - first fetch (404 for no existing data), then save
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 404,
+        } as Response) // For existing AI tags fetch (none found)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ success: true }),
+        } as Response) // For AI enhancement save
 
       const onPhotoUpdate = vi.fn()
       const { result } = renderHook(() => 
@@ -525,7 +536,7 @@ describe('useAiEnhancements', () => {
       )
 
       await act(async () => {
-        await result.current.addAiTag('photo-1', 'New AI Tag')
+        await result.current.addAiTag('photo-1', 'New AI Tag', mockPhoto)
       })
 
       expect(onPhotoUpdate).toHaveBeenCalledWith(

@@ -29,6 +29,7 @@ interface PhotoCardProps {
   onPhotoClick: (photo: Photo) => void;
   onTagClick?: (tagId: CompanyCamTag['id']) => void;
   onAddTagToCompanyCam: (photoId: Photo['id'], tagDisplayValue: string) => Promise<void>;
+  onAddAiTag: (photoId: string, tagDisplayValue: string, photo?: Photo) => Promise<void>;
   activeTagIds?: CompanyCamTag['id'][];
   aiSuggestionData?: PhotoCardAiSuggestionState;
   onFetchAiSuggestions: (photoId: string, photoUrl: string) => Promise<void>;
@@ -40,6 +41,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
   onPhotoClick,
   onTagClick,
   onAddTagToCompanyCam,
+  onAddAiTag,
   activeTagIds,
   aiSuggestionData,
   onFetchAiSuggestions,
@@ -191,9 +193,9 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                     onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
                       try {
-                        await onAddTagToCompanyCam(photo.id, tag);
+                        await onAddAiTag(photo.id, tag, photo);
                       } catch (err) {
-                        console.error(`[PhotoCard] Error calling onAddTagToCompanyCam for tag '${tag}':`, err);
+                        console.error(`[PhotoCard] Error calling onAddAiTag for tag '${tag}':`, err);
                       }
                     }}
                     className="px-2.5 py-1 bg-teal-600 hover:bg-teal-500 text-white text-xs rounded-full transition-colors duration-150"

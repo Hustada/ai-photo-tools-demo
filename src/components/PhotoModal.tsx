@@ -1,8 +1,7 @@
 // src/components/PhotoModal.tsx
 // 2025 Mark Hustad — MIT License
 import React, { useState, useEffect, useCallback } from 'react';
-import type { Photo, Tag } from '../types';
-import { companyCamService } from '../services/companyCamService';
+import type { Photo } from '../types';
 
 import type { PhotoCardAiSuggestionState } from './PhotoCard'; // Import the shared state type
 
@@ -11,9 +10,10 @@ interface PhotoModalProps {
   onClose: () => void;
   apiKey: string;
   onAddTagToCompanyCam: (photoId: string, tagDisplayValue: string) => void | Promise<void>;
+  onAddAiTag: (photoId: string, tagDisplayValue: string, photo?: Photo) => Promise<void>;
   aiSuggestionData?: PhotoCardAiSuggestionState;
   onFetchAiSuggestions: (photoId: string, photoUrl: string, projectId?: string) => Promise<void>;
-  onSaveAiDescription: (photoId: string, description: string) => Promise<void>;
+  onSaveAiDescription: (photoId: string, description: string, photo?: Photo) => Promise<void>;
   // Navigation props
   onShowNextPhoto: () => void;
   onShowPreviousPhoto: () => void;
@@ -48,6 +48,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   onClose,
   apiKey,
   onAddTagToCompanyCam,
+  onAddAiTag,
   aiSuggestionData,
   onFetchAiSuggestions,
   onSaveAiDescription,
@@ -99,28 +100,12 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   ) || [];
 
   const handleAddAiTag = async (suggestedTagValue: string) => {
-    if (!apiKey) {
-      setModalAiError('API key is missing. Cannot add tag.'); // Use modal-specific error state
-      return;
-    }
     setAddingTag(suggestedTagValue);
+    setModalAiError(null);
     try {
-      const allCompanyCamTags = await companyCamService.listCompanyCamTags(apiKey);
-      let targetTag = allCompanyCamTags.find((t: Tag) => t.display_value.toLowerCase() === suggestedTagValue.toLowerCase());
-      if (!targetTag) {
-        targetTag = await companyCamService.createCompanyCamTagDefinition(apiKey, suggestedTagValue);
-      }
-      if (targetTag) {
-        await companyCamService.addTagsToPhoto(apiKey, photo.id, [targetTag.id]);
-        // Call the prop from HomePage to handle tag addition, which will update CompanyCam and then local state
-        await onAddTagToCompanyCam(photo.id, suggestedTagValue);
-        // No longer need to manually update local aiSuggestedTags, 
-        // as filteredAiSuggestedTags will re-calculate based on props and photo.tags
-      } else {
-        throw new Error('Failed to find or create the tag.');
-      }
+      await onAddAiTag(photo.id, suggestedTagValue, photo);
     } catch (error: unknown) {
-      console.error(`Error adding AI tag '${suggestedTagValue}':`, error);
+      console.error(`[PhotoModal] Error adding AI tag '${suggestedTagValue}':`, error);
       // Type guard for error message
       let message = `Failed to add tag '${suggestedTagValue}'. Unknown error`;
       if (error instanceof Error) {
@@ -128,7 +113,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       } else if (typeof error === 'string') {
         message = `Failed to add tag '${suggestedTagValue}'. ${error}`;
       }
-      setModalAiError(message); // Use modal-specific error state
+      setModalAiError(message);
     } finally {
       setAddingTag(null);
     }
@@ -310,7 +295,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   onClick={async () => {
                     setIsSavingDescription(true);
                     try {
-                      await onSaveAiDescription(photo.id, editableDescription);
+                      await onSaveAiDescription(photo.id, editableDescription, photo);
                     } catch (error) {
                       console.error('Error saving description from modal:', error);
                       // Optionally set a modal-specific error state here

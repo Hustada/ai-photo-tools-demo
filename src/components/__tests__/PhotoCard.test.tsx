@@ -71,6 +71,7 @@ describe('PhotoCard', () => {
   const mockOnPhotoClick = vi.fn()
   const mockOnTagClick = vi.fn()
   const mockOnAddTagToCompanyCam = vi.fn()
+  const mockOnAddAiTag = vi.fn()
   const mockOnFetchAiSuggestions = vi.fn()
 
   const defaultProps = {
@@ -78,6 +79,7 @@ describe('PhotoCard', () => {
     onPhotoClick: mockOnPhotoClick,
     onTagClick: mockOnTagClick,
     onAddTagToCompanyCam: mockOnAddTagToCompanyCam,
+    onAddAiTag: mockOnAddAiTag,
     onFetchAiSuggestions: mockOnFetchAiSuggestions
   }
 
@@ -362,9 +364,10 @@ describe('PhotoCard', () => {
       const tagButton = screen.getByText('shingles') // Get the first suggested tag button
       await user.click(tagButton)
 
-      expect(mockOnAddTagToCompanyCam).toHaveBeenCalledWith(
+      expect(mockOnAddAiTag).toHaveBeenCalledWith(
         'test-photo-123',
-        'shingles'
+        'shingles',
+        mockPhoto
       )
     })
 

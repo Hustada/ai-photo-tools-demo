@@ -6,9 +6,9 @@ import type { PhotoCardAiSuggestionState } from '../components/PhotoCard'
 
 // API response interfaces
 interface AiSuggestionResponse {
-  suggested_tags: string[]
-  suggested_description: string
-  checklist_triggers?: string[]
+  suggestedTags: string[]
+  suggestedDescription: string
+  checklistTriggers?: string[]
 }
 
 interface PersistedEnhancement {
@@ -32,8 +32,8 @@ export interface UseAiEnhancementsReturn {
   
   // Core functions
   fetchAiSuggestions: (photoId: string, photoUrl: string, projectId?: string) => Promise<void>
-  saveAiDescription: (photoId: string, description: string) => Promise<void>
-  addAiTag: (photoId: string, tagDisplayValue: string) => Promise<void>
+  saveAiDescription: (photoId: string, description: string, photo?: Photo) => Promise<void>
+  addAiTag: (photoId: string, tagDisplayValue: string, photo?: Photo) => Promise<void>
   loadPersistedEnhancements: (photoId: string) => Promise<void>
   
   // Utility functions
@@ -109,11 +109,20 @@ export const useAiEnhancements = (
         throw new Error(`AI suggestion request failed: ${response.status} ${errorText}`)
       }
 
-      const aiResponse: AiSuggestionResponse = await response.json()
-      console.log(`[useAiEnhancements] AI suggestions received for ${photoId}:`, aiResponse)
+      const responseText = await response.text()
+      console.log(`[useAiEnhancements] Raw response text for ${photoId}:`, responseText)
+      
+      let aiResponse: AiSuggestionResponse
+      try {
+        aiResponse = JSON.parse(responseText)
+        console.log(`[useAiEnhancements] Parsed AI suggestions for ${photoId}:`, aiResponse)
+      } catch (parseError) {
+        console.error(`[useAiEnhancements] Failed to parse JSON response for ${photoId}:`, parseError)
+        throw new Error(`Invalid JSON response: ${responseText}`)
+      }
 
       // Filter out existing tags if current photo is provided
-      let filteredTags = aiResponse.suggested_tags || []
+      let filteredTags = aiResponse.suggestedTags || []
       if (options?.currentPhoto?.tags) {
         const existingTagValues = options.currentPhoto.tags.map(tag => tag.value.toLowerCase())
         filteredTags = filteredTags.filter(tag => 
@@ -123,7 +132,7 @@ export const useAiEnhancements = (
 
       updatePhotoCache(photoId, {
         suggestedTags: filteredTags,
-        suggestedDescription: aiResponse.suggested_description || '',
+        suggestedDescription: aiResponse.suggestedDescription || '',
         isSuggesting: false,
         suggestionError: null,
       })
@@ -189,7 +198,7 @@ export const useAiEnhancements = (
     }
   }, [options?.onPhotoUpdate, options?.currentPhoto, updatePhotoCache])
 
-  const saveAiDescription = useCallback(async (photoId: string, description: string) => {
+  const saveAiDescription = useCallback(async (photoId: string, description: string, photo?: Photo) => {
     if (!currentUser) {
       throw new Error('User not available for saving AI description')
     }
@@ -219,63 +228,75 @@ export const useAiEnhancements = (
         persistedDescription: description,
       })
 
-      // Update photo if callback provided
-      if (options?.onPhotoUpdate && options?.currentPhoto?.id === photoId) {
-        const updatedPhoto = { ...options.currentPhoto, description }
+      // Update photo data if provided and callback available
+      if (photo && options?.onPhotoUpdate) {
+        const updatedPhoto = { ...photo, description }
         options.onPhotoUpdate(updatedPhoto)
+        console.log(`[useAiEnhancements] Updated photo description in data cache for ${photoId}`)
       }
 
     } catch (error: any) {
       console.error(`[useAiEnhancements] Error saving AI description for ${photoId}:`, error)
       throw new Error('Failed to save AI description')
     }
-  }, [currentUser, options?.onPhotoUpdate, options?.currentPhoto, updatePhotoCache])
+  }, [currentUser, options?.onPhotoUpdate, updatePhotoCache])
 
-  const addAiTag = useCallback(async (photoId: string, tagDisplayValue: string) => {
+  const addAiTag = useCallback(async (photoId: string, tagDisplayValue: string, photo?: Photo) => {
     if (!currentUser) {
       throw new Error('User not available for adding AI tag')
     }
 
-    const apiKey = localStorage.getItem('companyCamApiKey')
-    if (!apiKey) {
-      throw new Error('API key not found')
-    }
-
-    console.log(`[useAiEnhancements] Adding AI tag "${tagDisplayValue}" to photo ${photoId}`)
+    console.log(`[useAiEnhancements] Adding AI tag "${tagDisplayValue}" to photo ${photoId} (backend only)`)
 
     try {
-      // 1. Create CompanyCam tag definition
-      const newTag = await companyCamService.createCompanyCamTagDefinition(apiKey, tagDisplayValue)
-      console.log(`[useAiEnhancements] Created CompanyCam tag:`, newTag)
+      // First, fetch current persisted AI tags from backend to ensure we have the latest
+      let existingAcceptedTags: string[] = []
+      try {
+        const existingResponse = await fetch(`/api/ai-enhancements?photoId=${photoId}`)
+        if (existingResponse.ok) {
+          const existingData: PersistedEnhancement = await existingResponse.json()
+          existingAcceptedTags = existingData.accepted_ai_tags || []
+          console.log(`[useAiEnhancements] Found existing AI tags for ${photoId}:`, existingAcceptedTags)
+        } else if (existingResponse.status !== 404) {
+          console.warn(`[useAiEnhancements] Error fetching existing AI tags: ${existingResponse.status}`)
+        }
+      } catch (fetchError) {
+        console.warn(`[useAiEnhancements] Could not fetch existing AI tags, starting fresh:`, fetchError)
+      }
 
-      // 2. Add tag to photo
-      await companyCamService.addTagsToPhoto(apiKey, photoId, [newTag.id])
-      console.log(`[useAiEnhancements] Added tag to photo ${photoId}`)
+      // Merge with the new tag (avoid duplicates)
+      const newAcceptedTags = Array.from(new Set([...existingAcceptedTags, tagDisplayValue]))
+      console.log(`[useAiEnhancements] Merged AI tags for ${photoId}:`, newAcceptedTags)
 
-      // 3. Save to AI enhancements
+      // Save ONLY to AI enhancements backend (not CompanyCam API)
       const response = await fetch('/api/ai-enhancements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           photoId,
           userId: currentUser.id,
-          acceptedAiTags: [tagDisplayValue],
+          acceptedAiTags: newAcceptedTags,
         }),
       })
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.warn(`[useAiEnhancements] Failed to save AI tag to enhancements: ${response.status} ${errorText}`)
-        // Don't throw here - the tag was already added to CompanyCam
+        throw new Error(`Failed to save AI tag to enhancements: ${response.status} ${errorText}`)
       }
 
-      console.log(`[useAiEnhancements] AI tag "${tagDisplayValue}" successfully added`)
+      console.log(`[useAiEnhancements] AI tag "${tagDisplayValue}" saved to backend with merged tags:`, newAcceptedTags)
 
-      // Update photo if callback provided
-      if (options?.onPhotoUpdate && options?.currentPhoto?.id === photoId) {
+      // Update AI cache
+      updatePhotoCache(photoId, {
+        persistedAcceptedTags: newAcceptedTags,
+      })
+
+      // Update photo data if provided and callback available
+      if (photo && options?.onPhotoUpdate) {
+        // Create synthetic AI tag
         const newAiTag: Tag = {
-          id: newTag.id,
-          company_id: newTag.company_id,
+          id: `ai_${photoId}_${tagDisplayValue.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}`,
+          company_id: 'AI_TAG',
           display_value: tagDisplayValue,
           value: tagDisplayValue.toLowerCase(),
           created_at: Date.now(),
@@ -284,17 +305,18 @@ export const useAiEnhancements = (
         }
 
         const updatedPhoto = {
-          ...options.currentPhoto,
-          tags: [...(options.currentPhoto.tags || []), newAiTag],
+          ...photo,
+          tags: [...(photo.tags || []), newAiTag],
         }
         options.onPhotoUpdate(updatedPhoto)
+        console.log(`[useAiEnhancements] Updated photo with synthetic AI tag for ${photoId}`)
       }
 
     } catch (error: any) {
       console.error(`[useAiEnhancements] Error adding AI tag "${tagDisplayValue}" to ${photoId}:`, error)
       throw error
     }
-  }, [currentUser, options?.onPhotoUpdate, options?.currentPhoto])
+  }, [currentUser, updatePhotoCache, options?.onPhotoUpdate])
 
   const getAiDataForPhoto = useCallback((photoId: string) => {
     return aiSuggestionsCache[photoId]
