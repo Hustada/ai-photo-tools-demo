@@ -439,7 +439,7 @@ describe('PhotoModal', () => {
       await user.click(tagButton)
 
       await waitFor(() => {
-        expect(screen.getByText(/Failed to add tag 'wiring'/)).toBeInTheDocument()
+        expect(screen.getByText("Error: Failed to add tag 'wiring'. User not available for adding AI tag")).toBeInTheDocument()
       })
     })
 
@@ -463,6 +463,36 @@ describe('PhotoModal', () => {
       })
 
       consoleSpy.mockRestore()
+    })
+
+    it('should handle string errors in tag addition', async () => {
+      const user = userEvent.setup()
+      
+      mockOnAddAiTag.mockRejectedValue('Network connection failed')
+
+      render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
+
+      const tagButton = screen.getByText('wiring')
+      await user.click(tagButton)
+
+      await waitFor(() => {
+        expect(screen.getByText("Error: Failed to add tag 'wiring'. Network connection failed")).toBeInTheDocument()
+      })
+    })
+
+    it('should handle unknown errors in tag addition', async () => {
+      const user = userEvent.setup()
+      
+      mockOnAddAiTag.mockRejectedValue({ code: 500, message: 'Unknown error' })
+
+      render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
+
+      const tagButton = screen.getByText('wiring')
+      await user.click(tagButton)
+
+      await waitFor(() => {
+        expect(screen.getByText("Error: Failed to add tag 'wiring'. Unknown error")).toBeInTheDocument()
+      })
     })
   })
 
@@ -533,6 +563,31 @@ describe('PhotoModal', () => {
 
       const saveButton = screen.getByText('Save Description')
       expect(saveButton).toBeDisabled()
+    })
+
+    it('should handle description save errors gracefully', async () => {
+      const user = userEvent.setup()
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      mockOnSaveAiDescription.mockRejectedValue(new Error('Save failed'))
+
+      render(<PhotoModal {...defaultProps} />)
+
+      const textarea = screen.getByDisplayValue('Electrical work in progress')
+      await user.clear(textarea)
+      await user.type(textarea, 'New description')
+
+      const saveButton = screen.getByText('Save Description')
+      await user.click(saveButton)
+
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Error saving description from modal:',
+          expect.any(Error)
+        )
+      })
+
+      consoleErrorSpy.mockRestore()
     })
   })
 

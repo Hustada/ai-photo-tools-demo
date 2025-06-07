@@ -423,5 +423,58 @@ describe('companyCamService', () => {
 
       await expect(companyCamService.getProjects(mockApiKey)).rejects.toThrow('Projects not accessible')
     })
+
+    it('should handle Axios errors when fetching projects', async () => {
+      const mockAxiosError = {
+        isAxiosError: true,
+        toJSON: vi.fn().mockReturnValue({ message: 'Network error', code: 'NETWORK_ERROR' }),
+        message: 'Request failed'
+      }
+      // Mock axios.isAxiosError to return true
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+      mockedAxios.get.mockRejectedValue(mockAxiosError)
+
+      await expect(companyCamService.getProjects(mockApiKey)).rejects.toThrow()
+      expect(mockAxiosError.toJSON).toHaveBeenCalled()
+    })
+
+    it('should handle unknown errors when fetching projects', async () => {
+      const unknownError = { someProperty: 'not an Error object' }
+      mockedAxios.get.mockRejectedValue(unknownError)
+
+      await expect(companyCamService.getProjects(mockApiKey)).rejects.toThrow()
+    })
+  })
+
+  describe('Error Handling Coverage', () => {
+    it('should handle Axios errors in listCompanyCamTags', async () => {
+      const mockAxiosError = {
+        isAxiosError: true,
+        toJSON: vi.fn().mockReturnValue({ message: 'Tag fetch error', code: 'TAG_ERROR' }),
+        message: 'Request failed'
+      }
+      // Mock axios.isAxiosError to return true
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+      mockedAxios.get.mockRejectedValue(mockAxiosError)
+
+      await expect(companyCamService.listCompanyCamTags(mockApiKey)).rejects.toThrow()
+      expect(mockAxiosError.toJSON).toHaveBeenCalled()
+    })
+
+    it('should handle generic errors in listCompanyCamTags', async () => {
+      const genericError = new Error('Generic tag error')
+      vi.mocked(axios.isAxiosError).mockReturnValue(false)
+      mockedAxios.get.mockRejectedValue(genericError)
+
+      await expect(companyCamService.listCompanyCamTags(mockApiKey)).rejects.toThrow('Generic tag error')
+    })
+
+    it('should handle unknown errors in listCompanyCamTags', async () => {
+      const unknownError = { unknownProp: 'not an Error object' }
+      vi.mocked(axios.isAxiosError).mockReturnValue(false)
+      mockedAxios.get.mockRejectedValue(unknownError)
+
+      await expect(companyCamService.listCompanyCamTags(mockApiKey)).rejects.toThrow()
+    })
   })
 })

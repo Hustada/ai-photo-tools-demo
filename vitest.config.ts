@@ -27,6 +27,8 @@ export default defineConfig({
         '**/*.config.*',
         'scripts/',
         'fetch-*.js', // Exclude utility scripts
+        '**/test-setup.ts', // Exclude test setup files
+        '**/setup.ts', // Exclude setup files
       ]
     }
   },

@@ -460,4 +460,142 @@ describe('HomePage', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/login')
     })
   })
+
+  describe('User Context Display', () => {
+    it('should display projects count when user has projects', () => {
+      // Create a custom render function to avoid the default renderHomePage
+      vi.mocked(useUserContext).mockReturnValue({
+        currentUser: mockUser,
+        companyDetails: { id: 'company-1', name: 'Test Company', status: 'active', address: {} },
+        projects: [
+          { id: 'project-1', name: 'Project 1' },
+          { id: 'project-2', name: 'Project 2' }
+        ],
+        loading: false,
+        error: null,
+        fetchUserContext: vi.fn(),
+      })
+      
+      render(
+        <BrowserRouter>
+          <HomePage />
+        </BrowserRouter>
+      )
+      
+      expect(screen.getByText('2 projects')).toBeInTheDocument()
+      expect(screen.getByText('Test Company')).toBeInTheDocument()
+    })
+
+    it('should display singular project text when user has one project', () => {
+      // Test the singular vs plural logic
+      vi.mocked(useUserContext).mockReturnValue({
+        currentUser: mockUser,
+        companyDetails: null,
+        projects: [{ id: 'project-1', name: 'Project 1' }],
+        loading: false,
+        error: null,
+        fetchUserContext: vi.fn(),
+      })
+      
+      render(
+        <BrowserRouter>
+          <HomePage />
+        </BrowserRouter>
+      )
+      
+      expect(screen.getByText('1 project')).toBeInTheDocument()
+    })
+  })
+
+  describe('Tag Management Integration', () => {
+    it('should trigger onPhotoUpdate callback when tag is added', () => {
+      let capturedCallback: any = null
+      
+      // Capture the callback passed to useTagManagement (line 47)
+      vi.mocked(useTagManagement).mockImplementation((photos, user, options) => {
+        capturedCallback = options?.onPhotoUpdate
+        return {
+          activeTagIds: [],
+          uniqueFilterableTags: [],
+          filteredPhotos: [mockPhoto],
+          tagError: null,
+          isAddingTag: false,
+          handleTagClick: vi.fn(),
+          handleAddTagRequest: vi.fn(),
+          clearAllFilters: vi.fn(),
+        }
+      })
+      
+      const mockUpdatePhotoInCache = vi.fn()
+      vi.mocked(usePhotoData).mockReturnValue({
+        photos: [mockPhoto],
+        allFetchedPhotos: [mockPhoto],
+        isLoading: false,
+        error: null,
+        hasMorePhotos: false,
+        fetchPhotos: vi.fn(),
+        refreshPhotos: vi.fn(),
+        loadMore: vi.fn(),
+        updatePhotoInCache: mockUpdatePhotoInCache,
+      })
+      
+      renderHomePage()
+      
+      // Verify callback was captured
+      expect(capturedCallback).toBeDefined()
+      
+      // Execute the callback to cover line 47
+      const newTag = {
+        id: 'new-tag-1',
+        display_value: 'New Tag',
+        value: 'new tag',
+        company_id: 'company-1',
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      }
+      
+      capturedCallback('photo-1', newTag, false)
+      
+      // Verify the photo was updated with the new tag
+      expect(mockUpdatePhotoInCache).toHaveBeenCalledWith({
+        ...mockPhoto,
+        tags: [newTag],
+      })
+    })
+  })
+
+  describe('Tag Filter Styling', () => {
+    it('should apply inactive styling to non-active tags', () => {
+      const mockTags = [
+        { id: 'tag-1', display_value: 'ActiveFilterTag', value: 'active', company_id: 'company-1', created_at: Date.now(), updated_at: Date.now() },
+        { id: 'tag-2', display_value: 'InactiveFilterTag', value: 'inactive', company_id: 'company-1', created_at: Date.now(), updated_at: Date.now() }
+      ]
+
+      // Mock filtering to have one active tag and one inactive (line 179)
+      vi.mocked(useTagFiltering).mockReturnValue({
+        filteredPhotos: [mockPhoto],
+        activeTagIds: ['tag-1'], // Only tag-1 is active
+        availableFilterTags: mockTags,
+        isFiltering: true,
+        filterLogic: 'AND',
+        toggleTag: vi.fn(),
+        clearAllFilters: vi.fn(),
+        setFilterLogic: vi.fn(),
+      })
+
+      renderHomePage()
+      
+      // Find the filter buttons specifically in the filter section
+      const filterSection = screen.getByText('Filter by Tags:').closest('div')
+      const activeButton = screen.getByText('ActiveFilterTag (0)').closest('button')
+      const inactiveButton = screen.getByText('InactiveFilterTag (0)').closest('button')
+      
+      // Verify active button has active styling
+      expect(activeButton).toHaveClass('bg-sky-500')
+      
+      // Verify inactive button has inactive styling (line 179)
+      expect(inactiveButton).toHaveClass('bg-gray-700')
+      expect(inactiveButton).toHaveClass('text-gray-300')
+    })
+  })
 })

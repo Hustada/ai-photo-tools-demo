@@ -574,4 +574,151 @@ describe('usePhotoData', () => {
       expect(result.current.allFetchedPhotos).toHaveLength(1)
     })
   })
+
+  describe('Additional Error Handling Coverage', () => {
+    it('should handle AI enhancement fetch with non-404 error response', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: vi.fn().mockResolvedValue('Internal server error')
+      } as any)
+
+      const { result } = renderHook(() => usePhotoData())
+
+      await act(async () => {
+        await result.current.fetchPhotos(1)
+      })
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      // Should still process the photo without AI enhancements
+      expect(result.current.allFetchedPhotos).toHaveLength(1)
+    })
+
+    it('should handle network error during AI enhancement fetch', async () => {
+      vi.mocked(fetch).mockRejectedValue(new Error('Network timeout'))
+
+      const { result } = renderHook(() => usePhotoData())
+
+      await act(async () => {
+        await result.current.fetchPhotos(1)
+      })
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      // Should still process the photo without AI enhancements
+      expect(result.current.allFetchedPhotos).toHaveLength(1)
+    })
+
+    it('should handle tag processing error for individual photo', async () => {
+      vi.mocked(companyCamService.getPhotoTags).mockRejectedValue(new Error('Tag processing failed'))
+
+      const { result } = renderHook(() => usePhotoData())
+
+      await act(async () => {
+        await result.current.fetchPhotos(1)
+      })
+
+      await waitFor(() => {
+        expect(result.current.error).toBe('Tag processing failed')
+      })
+
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    it('should handle filtered photo update when filters are active', async () => {
+      const tag2 = { ...mockTag, id: 'tag-2', display_value: 'Tag 2' }
+      const photoWithBothTags = { ...mockPhoto, id: 'photo-1' }
+      const photoWithOneTag = { ...mockPhoto, id: 'photo-2' }
+      
+      vi.mocked(companyCamService.getPhotos).mockResolvedValue([photoWithBothTags, photoWithOneTag])
+      vi.mocked(companyCamService.getPhotoTags)
+        .mockResolvedValueOnce([mockTag, tag2])
+        .mockResolvedValueOnce([mockTag])
+
+      const { result } = renderHook(() => usePhotoData())
+
+      await act(async () => {
+        await result.current.fetchPhotos(1)
+      })
+
+      await waitFor(() => {
+        expect(result.current.allFetchedPhotos).toHaveLength(2)
+      })
+
+      // Apply filter to show only photos with both tags
+      act(() => {
+        result.current.applyFilters(['tag-1', 'tag-2'])
+      })
+
+      expect(result.current.photos).toHaveLength(1)
+
+      // Update a photo to add the second tag while filters are active
+      const updatedPhoto = { 
+        ...photoWithOneTag, 
+        tags: [
+          { id: 'tag-1', display_value: 'Tag 1', isAiEnhanced: false, created_at: Date.now(), updated_at: Date.now() },
+          { id: 'tag-2', display_value: 'Tag 2', isAiEnhanced: false, created_at: Date.now(), updated_at: Date.now() }
+        ] 
+      }
+
+      act(() => {
+        result.current.updatePhotoInCache(updatedPhoto)
+      })
+
+      // Should now show 2 photos since both have the required tags
+      expect(result.current.photos).toHaveLength(2)
+    })
+
+    it('should handle AI enhancement response parsing error', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: vi.fn().mockRejectedValue(new Error('JSON parse error'))
+      } as any)
+
+      const { result } = renderHook(() => usePhotoData())
+
+      await act(async () => {
+        await result.current.fetchPhotos(1)
+      })
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      // Should still process the photo without AI enhancements
+      expect(result.current.allFetchedPhotos).toHaveLength(1)
+    })
+
+    it('should handle malformed AI enhancement data', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({
+          // Missing required fields
+          photo_id: 'test-photo',
+          accepted_ai_tags: null,
+          ai_description: undefined
+        })
+      } as any)
+
+      const { result } = renderHook(() => usePhotoData())
+
+      await act(async () => {
+        await result.current.fetchPhotos(1)
+      })
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      // Should still process the photo without AI enhancements
+      expect(result.current.allFetchedPhotos).toHaveLength(1)
+    })
+  })
 })

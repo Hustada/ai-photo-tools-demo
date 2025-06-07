@@ -609,4 +609,57 @@ describe('useTagManagement', () => {
       )
     })
   })
+
+  describe('Coverage for Uncovered Lines', () => {
+    it('should filter out photos without valid tags array', () => {
+      // Cover lines 58-59: photos with invalid/missing tags
+      const photosWithInvalidTags = [
+        { ...mockPhoto1, tags: undefined }, // No tags property
+        { ...mockPhoto2, tags: null }, // null tags
+        { ...mockPhoto1, id: 'invalid-photo', tags: "invalid" }, // non-array tags
+        { ...mockPhoto1, id: 'valid-photo', tags: [mockTag1] }, // Valid photo
+      ]
+
+      const { result } = renderHook(() => 
+        useTagManagement(photosWithInvalidTags as any, mockUser)
+      )
+
+      // First activate a tag filter to trigger the filtering logic that checks for valid tags
+      act(() => {
+        result.current.handleTagClick('tag-1')
+      })
+
+      // Should only return the valid photo (the filtering logic excludes photos with invalid tags)
+      expect(result.current.filteredPhotos).toHaveLength(1)
+      expect(result.current.filteredPhotos[0].id).toBe('valid-photo')
+    })
+
+    it('should handle AI tag acceptance persistence error gracefully', async () => {
+      // Cover lines 155-157: error persisting AI tag acceptance
+      const onPhotoUpdate = vi.fn()
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({}), // addTagsToPhoto success
+        } as Response)
+        .mockRejectedValueOnce(new Error('Persistence failed')) // AI persistence fails
+
+      const { result } = renderHook(() => 
+        useTagManagement(mockPhotos, mockUser, { onPhotoUpdate })
+      )
+
+      await act(async () => {
+        await result.current.handleAddTagRequest('photo-1', 'ai-suggested-tag', true) // isFromAiSuggestion: true
+      })
+
+      // Tag should still be added to CompanyCam despite persistence failure
+      expect(companyCamService.createCompanyCamTagDefinition).toHaveBeenCalledWith('test-api-key', 'ai-suggested-tag')
+      expect(companyCamService.addTagsToPhoto).toHaveBeenCalled()
+      expect(onPhotoUpdate).toHaveBeenCalled()
+
+      // Error should not prevent the operation from completing
+      expect(result.current.tagError).toBeNull()
+    })
+  })
 })

@@ -715,4 +715,96 @@ describe('useAiEnhancements', () => {
       })
     })
   })
+
+  describe('Coverage for Uncovered Lines', () => {
+    it('should handle non-404 error when fetching existing AI tags', async () => {
+      // First call: non-404 error when fetching existing tags (line 262)
+      // Second call: successful save
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          text: () => Promise.resolve('Server error'),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({}),
+        } as Response)
+
+      const { result } = renderHook(() => useAiEnhancements(mockUser))
+
+      await act(async () => {
+        await result.current.addAiTag('photo-1', 'test-tag')
+      })
+
+      expect(fetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('should handle fetch error when getting existing AI tags', async () => {
+      // First call: network error when fetching existing tags (lines 264-265)
+      // Second call: successful save
+      vi.mocked(fetch)
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({}),
+        } as Response)
+
+      const { result } = renderHook(() => useAiEnhancements(mockUser))
+
+      await act(async () => {
+        await result.current.addAiTag('photo-1', 'test-tag')
+      })
+
+      expect(fetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('should mark existing tag as AI enhanced when loading persisted data', async () => {
+      // Cover line 358: matchingExistingTag.isAiEnhanced = true
+      const photoWithExistingTag = {
+        ...mockPhoto,
+        tags: [
+          {
+            id: 'existing-tag',
+            display_value: 'Existing Tag',
+            value: 'existing',
+            company_id: 'company-1',
+            created_at: Date.now(),
+            updated_at: Date.now(),
+            isAiEnhanced: false,
+          }
+        ]
+      }
+
+      const persistedDataWithMatchingTag = {
+        photo_id: 'photo-1',
+        user_id: 'user-123',
+        ai_description: 'Test description',
+        accepted_ai_tags: ['Existing Tag'], // This matches the existing tag
+        created_at: '2025-01-01T00:00:00Z',
+        updated_at: '2025-01-01T00:00:00Z',
+        suggestion_source: 'openai',
+      }
+
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(persistedDataWithMatchingTag),
+      } as Response)
+
+      const { result } = renderHook(() => useAiEnhancements(mockUser))
+
+      await act(async () => {
+        await result.current.loadPersistedEnhancements('photo-1')
+      })
+
+      const updatedPhoto = result.current.updatePhotoWithPersistedData('photo-1', photoWithExistingTag)
+      
+      // Verify the existing tag was marked as AI enhanced
+      const existingTag = updatedPhoto.tags.find(tag => tag.display_value === 'Existing Tag')
+      expect(existingTag?.isAiEnhanced).toBe(true)
+    })
+  })
 })
