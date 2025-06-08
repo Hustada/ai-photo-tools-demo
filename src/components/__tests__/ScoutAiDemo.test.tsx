@@ -100,7 +100,15 @@ const mockOnPhotoUpdate = vi.fn();
 
 // Helper to render component with active suggestions
 const renderWithActiveSuggestions = async (suggestions = [mockSuggestion]) => {
+  // Set up the mock context to have suggestions already
   mockScoutAiContext.suggestions = suggestions;
+  
+  // Mock the analyzeSimilarPhotos to update suggestions when called
+  mockScoutAiContext.analyzeSimilarPhotos.mockImplementation(async () => {
+    // Update the mock context state
+    mockScoutAiContext.suggestions = suggestions;
+    return Promise.resolve([]);
+  });
   
   const result = render(
     <ScoutAiDemo 
@@ -110,10 +118,16 @@ const renderWithActiveSuggestions = async (suggestions = [mockSuggestion]) => {
     />
   );
   
-  // Trigger analysis to show suggestions
+  // Trigger analysis to activate suggestions display
   const triggerButton = screen.getByText('Trigger Analysis');
   await act(async () => {
     fireEvent.click(triggerButton);
+  });
+  
+  // Wait for any async state updates - adjust expectation based on number of suggestions
+  await waitFor(() => {
+    const notifications = screen.getAllByTestId('camintellect-notification');
+    expect(notifications).toHaveLength(suggestions.length);
   });
   
   return result;
@@ -382,56 +396,20 @@ describe('ScoutAiDemo', () => {
 
   describe('Suggestion Display and Interaction', () => {
     it('should display suggestion when manually triggered', async () => {
-      mockScoutAiContext.suggestions = [mockSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
-      
-      // Trigger analysis to show suggestions
-      const triggerButton = screen.getByText('Trigger Analysis');
-      await act(async () => {
-        fireEvent.click(triggerButton);
-      });
+      await renderWithActiveSuggestions([mockSuggestion]);
       
       // Should show the notification
       expect(screen.getByTestId('camintellect-notification')).toBeInTheDocument();
     });
 
     it('should render ScoutAiNotification for each active suggestion', async () => {
-      mockScoutAiContext.suggestions = [mockSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
-      
-      // Trigger analysis to show suggestions
-      const triggerButton = screen.getByText('Trigger Analysis');
-      await act(async () => {
-        fireEvent.click(triggerButton);
-      });
+      await renderWithActiveSuggestions([mockSuggestion]);
 
       expect(screen.getByTestId('camintellect-notification')).toBeInTheDocument();
     });
 
     it('should handle accepting suggestions', async () => {
-      mockScoutAiContext.suggestions = [mockSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
+      await renderWithActiveSuggestions([mockSuggestion]);
 
       const acceptButtons = screen.getAllByText('Accept');
       const acceptButton = acceptButtons[0]; // Get the first Accept button
@@ -448,17 +426,9 @@ describe('ScoutAiDemo', () => {
     });
 
     it('should handle rejecting suggestions', async () => {
-      mockScoutAiContext.suggestions = [mockSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
+      await renderWithActiveSuggestions([mockSuggestion]);
 
-      const dismissButton = screen.getByLabelText('Dismiss suggestion');
+      const dismissButton = screen.getByText('Dismiss');
       
       await act(async () => {
         fireEvent.click(dismissButton);
@@ -467,18 +437,10 @@ describe('ScoutAiDemo', () => {
       expect(mockScoutAiContext.dismissSuggestion).toHaveBeenCalledWith('suggestion-1');
     });
 
-    it('should handle dismissing suggestions', () => {
-      mockScoutAiContext.suggestions = [mockSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
+    it('should handle dismissing suggestions', async () => {
+      await renderWithActiveSuggestions([mockSuggestion]);
 
-      const dismissButton = screen.getByLabelText('Dismiss suggestion');
+      const dismissButton = screen.getByText('Dismiss');
       
       fireEvent.click(dismissButton);
 
@@ -486,21 +448,7 @@ describe('ScoutAiDemo', () => {
     });
 
     it('should handle viewing preview', async () => {
-      mockScoutAiContext.suggestions = [mockSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
-      
-      // Trigger analysis to show suggestions
-      const triggerButton = screen.getByText('Trigger Analysis');
-      await act(async () => {
-        fireEvent.click(triggerButton);
-      });
+      await renderWithActiveSuggestions([mockSuggestion]);
 
       const previewButton = screen.getByText('Preview');
       
@@ -513,26 +461,17 @@ describe('ScoutAiDemo', () => {
 
   describe('Details Modal', () => {
     const renderModalAndOpen = async () => {
-      mockScoutAiContext.suggestions = [mockSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
-
-      // Trigger analysis first to show suggestions
-      const triggerButton = screen.getByText('Trigger Analysis');
-      await act(async () => {
-        fireEvent.click(triggerButton);
-      });
+      await renderWithActiveSuggestions([mockSuggestion]);
       
       // Open preview modal
       const previewButton = screen.getByText('Preview');
       await act(async () => {
         fireEvent.click(previewButton);
+      });
+      
+      // Wait for modal to appear
+      await waitFor(() => {
+        expect(screen.getByText('Preview Changes')).toBeInTheDocument();
       });
     };
 
@@ -545,7 +484,7 @@ describe('ScoutAiDemo', () => {
 
     it('should display confidence level', async () => {
       await renderModalAndOpen();
-      expect(screen.getByText('high')).toBeInTheDocument();
+      expect(screen.getByText(/Confidence:.*high/)).toBeInTheDocument();
     });
 
     it('should display recommendation details', async () => {
@@ -556,8 +495,8 @@ describe('ScoutAiDemo', () => {
       
       // Check for the new modal structure
       expect(screen.getByText('Bulk Actions')).toBeInTheDocument();
-      expect(screen.getByText(/Keep:/)).toBeInTheDocument();
-      expect(screen.getByText(/Archive:/)).toBeInTheDocument();
+      expect(screen.getAllByText(/Keep:/)).toHaveLength(2); // One in header, one in bulk actions
+      expect(screen.getAllByText(/Archive:/)).toHaveLength(2); // One in header, one in bulk actions
       
       // Check for group type text (it's now "Group: retry shots")
       expect(screen.getByText(/Group:.*retry shots/)).toBeInTheDocument();
@@ -590,7 +529,7 @@ describe('ScoutAiDemo', () => {
       // Modal should be visible
       expect(screen.getByText('Preview Changes')).toBeInTheDocument();
       expect(screen.getByText('Message:')).toBeInTheDocument();
-      expect(screen.getByText('Confidence:')).toBeInTheDocument();
+      expect(screen.getByText(/Confidence:/)).toBeInTheDocument();
       expect(screen.getByText('Bulk Actions')).toBeInTheDocument();
       expect(screen.getByText('Apply Changes')).toBeInTheDocument();
     });
@@ -604,21 +543,7 @@ describe('ScoutAiDemo', () => {
     };
 
     it('should display correct suggestion count', async () => {
-      mockScoutAiContext.suggestions = [mockSuggestion, secondSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
-
-      // Trigger analysis to show suggestions
-      const triggerButton = screen.getByText('Trigger Analysis');
-      await act(async () => {
-        fireEvent.click(triggerButton);
-      });
+      await renderWithActiveSuggestions([mockSuggestion, secondSuggestion]);
       
       // Should have multiple notifications
       const notifications = screen.getAllByTestId('camintellect-notification');
@@ -626,36 +551,14 @@ describe('ScoutAiDemo', () => {
     });
 
     it('should render multiple ScoutAiNotifications', async () => {
-      mockScoutAiContext.suggestions = [mockSuggestion, secondSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
-      
-      // Trigger analysis to show suggestions
-      const triggerButton = screen.getByText('Trigger Analysis');
-      await act(async () => {
-        fireEvent.click(triggerButton);
-      });
+      await renderWithActiveSuggestions([mockSuggestion, secondSuggestion]);
 
       const notifications = screen.getAllByTestId('camintellect-notification');
       expect(notifications).toHaveLength(2);
     });
 
     it('should handle interactions with each suggestion independently', async () => {
-      mockScoutAiContext.suggestions = [mockSuggestion, secondSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
+      await renderWithActiveSuggestions([mockSuggestion, secondSuggestion]);
 
       const acceptButtons = screen.getAllByText('Accept');
       
@@ -696,24 +599,12 @@ describe('ScoutAiDemo', () => {
     });
 
     it('should handle undefined suggestion data gracefully', async () => {
-      mockScoutAiContext.suggestions = [{
+      const emptyRecommendationSuggestion = {
         ...mockSuggestion,
         recommendations: []
-      }];
+      };
       
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
-      
-      // Trigger analysis to show suggestions
-      const triggerButton = screen.getByText('Trigger Analysis');
-      await act(async () => {
-        fireEvent.click(triggerButton);
-      });
+      await renderWithActiveSuggestions([emptyRecommendationSuggestion]);
 
       // Should still render the notification
       expect(screen.getByTestId('camintellect-notification')).toBeInTheDocument();
@@ -721,15 +612,8 @@ describe('ScoutAiDemo', () => {
 
     it('should handle suggestion action errors gracefully', async () => {
       mockScoutAiContext.acceptSuggestion.mockRejectedValue(new Error('Action failed'));
-      mockScoutAiContext.suggestions = [mockSuggestion];
       
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
+      await renderWithActiveSuggestions([mockSuggestion]);
 
       const acceptButton = screen.getByText('Accept');
       
@@ -772,15 +656,7 @@ describe('ScoutAiDemo', () => {
     });
 
     it('should log suggestion acceptance', async () => {
-      mockScoutAiContext.suggestions = [mockSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
+      await renderWithActiveSuggestions([mockSuggestion]);
 
       const acceptButton = screen.getByText('Accept');
       
@@ -792,17 +668,9 @@ describe('ScoutAiDemo', () => {
     });
 
     it('should log suggestion rejection', async () => {
-      mockScoutAiContext.suggestions = [mockSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
+      await renderWithActiveSuggestions([mockSuggestion]);
 
-      const dismissButton = screen.getByLabelText('Dismiss suggestion');
+      const dismissButton = screen.getByText('Dismiss');
       
       await act(async () => {
         fireEvent.click(dismissButton);
@@ -811,18 +679,10 @@ describe('ScoutAiDemo', () => {
       expect(consoleSpy).toHaveBeenCalledWith('[ScoutAiDemo] Dismissing suggestion:', 'suggestion-1');
     });
 
-    it('should log suggestion dismissal', () => {
-      mockScoutAiContext.suggestions = [mockSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
+    it('should log suggestion dismissal', async () => {
+      await renderWithActiveSuggestions([mockSuggestion]);
 
-      const dismissButton = screen.getByLabelText('Dismiss suggestion');
+      const dismissButton = screen.getByText('Dismiss');
       
       fireEvent.click(dismissButton);
 
@@ -830,21 +690,7 @@ describe('ScoutAiDemo', () => {
     });
 
     it('should log viewing preview', async () => {
-      mockScoutAiContext.suggestions = [mockSuggestion];
-      
-      render(
-        <ScoutAiDemo 
-          photos={mockPhotos} 
-          visible={true} 
-          onPhotoUpdate={mockOnPhotoUpdate}
-        />
-      );
-      
-      // Trigger analysis to show suggestions
-      const triggerButton = screen.getByText('Trigger Analysis');
-      await act(async () => {
-        fireEvent.click(triggerButton);
-      });
+      await renderWithActiveSuggestions([mockSuggestion]);
 
       const previewButton = screen.getByText('Preview');
       

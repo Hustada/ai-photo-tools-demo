@@ -70,9 +70,8 @@ const mockSuggestion: ScoutAiSuggestion = {
 
 describe('ScoutAiNotification', () => {
   const mockOnAccept = vi.fn();
-  const mockOnReject = vi.fn();
   const mockOnDismiss = vi.fn();
-  const mockOnViewDetails = vi.fn();
+  const mockOnPreview = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -84,9 +83,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -106,9 +104,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -127,9 +124,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={mediumConfidenceSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -141,9 +137,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -164,9 +159,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={noSavingsSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -180,15 +174,13 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
       expect(screen.getByRole('button', { name: /accept/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /view details/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /not now/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /preview/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /dismiss/i })).toBeInTheDocument();
     });
 
@@ -202,15 +194,13 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={nonActionableSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
       expect(screen.queryByRole('button', { name: /accept/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /view details/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /not now/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /preview/i })).not.toBeInTheDocument();
     });
 
     it('should call onAccept when accept button is clicked', async () => {
@@ -218,9 +208,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -232,33 +221,13 @@ describe('ScoutAiNotification', () => {
       expect(mockOnAccept).toHaveBeenCalledWith(mockSuggestion.id);
     });
 
-    it('should call onReject when "Not Now" button is clicked', async () => {
-      render(
-        <ScoutAiNotification
-          suggestion={mockSuggestion}
-          onAccept={mockOnAccept}
-          onReject={mockOnReject}
-          onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
-        />
-      );
-
-      const rejectButton = screen.getByRole('button', { name: /not now/i });
-      await act(async () => {
-        fireEvent.click(rejectButton);
-      });
-      
-      expect(mockOnReject).toHaveBeenCalledWith(mockSuggestion.id);
-    });
-
     it('should call onDismiss when dismiss button is clicked', () => {
       render(
         <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -266,19 +235,18 @@ describe('ScoutAiNotification', () => {
       expect(mockOnDismiss).toHaveBeenCalledWith(mockSuggestion.id);
     });
 
-    it('should call onViewDetails when view details button is clicked', () => {
+    it('should call onPreview when preview button is clicked', () => {
       render(
         <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
-      fireEvent.click(screen.getByRole('button', { name: /view details/i }));
-      expect(mockOnViewDetails).toHaveBeenCalledWith(mockSuggestion);
+      fireEvent.click(screen.getByRole('button', { name: /preview/i }));
+      expect(mockOnPreview).toHaveBeenCalledWith(mockSuggestion);
     });
   });
 
@@ -288,9 +256,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -306,9 +273,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={processingMockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -316,7 +282,7 @@ describe('ScoutAiNotification', () => {
       fireEvent.click(acceptButton);
 
       expect(acceptButton).toBeDisabled();
-      expect(screen.getAllByText(/processing/i)).toHaveLength(2); // Button text + overlay
+      expect(screen.getByText(/applying/i)).toBeInTheDocument(); // Button text shows "Applying..."
 
       await waitFor(() => {
         expect(acceptButton).not.toBeDisabled();
@@ -328,9 +294,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -350,9 +315,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={acceptedSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -371,9 +335,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={rejectedSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -392,9 +355,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={dismissedSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -410,9 +372,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
@@ -431,9 +392,8 @@ describe('ScoutAiNotification', () => {
         <ScoutAiNotification
           suggestion={multiGroupSuggestion}
           onAccept={mockOnAccept}
-          onReject={mockOnReject}
           onDismiss={mockOnDismiss}
-          onViewDetails={mockOnViewDetails}
+          onPreview={mockOnPreview}
         />
       );
 
