@@ -17,46 +17,109 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const [showDetails, setShowDetails] = useState<ScoutAiSuggestion | null>(null);
   const [selectedPhotoActions, setSelectedPhotoActions] = useState<{[photoId: string]: 'keep' | 'archive'}>({});
+  const [executionProgress, setExecutionProgress] = useState<{[suggestionId: string]: {
+    isExecuting: boolean;
+    completedActions: number;
+    totalActions: number;
+    currentAction?: string;
+  }}>({});
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
 
-  // Analyze photos when they become available
+  // Auto-hide suggestions after successful actions
   useEffect(() => {
-    if (photos.length >= 2 && !hasAnalyzed && visible) {
-      // Delay analysis slightly to let the UI settle
+    const acceptedSuggestions = scoutAi.suggestions.filter(s => s.status === 'accepted');
+    if (acceptedSuggestions.length > 0 && showSuggestions) {
+      // Auto-minimize after 3 seconds when suggestions are accepted
       const timer = setTimeout(() => {
-        console.log('[ScoutAiDemo] Starting analysis of', photos.length, 'photos');
-        scoutAi.analyzeSimilarPhotos(photos);
-        setHasAnalyzed(true);
-      }, 2000);
-
+        setIsMinimized(true);
+      }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [photos, hasAnalyzed, visible, scoutAi]);
+  }, [scoutAi.suggestions, showSuggestions]);
 
-  // Handle manual trigger for testing
-  const handleManualAnalysis = () => {
+  // Handle manual trigger for analysis
+  const handleManualAnalysis = async () => {
     console.log('[ScoutAiDemo] Manual analysis triggered');
     setHasAnalyzed(false);
-    scoutAi.analyzeSimilarPhotos(photos);
+    setShowSuggestions(true);
+    setIsMinimized(false);
+    
+    // Analyze photos and clear existing suggestions
+    await scoutAi.analyzeSimilarPhotos(photos, true);
     setHasAnalyzed(true);
   };
 
   const handleAcceptSuggestion = async (suggestionId: string) => {
     console.log('[ScoutAiDemo] Accepting suggestion:', suggestionId);
-    await scoutAi.acceptSuggestion(suggestionId, photos, onPhotoUpdate);
+    
+    const suggestion = scoutAi.suggestions.find(s => s.id === suggestionId);
+    if (!suggestion) return;
+    
+    // Calculate total actions
+    const totalActions = suggestion.recommendations.reduce(
+      (sum, rec) => sum + rec.archive.length + rec.keep.length, 0
+    );
+    
+    // Initialize progress tracking
+    setExecutionProgress(prev => ({
+      ...prev,
+      [suggestionId]: {
+        isExecuting: true,
+        completedActions: 0,
+        totalActions,
+        currentAction: 'Starting application...'
+      }
+    }));
+    
+    try {
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setExecutionProgress(prev => {
+          const current = prev[suggestionId];
+          if (!current || current.completedActions >= current.totalActions) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          
+          return {
+            ...prev,
+            [suggestionId]: {
+              ...current,
+              completedActions: Math.min(current.completedActions + 1, current.totalActions),
+              currentAction: current.completedActions < current.totalActions / 2 
+                ? 'Archiving photos...' 
+                : 'Organizing gallery...'
+            }
+          };
+        });
+      }, 200);
+      
+      await scoutAi.acceptSuggestion(suggestionId, photos, onPhotoUpdate);
+      
+      // Complete progress and auto-minimize after success
+      setTimeout(() => {
+        setExecutionProgress(prev => {
+          const newState = { ...prev };
+          delete newState[suggestionId];
+          return newState;
+        });
+        // Auto-minimize the Scout AI panel after successful completion
+        setTimeout(() => setIsMinimized(true), 2000);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('[ScoutAiDemo] Failed to accept suggestion:', error);
+      setExecutionProgress(prev => {
+        const newState = { ...prev };
+        delete newState[suggestionId];
+        return newState;
+      });
+    }
   };
 
-  const handleRejectSuggestion = async (suggestionId: string) => {
-    console.log('[ScoutAiDemo] Rejecting suggestion:', suggestionId);
-    await scoutAi.rejectSuggestion(suggestionId);
-  };
-
-  const handleDismissSuggestion = (suggestionId: string) => {
-    console.log('[ScoutAiDemo] Dismissing suggestion:', suggestionId);
-    scoutAi.dismissSuggestion(suggestionId);
-  };
-
-  const handleViewDetails = (suggestion: ScoutAiSuggestion) => {
-    console.log('[ScoutAiDemo] Viewing details for suggestion:', suggestion.id);
+  const handlePreviewSuggestion = (suggestion: ScoutAiSuggestion) => {
+    console.log('[ScoutAiDemo] Previewing suggestion:', suggestion.id);
     setShowDetails(suggestion);
     
     // Initialize photo selections based on current recommendation
@@ -72,11 +135,62 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
     setSelectedPhotoActions(initialSelections);
   };
 
+  const handleDismissSuggestion = (suggestionId: string) => {
+    console.log('[ScoutAiDemo] Dismissing suggestion:', suggestionId);
+    scoutAi.dismissSuggestion(suggestionId);
+  };
+
+  const handleUndoSuggestion = async (suggestionId: string) => {
+    console.log('[ScoutAiDemo] Undoing suggestion:', suggestionId);
+    await scoutAi.undoLastAction(photos, onPhotoUpdate);
+  };
+
+
   const handlePhotoActionChange = (photoId: string, action: 'keep' | 'archive') => {
     setSelectedPhotoActions(prev => ({
       ...prev,
       [photoId]: action
     }));
+  };
+
+  const handleSelectAllArchive = () => {
+    if (!showDetails) return;
+    
+    const allSelections: {[photoId: string]: 'keep' | 'archive'} = {};
+    showDetails.recommendations.forEach(rec => {
+      rec.group.photos.forEach(photo => {
+        allSelections[photo.id] = 'archive';
+      });
+    });
+    setSelectedPhotoActions(allSelections);
+  };
+
+  const handleKeepAll = () => {
+    if (!showDetails) return;
+    
+    const allSelections: {[photoId: string]: 'keep' | 'archive'} = {};
+    showDetails.recommendations.forEach(rec => {
+      rec.group.photos.forEach(photo => {
+        allSelections[photo.id] = 'keep';
+      });
+    });
+    setSelectedPhotoActions(allSelections);
+  };
+
+  const handleResetToRecommended = () => {
+    if (!showDetails) return;
+    
+    // Reset to original Scout AI recommendations
+    const initialSelections: {[photoId: string]: 'keep' | 'archive'} = {};
+    showDetails.recommendations.forEach(rec => {
+      rec.keep.forEach(photo => {
+        initialSelections[photo.id] = 'keep';
+      });
+      rec.archive.forEach(photo => {
+        initialSelections[photo.id] = 'archive';
+      });
+    });
+    setSelectedPhotoActions(initialSelections);
   };
 
   const getModifiedCounts = () => {
@@ -111,62 +225,169 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
     return null;
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Demo Controls */}
-      <div className="bg-gray-100 p-4 rounded-lg border-2 border-dashed border-gray-300">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">🧪 Scout AI Demo Controls</h3>
-        <div className="flex items-center space-x-4 text-sm">
-          <span className="text-gray-600">
-            Photos loaded: <strong>{photos.length}</strong>
-          </span>
-          <span className="text-gray-600">
-            Suggestions: <strong>{scoutAi.suggestions.length}</strong>
-          </span>
-          <span className="text-gray-600">
-            Status: <strong>{scoutAi.isAnalyzing ? 'Analyzing...' : 'Ready'}</strong>
-          </span>
+  // Show minimized state when Scout AI is not actively being used
+  if (isMinimized && !showSuggestions) {
+    return (
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" viewBox="0 0 512 512">
+                <circle cx="256" cy="256" r="200" fill="currentColor" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-blue-900">Scout AI</h3>
+              <p className="text-xs text-blue-700">Ready to analyze photos</p>
+            </div>
+          </div>
           <button
-            onClick={handleManualAnalysis}
-            disabled={scoutAi.isAnalyzing || photos.length < 2}
-            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => {
+              setIsMinimized(false);
+              setShowSuggestions(false);
+            }}
+            className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
           >
-            Trigger Analysis
+            Analyze Photos
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // Show suggestions only when actively triggered
+  const activeSuggestions = showSuggestions ? scoutAi.suggestions.filter(s => s.status === 'pending') : [];
+  const completedSuggestions = scoutAi.suggestions.filter(s => s.status === 'accepted');
+
+  return (
+    <div className="space-y-4">
+      {/* Scout AI Control Panel */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" viewBox="0 0 512 512">
+                <defs>
+                  <radialGradient id="lensGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#ffffff"/>
+                    <stop offset="100%" stopColor="#e0e7ff"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="256" cy="256" r="200" fill="url(#lensGrad)" />
+                <g stroke="#2563eb" strokeWidth="6" fill="none">
+                  <path d="M256,256 C300,240 350,200 350,150" />
+                  <path d="M256,256 C300,272 350,312 350,362" />
+                  <path d="M256,256 C212,272 162,312 162,362" />
+                  <path d="M256,256 C212,240 162,200 162,150" />
+                </g>
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-blue-900">Scout AI</h3>
+              <p className="text-sm text-blue-700">
+                {scoutAi.isAnalyzing ? 'Analyzing photos...' : `${photos.length} photos loaded`}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            {completedSuggestions.length > 0 && (
+              <div className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">
+                ✓ {completedSuggestions.length} applied
+              </div>
+            )}
+            <button
+              onClick={handleManualAnalysis}
+              disabled={scoutAi.isAnalyzing || photos.length < 2}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {scoutAi.isAnalyzing ? 'Analyzing...' : 'Trigger Analysis'}
+            </button>
+            {showSuggestions && activeSuggestions.length === 0 && completedSuggestions.length > 0 && (
+              <button
+                onClick={() => setIsMinimized(true)}
+                className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                title="Minimize Scout AI"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+        
         {photos.length < 2 && (
-          <p className="text-amber-600 text-sm mt-2">
-            💡 Load at least 2 photos to see Scout AI suggestions
+          <p className="text-blue-700 text-sm">
+            💡 Load at least 2 photos to use Scout AI analysis
           </p>
         )}
         {scoutAi.error && (
-          <p className="text-red-600 text-sm mt-2">
+          <p className="text-red-600 text-sm bg-red-50 p-2 rounded mt-2">
             ❌ Error: {scoutAi.error}
           </p>
         )}
       </div>
 
-      {/* Scout AI Suggestions */}
-      {scoutAi.suggestions.map((suggestion) => (
+      {/* Active Scout AI Suggestions */}
+      {activeSuggestions.map((suggestion) => (
         <ScoutAiNotification
           key={suggestion.id}
           suggestion={suggestion}
           onAccept={handleAcceptSuggestion}
-          onReject={handleRejectSuggestion}
+          onPreview={handlePreviewSuggestion}
           onDismiss={handleDismissSuggestion}
-          onViewDetails={handleViewDetails}
+          onUndo={handleUndoSuggestion}
+          executionProgress={executionProgress[suggestion.id]}
         />
       ))}
+      
+      {/* Completed Suggestions Summary (if not minimized) */}
+      {!isMinimized && completedSuggestions.length > 0 && activeSuggestions.length === 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              <span className="text-sm font-medium text-green-800">
+                {completedSuggestions.length} Scout AI suggestion{completedSuggestions.length > 1 ? 's' : ''} applied successfully
+              </span>
+            </div>
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="text-xs text-green-600 hover:text-green-800 underline"
+            >
+              Minimize
+            </button>
+          </div>
+        </div>
+      )}
 
-      {/* Enhanced Details Modal with Photo Selection */}
+      {/* Enhanced Preview Modal with Photo Selection */}
       {showDetails && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-4xl w-full mx-4 max-h-[85vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Scout AI Suggestion Details</h3>
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Preview Changes</h3>
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span>Keep: {getModifiedCounts().keepCount}</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                    <span>Archive: {getModifiedCounts().archiveCount}</span>
+                  </div>
+                  <div className="text-blue-600 font-medium">
+                    Confidence: {showDetails.confidence}
+                  </div>
+                </div>
+              </div>
               <button
                 onClick={() => setShowDetails(null)}
-                className="text-gray-500 hover:text-gray-700 text-xl"
+                className="text-gray-400 hover:text-gray-600 text-xl p-1 hover:bg-gray-100 rounded transition-colors"
+                aria-label="Close preview"
               >
                 ✕
               </button>
@@ -179,19 +400,44 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
                 <p className="text-gray-600 bg-blue-50 p-3 rounded">{showDetails.message}</p>
               </div>
               
-              {/* Confidence & Stats */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-gray-800">Confidence:</h4>
-                  <p className="text-gray-600 capitalize">{showDetails.confidence}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-800">Current Selection:</h4>
+              {/* Bulk Selection Controls */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-gray-800">Bulk Actions</h4>
                   <div className="text-sm text-gray-600">
                     <span className="text-green-600 font-medium">Keep: {getModifiedCounts().keepCount}</span>
                     {' • '}
                     <span className="text-amber-600 font-medium">Archive: {getModifiedCounts().archiveCount}</span>
                   </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={handleKeepAll}
+                    className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors flex items-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                    <span>Keep All</span>
+                  </button>
+                  <button
+                    onClick={handleSelectAllArchive}
+                    className="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-md hover:bg-amber-700 transition-colors flex items-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7 19l-2-2v2h2zm0-4l-2-2v2h2zm0-4L5 9v2h2zm4 8l-2-2v2h2zm0-4l-2-2v2h2zm0-4L9 9v2h2zm4 8l-2-2v2h2zm0-4l-2-2v2h2zm0-4l-2-2v2h2zm4 8l-2-2v2h2zm0-4l-2-2v2h2z"/>
+                    </svg>
+                    <span>Archive All</span>
+                  </button>
+                  <button
+                    onClick={handleResetToRecommended}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span>Use AI Recommendations</span>
+                  </button>
                 </div>
               </div>
 
@@ -283,19 +529,34 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
               ))}
               
               {/* Action Buttons */}
-              <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+              <div className="flex justify-between items-center pt-6 border-t border-gray-200">
                 <button
                   onClick={() => setShowDetails(null)}
                   className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
-                <div className="flex space-x-3">
+                <div className="flex items-center space-x-3">
+                  <div className="text-sm text-gray-600">
+                    {getModifiedCounts().keepCount + getModifiedCounts().archiveCount > 0 ? (
+                      <span>
+                        Ready to apply <span className="font-medium text-blue-600">
+                          {getModifiedCounts().keepCount + getModifiedCounts().archiveCount}
+                        </span> changes
+                      </span>
+                    ) : (
+                      <span className="text-amber-600">Select actions for photos above</span>
+                    )}
+                  </div>
                   <button
                     onClick={handleApplyChanges}
-                    className="px-6 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 transition-colors font-medium"
+                    disabled={getModifiedCounts().keepCount + getModifiedCounts().archiveCount === 0}
+                    className="px-6 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                   >
-                    Apply Changes
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                    <span>Apply Changes</span>
                   </button>
                 </div>
               </div>

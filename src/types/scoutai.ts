@@ -75,14 +75,27 @@ export interface CurationActionResult {
   error?: string;
 }
 
+export interface UndoAction {
+  id: string;
+  suggestionId: string;
+  description: string;
+  timestamp: Date;
+  actions: Array<{
+    type: 'archive' | 'restore';
+    photoId: string;
+    previousState: any;
+  }>;
+}
+
 export interface ScoutAiContextType {
   suggestions: ScoutAiSuggestion[];
   userPreferences: UserCurationPreferences | null;
   isAnalyzing: boolean;
   error: string | null;
+  undoStack: UndoAction[];
   
   // Actions
-  analyzeSimilarPhotos: (photos: Photo[]) => Promise<PhotoSimilarityGroup[]>;
+  analyzeSimilarPhotos: (photos: Photo[], clearExisting?: boolean) => Promise<PhotoSimilarityGroup[]>;
   generateSuggestion: (groups: PhotoSimilarityGroup[]) => ScoutAiSuggestion;
   acceptSuggestion: (suggestionId: string, photos: Photo[], onPhotoUpdate: (photo: Photo) => void) => Promise<CurationActionResult>;
   rejectSuggestion: (suggestionId: string) => Promise<void>;
@@ -93,4 +106,9 @@ export interface ScoutAiContextType {
   applyCurationActions: (actions: PhotoAction[], photos: Photo[], onPhotoUpdate: (photo: Photo) => void) => Promise<CurationActionResult>;
   archivePhoto: (photoId: string, reason: string, photos: Photo[], onPhotoUpdate: (photo: Photo) => void) => Promise<void>;
   restorePhoto: (photoId: string, photos: Photo[], onPhotoUpdate: (photo: Photo) => void) => Promise<void>;
+  
+  // Undo functionality
+  undoLastAction: (photos: Photo[], onPhotoUpdate: (photo: Photo) => void) => Promise<void>;
+  clearUndoStack: () => void;
+  clearSuggestions: () => void;
 }

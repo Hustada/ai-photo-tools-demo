@@ -14,7 +14,8 @@ import type {
   ScoutAiSuggestion,
   UserCurationPreferences,
   PhotoSimilarityGroup,
-  CurationActionResult
+  CurationActionResult,
+  UndoAction
 } from '../types/scoutai';
 import { groupSimilarPhotos } from '../utils/photoSimilarity';
 import { generateCurationRecommendation, generateScoutAiMessage } from '../utils/curationLogic';
@@ -40,6 +41,17 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
   const [userPreferences, setUserPreferences] = useState<UserCurationPreferences | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [undoStack, setUndoStack] = useState<Array<{
+    id: string;
+    suggestionId: string;
+    description: string;
+    timestamp: Date;
+    actions: Array<{
+      type: 'archive' | 'restore';
+      photoId: string;
+      previousState: any;
+    }>;
+  }>>([]);
 
   // Load user preferences from localStorage on mount
   useEffect(() => {
@@ -90,8 +102,14 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     }
   }, [userId]);
 
+  // Clear all suggestions
+  const clearSuggestions = useCallback(() => {
+    setSuggestions([]);
+    console.log('[Scout AI] Cleared all suggestions');
+  }, []);
+
   // Analyze photos for similarity and generate suggestions
-  const analyzeSimilarPhotos = useCallback(async (photos: Photo[]): Promise<PhotoSimilarityGroup[]> => {
+  const analyzeSimilarPhotos = useCallback(async (photos: Photo[], clearExisting = true): Promise<PhotoSimilarityGroup[]> => {
     if (!userPreferences) {
       console.warn('[Scout AI] User preferences not loaded yet');
       return [];
@@ -99,6 +117,11 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
 
     setIsAnalyzing(true);
     setError(null);
+
+    // Clear existing suggestions if requested
+    if (clearExisting) {
+      setSuggestions([]);
+    }
 
     try {
       console.log('[Scout AI] Analyzing', photos.length, 'photos for similarity');
@@ -126,7 +149,7 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
           status: 'pending'
         };
 
-        setSuggestions(prev => [suggestion, ...prev]);
+        setSuggestions([suggestion]); // Replace existing suggestions
         console.log('[Scout AI] Generated suggestion:', suggestion.message);
       }
 
@@ -184,6 +207,22 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
       const result = await applyCurationActions(allActions, photos, onPhotoUpdate);
       
       if (result.success) {
+        // Create undo entry
+        const undoEntry: UndoAction = {
+          id: `undo-${Date.now()}`,
+          suggestionId,
+          description: `Applied Scout AI suggestion: ${suggestion.message.substring(0, 50)}...`,
+          timestamp: new Date(),
+          actions: allActions.map(action => ({
+            type: action.type === 'archive' ? 'archive' as const : 'restore' as const,
+            photoId: action.photoId,
+            previousState: {} // Could store more detailed state if needed
+          }))
+        };
+        
+        // Add to undo stack (keep only last 5 actions)
+        setUndoStack(prev => [...prev.slice(-4), undoEntry]);
+        
         // Update suggestion status to accepted
         setSuggestions(prev => 
           prev.map(s => 
@@ -308,11 +347,59 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     await restorePhotoUtil(photoId, photos, onPhotoUpdate);
   }, []);
 
+  // Undo last action
+  const undoLastAction = useCallback(async (
+    photos: Photo[], 
+    onPhotoUpdate: (photo: Photo) => void
+  ): Promise<void> => {
+    if (undoStack.length === 0) return;
+    
+    const lastAction = undoStack[undoStack.length - 1];
+    console.log('[Scout AI] Undoing action:', lastAction.description);
+    
+    try {
+      // Reverse all actions in the undo entry
+      for (const action of lastAction.actions.reverse()) {
+        if (action.type === 'archive') {
+          // If it was archived, restore it
+          await restorePhotoUtil(action.photoId, photos, onPhotoUpdate);
+        } else if (action.type === 'restore') {
+          // If it was restored, archive it
+          await archivePhotoUtil(action.photoId, 'Undo restore', photos, onPhotoUpdate);
+        }
+      }
+      
+      // Remove from undo stack
+      setUndoStack(prev => prev.slice(0, -1));
+      
+      // Update suggestion status back to pending
+      setSuggestions(prev => 
+        prev.map(s => 
+          s.id === lastAction.suggestionId 
+            ? { ...s, status: 'pending' as const }
+            : s
+        )
+      );
+      
+      console.log('[Scout AI] Successfully undid action');
+    } catch (err) {
+      console.error('[Scout AI] Failed to undo action:', err);
+      setError(err instanceof Error ? err.message : 'Failed to undo action');
+    }
+  }, [undoStack]);
+
+  // Clear undo stack
+  const clearUndoStack = useCallback(() => {
+    setUndoStack([]);
+    console.log('[Scout AI] Cleared undo stack');
+  }, []);
+
   const contextValue: ScoutAiContextType = {
     suggestions,
     userPreferences,
     isAnalyzing,
     error,
+    undoStack,
     analyzeSimilarPhotos,
     generateSuggestion,
     acceptSuggestion,
@@ -321,7 +408,10 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     updateUserPreferences,
     applyCurationActions: applyCurationActionsMethod,
     archivePhoto,
-    restorePhoto
+    restorePhoto,
+    undoLastAction,
+    clearUndoStack,
+    clearSuggestions
   };
 
   return (

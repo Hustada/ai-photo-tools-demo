@@ -6,19 +6,27 @@ import type { ScoutAiSuggestion } from '../types/scoutai';
 interface ScoutAiNotificationProps {
   suggestion: ScoutAiSuggestion;
   onAccept: (suggestionId: string) => Promise<void> | void;
-  onReject: (suggestionId: string) => Promise<void> | void;
+  onPreview: (suggestion: ScoutAiSuggestion) => void;
   onDismiss: (suggestionId: string) => void;
-  onViewDetails: (suggestion: ScoutAiSuggestion) => void;
+  onUndo?: (suggestionId: string) => Promise<void> | void;
+  executionProgress?: {
+    isExecuting: boolean;
+    completedActions: number;
+    totalActions: number;
+    currentAction?: string;
+  };
 }
 
 export const ScoutAiNotification: React.FC<ScoutAiNotificationProps> = ({
   suggestion,
   onAccept,
-  onReject,
+  onPreview,
   onDismiss,
-  onViewDetails
+  onUndo,
+  executionProgress
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // Calculate total photos and savings across all recommendations
   const totalPhotos = suggestion.recommendations.reduce(
@@ -100,15 +108,10 @@ export const ScoutAiNotification: React.FC<ScoutAiNotificationProps> = ({
     }
   };
 
-  const handleReject = async () => {
-    if (isProcessing) return;
-    
-    setIsProcessing(true);
-    try {
-      await onReject(suggestion.id);
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleAcceptWithAnimation = async () => {
+    await handleAccept();
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 2000);
   };
 
   return (
@@ -203,75 +206,119 @@ export const ScoutAiNotification: React.FC<ScoutAiNotificationProps> = ({
         </div>
       </div>
 
-      {/* Action Buttons */}
-      {suggestion.actionable && suggestion.status === 'pending' && (
-        <div className="flex items-center space-x-3">
-          {/* Accept Button */}
-          <button
-            onClick={handleAccept}
-            disabled={isProcessing}
-            className="
-              px-4 py-2 bg-sky-600 text-white text-sm font-medium rounded-md
-              hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2
-              disabled:opacity-50 disabled:cursor-not-allowed
-              transition-colors duration-200
-            "
-          >
-            {isProcessing ? 'Processing...' : 'Accept'}
-          </button>
+      {/* Execution Progress */}
+      {executionProgress?.isExecuting && (
+        <div className="mb-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+          <div className="flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-blue-800">Applying changes...</div>
+              {executionProgress.currentAction && (
+                <div className="text-xs text-blue-600 mt-1">{executionProgress.currentAction}</div>
+              )}
+            </div>
+            <div className="text-sm text-blue-600">
+              {executionProgress.completedActions}/{executionProgress.totalActions}
+            </div>
+          </div>
+          <div className="mt-2 bg-blue-200 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(executionProgress.completedActions / executionProgress.totalActions) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
 
-          {/* View Details Button */}
-          <button
-            onClick={() => onViewDetails(suggestion)}
-            disabled={isProcessing}
-            className="
-              px-4 py-2 bg-white text-sky-600 text-sm font-medium rounded-md border border-sky-200
-              hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2
-              disabled:opacity-50 disabled:cursor-not-allowed
-              transition-colors duration-200
-            "
-          >
-            View Details
-          </button>
+      {/* Success Animation */}
+      {showSuccess && (
+        <div className="mb-4 p-3 bg-green-50 rounded-md border border-green-200 animate-pulse">
+          <div className="flex items-center space-x-2">
+            <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            <span className="text-sm font-medium text-green-800">Changes applied successfully!</span>
+          </div>
+        </div>
+      )}
 
-          {/* Not Now Button */}
-          <button
-            onClick={handleReject}
-            disabled={isProcessing}
-            className="
-              px-3 py-2 text-gray-600 text-sm font-medium rounded-md
-              hover:text-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
-              disabled:opacity-50 disabled:cursor-not-allowed
-              transition-colors duration-200
-            "
-          >
-            Not Now
-          </button>
+      {/* Three-Action Pattern: Accept/Preview/Dismiss */}
+      {suggestion.actionable && suggestion.status === 'pending' && !executionProgress?.isExecuting && (
+        <div className="flex items-center justify-between space-x-3">
+          <div className="flex items-center space-x-3">
+            {/* Accept Button */}
+            <button
+              onClick={handleAcceptWithAnimation}
+              disabled={isProcessing}
+              className="
+                px-6 py-2 bg-green-600 text-white text-sm font-medium rounded-md
+                hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
+                disabled:opacity-50 disabled:cursor-not-allowed
+                transition-all duration-200 transform hover:scale-105
+                flex items-center space-x-2
+              "
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              <span>{isProcessing ? 'Applying...' : 'Accept'}</span>
+            </button>
+
+            {/* Preview Button */}
+            <button
+              onClick={() => onPreview(suggestion)}
+              disabled={isProcessing}
+              className="
+                px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-md
+                hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                disabled:opacity-50 disabled:cursor-not-allowed
+                transition-all duration-200 transform hover:scale-105
+                flex items-center space-x-2
+              "
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+              </svg>
+              <span>Preview</span>
+            </button>
+          </div>
 
           {/* Dismiss Button */}
           <button
             onClick={() => onDismiss(suggestion.id)}
             disabled={isProcessing}
             className="
-              ml-auto p-2 text-gray-400 rounded-md
-              hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
+              px-4 py-2 text-gray-600 text-sm font-medium rounded-md border border-gray-300
+              hover:text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors duration-200
+              flex items-center space-x-2
             "
-            aria-label="Dismiss suggestion"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
             </svg>
+            <span>Dismiss</span>
           </button>
         </div>
       )}
 
-      {/* Processing State */}
-      {isProcessing && (
-        <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center rounded-lg">
-          <div className="text-gray-600 text-sm font-medium">
-            Processing...
+      {/* Success State Badge */}
+      {suggestion.status === 'accepted' && (
+        <div className="mt-4 p-3 bg-green-50 rounded-md border border-green-200">
+          <div className="flex items-center space-x-2">
+            <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            <span className="text-sm font-medium text-green-800">Applied successfully</span>
+            {onUndo && (
+              <button 
+                className="ml-auto text-xs text-green-600 hover:text-green-800 underline transition-colors"
+                onClick={() => onUndo(suggestion.id)}
+              >
+                Undo
+              </button>
+            )}
           </div>
         </div>
       )}
