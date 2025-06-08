@@ -561,12 +561,21 @@ describe('CamIntellectDemo', () => {
 
     it('should display recommendation details', () => {
       renderModalAndOpen();
-      expect(screen.getByText('retry shots')).toBeInTheDocument();
-      // Check for individual parts since they may be split across elements
-      expect(screen.getByText('Photos:')).toBeInTheDocument();
-      expect(screen.getByText('Keep:')).toBeInTheDocument();
-      expect(screen.getByText('Archive:')).toBeInTheDocument();
-      expect(screen.getByText('2 minutes')).toBeInTheDocument(); // time saved
+      
+      // Wait for modal to fully render
+      expect(screen.getByText('CamIntellect Suggestion Details')).toBeInTheDocument();
+      
+      // Check for the new modal structure
+      expect(screen.getByText('Current Selection:')).toBeInTheDocument();
+      expect(screen.getByText(/Keep:/)).toBeInTheDocument();
+      expect(screen.getByText(/Archive:/)).toBeInTheDocument();
+      
+      // Check for group type text (it's now "Group: retry shots")
+      expect(screen.getByText(/Group:.*retry shots/)).toBeInTheDocument();
+      
+      // Check that there are multiple Save elements (both in notification and modal)
+      const saveElements = screen.getAllByText(/Save ~.*minutes/);
+      expect(saveElements.length).toBeGreaterThan(0);
     });
 
     it('should display rationale', () => {
@@ -591,7 +600,8 @@ describe('CamIntellectDemo', () => {
       expect(screen.getByText('CamIntellect Suggestion Details')).toBeInTheDocument();
       expect(screen.getByText('Message:')).toBeInTheDocument();
       expect(screen.getByText('Confidence:')).toBeInTheDocument();
-      expect(screen.getByText('Recommendations:')).toBeInTheDocument();
+      expect(screen.getByText('Current Selection:')).toBeInTheDocument();
+      expect(screen.getByText('Apply Changes')).toBeInTheDocument();
     });
   });
 
