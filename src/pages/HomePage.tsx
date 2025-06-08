@@ -12,13 +12,13 @@ import { useTagManagement } from '../hooks/useTagManagement';
 import { usePhotoModal } from '../hooks/usePhotoModal';
 import { useTagFiltering } from '../hooks/useTagFiltering';
 
-// Import CamIntellect
-import { CamIntellectProvider, useCamIntellect } from '../contexts/CamIntellectContext';
+// Import Scout AI
+import { ScoutAiProvider, useScoutAi } from '../contexts/ScoutAiContext';
 
 // Import components
 import PhotoModal from '../components/PhotoModal';
 import PhotoCard from '../components/PhotoCard';
-import { CamIntellectDemo } from '../components/CamIntellectDemo';
+import { ScoutAiDemo } from '../components/ScoutAiDemo';
 
 const HomePageContent: React.FC = () => {
   const navigate = useNavigate();
@@ -229,8 +229,8 @@ const HomePageContent: React.FC = () => {
           </div>
         )}
 
-        {/* CamIntellect Demo Section */}
-        <CamIntellectDemo 
+        {/* Scout AI Demo Section */}
+        <ScoutAiDemo 
           photos={photoData.photos} 
           visible={photoData.photos.length > 0}
           onPhotoUpdate={photoData.updatePhotoInCache}
@@ -295,7 +295,7 @@ const HomePageContent: React.FC = () => {
   );
 };
 
-// Wrapper component with CamIntellectProvider
+// Wrapper component with ScoutAiProvider
 const HomePage: React.FC = () => {
   const { currentUser } = useUserContext();
   
@@ -304,9 +304,9 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <CamIntellectProvider userId={currentUser.id}>
+    <ScoutAiProvider userId={currentUser.id}>
       <HomePageContent />
-    </CamIntellectProvider>
+    </ScoutAiProvider>
   );
 };
 

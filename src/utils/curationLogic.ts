@@ -1,7 +1,7 @@
 // © 2025 Mark Hustad — MIT License
 
 import type { Photo } from '../types';
-import type { PhotoSimilarityGroup, CurationRecommendation, PhotoQualityMetrics } from '../types/camintellect';
+import type { PhotoSimilarityGroup, CurationRecommendation, PhotoQualityMetrics } from '../types/scoutai';
 import { calculateQualityMetrics } from './photoSimilarity';
 
 /**
@@ -138,7 +138,7 @@ function generateRationale(
 /**
  * Generate conversational CamIntellect message for curation suggestions
  */
-export function generateCamIntellectMessage(recommendations: CurationRecommendation[]): string {
+export function generateScoutAiMessage(recommendations: CurationRecommendation[]): string {
   if (recommendations.length === 0) {
     return "I've analyzed your photos and everything looks well organized!";
   }

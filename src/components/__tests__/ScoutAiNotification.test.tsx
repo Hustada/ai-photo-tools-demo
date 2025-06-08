@@ -3,8 +3,8 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { CamIntellectNotification } from '../CamIntellectNotification';
-import type { CamIntellectSuggestion, CurationRecommendation } from '../../types/camintellect';
+import { ScoutAiNotification } from '../ScoutAiNotification';
+import type { ScoutAiSuggestion, CurationRecommendation } from '../../types/scoutai';
 import type { Photo } from '../../types';
 
 // Mock photos for testing
@@ -57,7 +57,7 @@ const mockRecommendation: CurationRecommendation = {
   confidence: 0.9
 };
 
-const mockSuggestion: CamIntellectSuggestion = {
+const mockSuggestion: ScoutAiSuggestion = {
   id: 'suggestion-1',
   type: 'photo_curation',
   message: 'I noticed 2 photos that look like retry shots of the same thing. Would you like me to recommend the best 1 that capture everything you need?',
@@ -68,7 +68,7 @@ const mockSuggestion: CamIntellectSuggestion = {
   status: 'pending'
 };
 
-describe('CamIntellectNotification', () => {
+describe('ScoutAiNotification', () => {
   const mockOnAccept = vi.fn();
   const mockOnReject = vi.fn();
   const mockOnDismiss = vi.fn();
@@ -79,9 +79,9 @@ describe('CamIntellectNotification', () => {
   });
 
   describe('Component Rendering', () => {
-    it('should render CamIntellect suggestion with proper styling', () => {
+    it('should render Scout AI suggestion with proper styling', () => {
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -90,8 +90,8 @@ describe('CamIntellectNotification', () => {
         />
       );
 
-      // Should show CamIntellect branding
-      expect(screen.getByText('CamIntellect')).toBeInTheDocument();
+      // Should show Scout AI branding
+      expect(screen.getByText('Scout AI')).toBeInTheDocument();
       
       // Should show the suggestion message
       expect(screen.getByText(mockSuggestion.message)).toBeInTheDocument();
@@ -103,7 +103,7 @@ describe('CamIntellectNotification', () => {
 
     it('should show confidence indicator for high confidence suggestions', () => {
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -124,7 +124,7 @@ describe('CamIntellectNotification', () => {
       };
 
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={mediumConfidenceSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -138,7 +138,7 @@ describe('CamIntellectNotification', () => {
 
     it('should show time savings when available', () => {
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -161,7 +161,7 @@ describe('CamIntellectNotification', () => {
       };
 
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={noSavingsSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -177,7 +177,7 @@ describe('CamIntellectNotification', () => {
   describe('Action Buttons', () => {
     it('should render all action buttons for actionable suggestions', () => {
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -199,7 +199,7 @@ describe('CamIntellectNotification', () => {
       };
 
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={nonActionableSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -215,7 +215,7 @@ describe('CamIntellectNotification', () => {
 
     it('should call onAccept when accept button is clicked', async () => {
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -234,7 +234,7 @@ describe('CamIntellectNotification', () => {
 
     it('should call onReject when "Not Now" button is clicked', async () => {
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -253,7 +253,7 @@ describe('CamIntellectNotification', () => {
 
     it('should call onDismiss when dismiss button is clicked', () => {
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -268,7 +268,7 @@ describe('CamIntellectNotification', () => {
 
     it('should call onViewDetails when view details button is clicked', () => {
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -285,7 +285,7 @@ describe('CamIntellectNotification', () => {
   describe('Animation and Interaction', () => {
     it('should have proper accessibility attributes', () => {
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -296,14 +296,14 @@ describe('CamIntellectNotification', () => {
 
       const notification = screen.getByTestId('camintellect-notification');
       expect(notification).toHaveAttribute('role', 'alert');
-      expect(notification).toHaveAttribute('aria-label', expect.stringContaining('CamIntellect suggestion'));
+      expect(notification).toHaveAttribute('aria-label', expect.stringContaining('Scout AI suggestion'));
     });
 
     it('should show loading state when suggestion is being processed', async () => {
       const processingMockOnAccept = vi.fn(() => new Promise(resolve => setTimeout(resolve, 100)));
 
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={processingMockOnAccept}
           onReject={mockOnReject}
@@ -325,7 +325,7 @@ describe('CamIntellectNotification', () => {
 
     it('should show fade-in animation on mount', () => {
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -347,7 +347,7 @@ describe('CamIntellectNotification', () => {
       };
 
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={acceptedSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -368,7 +368,7 @@ describe('CamIntellectNotification', () => {
       };
 
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={rejectedSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -389,7 +389,7 @@ describe('CamIntellectNotification', () => {
       };
 
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={dismissedSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -407,7 +407,7 @@ describe('CamIntellectNotification', () => {
   describe('Photo Summary', () => {
     it('should show photo count summary', () => {
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={mockSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}
@@ -428,7 +428,7 @@ describe('CamIntellectNotification', () => {
       };
 
       render(
-        <CamIntellectNotification
+        <ScoutAiNotification
           suggestion={multiGroupSuggestion}
           onAccept={mockOnAccept}
           onReject={mockOnReject}

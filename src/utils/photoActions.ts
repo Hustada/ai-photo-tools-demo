@@ -1,7 +1,7 @@
 // © 2025 Mark Hustad — MIT License
 
 import type { Photo } from '../types';
-import type { PhotoAction, CurationActionResult, CurationRecommendation } from '../types/camintellect';
+import type { PhotoAction, CurationActionResult, CurationRecommendation } from '../types/scoutai';
 
 /**
  * Creates PhotoAction objects from a CurationRecommendation
@@ -20,7 +20,7 @@ export function createActionsFromRecommendation(recommendation: CurationRecommen
     actions.push({
       type: 'keep',
       photoId: photo.id,
-      reason: `CamIntellect recommended to keep - ${recommendation.rationale}`,
+      reason: `Scout AI recommended to keep - ${recommendation.rationale}`,
       metadata: groupMetadata
     });
   });
@@ -30,7 +30,7 @@ export function createActionsFromRecommendation(recommendation: CurationRecommen
     actions.push({
       type: 'archive',
       photoId: photo.id,
-      reason: `CamIntellect archived - similar to kept photo in same group`,
+      reason: `Scout AI archived - similar to kept photo in same group`,
       metadata: groupMetadata
     });
   });

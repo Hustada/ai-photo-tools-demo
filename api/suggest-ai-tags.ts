@@ -184,7 +184,7 @@ async function assembleGptPrompt(
     `Assembling GPT prompt. User: ${userName || 'N/A'}, Project: ${projectName || 'N/A'}. Vision labels: ${visionResponse?.labelAnnotations?.length || 0}, Web entities: ${visionResponse?.webDetection?.webEntities?.length || 0}, Memory chunks: ${memoryChunks.length}`
   );
 
-  const systemMessage = `You are "CamIntellect," an advanced AI assistant deeply integrated within CompanyCam, the leading photo documentation platform for contractors in field-service industries. Your primary function is to act as an expert partner to users, helping them create rich, accurate, and highly useful photo documentation with minimal effort.
+  const systemMessage = `You are "Scout AI," an advanced AI assistant deeply integrated within CompanyCam, the leading photo documentation platform for contractors in field-service industries. Your primary function is to act as an expert partner to users, helping them create rich, accurate, and highly useful photo documentation with minimal effort.
 
 ${userName ? `You are currently assisting User '${userName}'.` : ''} ${projectName ? `The photo is related to Project '${projectName}'.` : ''}
 

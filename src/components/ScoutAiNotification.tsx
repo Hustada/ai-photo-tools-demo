@@ -1,17 +1,17 @@
 // © 2025 Mark Hustad — MIT License
 
 import React, { useState } from 'react';
-import type { CamIntellectSuggestion } from '../types/camintellect';
+import type { ScoutAiSuggestion } from '../types/scoutai';
 
-interface CamIntellectNotificationProps {
-  suggestion: CamIntellectSuggestion;
+interface ScoutAiNotificationProps {
+  suggestion: ScoutAiSuggestion;
   onAccept: (suggestionId: string) => Promise<void> | void;
   onReject: (suggestionId: string) => Promise<void> | void;
   onDismiss: (suggestionId: string) => void;
-  onViewDetails: (suggestion: CamIntellectSuggestion) => void;
+  onViewDetails: (suggestion: ScoutAiSuggestion) => void;
 }
 
-export const CamIntellectNotification: React.FC<CamIntellectNotificationProps> = ({
+export const ScoutAiNotification: React.FC<ScoutAiNotificationProps> = ({
   suggestion,
   onAccept,
   onReject,
@@ -115,7 +115,7 @@ export const CamIntellectNotification: React.FC<CamIntellectNotificationProps> =
     <div
       data-testid="camintellect-notification"
       role="alert"
-      aria-label={`CamIntellect suggestion: ${suggestion.message}`}
+      aria-label={`Scout AI suggestion: ${suggestion.message}`}
       className={`
         ${styling.bgColor} ${styling.borderColor}
         border rounded-lg p-4 shadow-sm animate-fade-in
@@ -125,17 +125,33 @@ export const CamIntellectNotification: React.FC<CamIntellectNotificationProps> =
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-2">
-          {/* CamIntellect Logo/Icon */}
-          <div className={`${styling.iconColor} flex-shrink-0`}>
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          {/* Scout AI Logo/Icon */}
+          <div className="flex-shrink-0">
+            <svg className="w-6 h-6" viewBox="0 0 512 512">
+              <defs>
+                <radialGradient id="lensGradD" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#2f4b7c"/>
+                  <stop offset="100%" stopColor="#00CFB4"/>
+                </radialGradient>
+              </defs>
+              <circle cx="256" cy="256" r="200" fill="url(#lensGradD)" />
+              <g stroke="#ffffff" strokeOpacity="0.6" strokeWidth="6" fill="none">
+                <path d="M256,256 C300,240 350,200 350,150" />
+                <path d="M256,256 C300,272 350,312 350,362" />
+                <path d="M256,256 C212,272 162,312 162,362" />
+                <path d="M256,256 C212,240 162,200 162,150" />
+              </g>
+              <circle cx="350" cy="150" r="12" fill="#009E73" />
+              <circle cx="350" cy="362" r="12" fill="#009E73" />
+              <circle cx="162" cy="362" r="12" fill="#009E73" />
+              <circle cx="162" cy="150" r="12" fill="#009E73" />
             </svg>
           </div>
           
           {/* Brand Name */}
           <div className="flex items-center space-x-2">
             <h3 className={`font-semibold ${styling.statusColor}`}>
-              CamIntellect
+              Scout AI
             </h3>
             
             {/* Confidence Indicator */}

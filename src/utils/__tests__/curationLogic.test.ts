@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import {
   generateCurationRecommendation,
   selectBestPhotos,
-  generateCamIntellectMessage,
+  generateScoutAiMessage,
   calculateTimeSavings
 } from '../curationLogic';
 import type { Photo } from '../../types';
@@ -158,10 +158,10 @@ describe('curationLogic utilities', () => {
     });
   });
 
-  describe('generateCamIntellectMessage', () => {
+  describe('generateScoutAiMessage', () => {
     it('should generate conversational message for photo curation', () => {
       const recommendation = generateCurationRecommendation(mockSimilarityGroup);
-      const message = generateCamIntellectMessage([recommendation]);
+      const message = generateScoutAiMessage([recommendation]);
       
       expect(typeof message).toBe('string');
       expect(message.length).toBeGreaterThan(20);
@@ -176,7 +176,7 @@ describe('curationLogic utilities', () => {
         groupType: 'angle_variations'
       });
       
-      const message = generateCamIntellectMessage([recommendation1, recommendation2]);
+      const message = generateScoutAiMessage([recommendation1, recommendation2]);
       
       expect(message).toMatch(/\d+.*photo/i); // Should mention number of photos
     });
@@ -188,15 +188,15 @@ describe('curationLogic utilities', () => {
       const retryRecommendation = generateCurationRecommendation(retryGroup);
       const progressRecommendation = generateCurationRecommendation(progressGroup);
       
-      const retryMessage = generateCamIntellectMessage([retryRecommendation]);
-      const progressMessage = generateCamIntellectMessage([progressRecommendation]);
+      const retryMessage = generateScoutAiMessage([retryRecommendation]);
+      const progressMessage = generateScoutAiMessage([progressRecommendation]);
       
       expect(retryMessage).not.toBe(progressMessage);
     });
 
     it('should be encouraging and helpful in tone', () => {
       const recommendation = generateCurationRecommendation(mockSimilarityGroup);
-      const message = generateCamIntellectMessage([recommendation]);
+      const message = generateScoutAiMessage([recommendation]);
       
       // Should contain helpful/encouraging words
       const encouragingWords = ['help', 'recommend', 'suggest', 'best', 'better', 'optimize', 'improve'];

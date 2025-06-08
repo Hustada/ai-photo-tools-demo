@@ -28,7 +28,7 @@ export interface CurationRecommendation {
   confidence: number;            // Confidence in this recommendation (0-1)
 }
 
-export interface CamIntellectSuggestion {
+export interface ScoutAiSuggestion {
   id: string;
   type: 'photo_curation' | 'tag_suggestion' | 'description_enhancement';
   message: string;               // Conversational message to user
@@ -75,15 +75,15 @@ export interface CurationActionResult {
   error?: string;
 }
 
-export interface CamIntellectContextType {
-  suggestions: CamIntellectSuggestion[];
+export interface ScoutAiContextType {
+  suggestions: ScoutAiSuggestion[];
   userPreferences: UserCurationPreferences | null;
   isAnalyzing: boolean;
   error: string | null;
   
   // Actions
   analyzeSimilarPhotos: (photos: Photo[]) => Promise<PhotoSimilarityGroup[]>;
-  generateSuggestion: (groups: PhotoSimilarityGroup[]) => CamIntellectSuggestion;
+  generateSuggestion: (groups: PhotoSimilarityGroup[]) => ScoutAiSuggestion;
   acceptSuggestion: (suggestionId: string, photos: Photo[], onPhotoUpdate: (photo: Photo) => void) => Promise<CurationActionResult>;
   rejectSuggestion: (suggestionId: string) => Promise<void>;
   dismissSuggestion: (suggestionId: string) => void;

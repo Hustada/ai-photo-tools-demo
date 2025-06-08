@@ -3,9 +3,9 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, act, waitFor } from '@testing-library/react';
-import { CamIntellectProvider, useCamIntellect } from '../CamIntellectContext';
+import { ScoutAiProvider, useScoutAi } from '../ScoutAiContext';
 import type { Photo } from '../../types';
-import type { CamIntellectSuggestion, UserCurationPreferences } from '../../types/camintellect';
+import type { ScoutAiSuggestion, UserCurationPreferences } from '../../types/scoutai';
 
 // Mock the utility functions
 vi.mock('../../utils/photoSimilarity', () => ({
@@ -14,7 +14,7 @@ vi.mock('../../utils/photoSimilarity', () => ({
 
 vi.mock('../../utils/curationLogic', () => ({
   generateCurationRecommendation: vi.fn(),
-  generateCamIntellectMessage: vi.fn(),
+  generateScoutAiMessage: vi.fn(),
 }));
 
 vi.mock('../../utils/photoActions', () => ({
@@ -54,7 +54,7 @@ const mockPhotos: Photo[] = [
 
 // Test component to access context
 const TestComponent: React.FC<{ onContextReady?: (context: any) => void }> = ({ onContextReady }) => {
-  const context = useCamIntellect();
+  const context = useScoutAi();
   const mockOnPhotoUpdate = vi.fn();
   
   React.useEffect(() => {
@@ -110,13 +110,13 @@ const TestComponent: React.FC<{ onContextReady?: (context: any) => void }> = ({ 
 
 const renderWithContext = (userId: string = 'test-user') => {
   return render(
-    <CamIntellectProvider userId={userId}>
+    <ScoutAiProvider userId={userId}>
       <TestComponent />
-    </CamIntellectProvider>
+    </ScoutAiProvider>
   );
 };
 
-describe('CamIntellectContext', () => {
+describe('ScoutAiContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Mock localStorage
@@ -158,7 +158,7 @@ describe('CamIntellectContext', () => {
       
       renderWithContext();
       
-      expect(window.localStorage.getItem).toHaveBeenCalledWith('camintellect-preferences-test-user');
+      expect(window.localStorage.getItem).toHaveBeenCalledWith('scoutai-preferences-test-user');
     });
 
     it('should handle missing localStorage preferences gracefully', () => {
@@ -193,7 +193,7 @@ describe('CamIntellectContext', () => {
 
     it('should generate suggestions when similar photos are found', async () => {
       const { groupSimilarPhotos } = await import('../../utils/photoSimilarity');
-      const { generateCurationRecommendation, generateCamIntellectMessage } = await import('../../utils/curationLogic');
+      const { generateCurationRecommendation, generateScoutAiMessage } = await import('../../utils/curationLogic');
       
       const mockGroup = {
         id: 'group-1',
@@ -221,7 +221,7 @@ describe('CamIntellectContext', () => {
 
       vi.mocked(groupSimilarPhotos).mockResolvedValue([mockGroup]);
       vi.mocked(generateCurationRecommendation).mockReturnValue(mockRecommendation);
-      vi.mocked(generateCamIntellectMessage).mockReturnValue('Test message');
+      vi.mocked(generateScoutAiMessage).mockReturnValue('Test message');
 
       renderWithContext();
       
@@ -237,7 +237,7 @@ describe('CamIntellectContext', () => {
 
       expect(groupSimilarPhotos).toHaveBeenCalledWith(mockPhotos, expect.any(Number));
       expect(generateCurationRecommendation).toHaveBeenCalledWith(mockGroup);
-      expect(generateCamIntellectMessage).toHaveBeenCalled();
+      expect(generateScoutAiMessage).toHaveBeenCalled();
     });
 
     it('should handle errors during analysis gracefully', async () => {
@@ -319,13 +319,13 @@ describe('CamIntellectContext', () => {
   });
 
   describe('error handling', () => {
-    it('should throw error when useCamIntellect used outside provider', () => {
+    it('should throw error when useScoutAi used outside provider', () => {
       // Suppress console.error for this test
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       
       expect(() => {
         render(<TestComponent />);
-      }).toThrow('useCamIntellect must be used within a CamIntellectProvider');
+      }).toThrow('useScoutAi must be used within a ScoutAiProvider');
       
       consoleSpy.mockRestore();
     });
@@ -335,7 +335,7 @@ describe('CamIntellectContext', () => {
     it('should update user preferences and persist to localStorage', async () => {
       // Create a test component that can call updateUserPreferences
       const PreferencesTestComponent: React.FC = () => {
-        const context = useCamIntellect();
+        const context = useScoutAi();
         
         const handleUpdatePreferences = async () => {
           const newPreferences: Partial<UserCurationPreferences> = {
@@ -353,9 +353,9 @@ describe('CamIntellectContext', () => {
       };
 
       render(
-        <CamIntellectProvider userId="test-user">
+        <ScoutAiProvider userId="test-user">
           <PreferencesTestComponent />
-        </CamIntellectProvider>
+        </ScoutAiProvider>
       );
       
       const updateButton = screen.getByTestId('update-preferences');
@@ -365,7 +365,7 @@ describe('CamIntellectContext', () => {
       });
 
       expect(window.localStorage.setItem).toHaveBeenCalledWith(
-        'camintellect-preferences-test-user',
+        'scoutai-preferences-test-user',
         expect.stringContaining('"qualityThreshold":0.8')
       );
     });
@@ -376,9 +376,9 @@ describe('CamIntellectContext', () => {
 
     beforeEach(async () => {
       render(
-        <CamIntellectProvider userId="test-user">
+        <ScoutAiProvider userId="test-user">
           <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
-        </CamIntellectProvider>
+        </ScoutAiProvider>
       );
 
       await waitFor(() => {
@@ -389,7 +389,7 @@ describe('CamIntellectContext', () => {
     it('should accept suggestions with photo actions', async () => {
       const { applyCurationActions, createActionsFromRecommendation } = await import('../../utils/photoActions');
       const { groupSimilarPhotos } = await import('../../utils/photoSimilarity');
-      const { generateCurationRecommendation, generateCamIntellectMessage } = await import('../../utils/curationLogic');
+      const { generateCurationRecommendation, generateScoutAiMessage } = await import('../../utils/curationLogic');
       
       const mockGroup = {
         id: 'group-1',
@@ -423,7 +423,7 @@ describe('CamIntellectContext', () => {
       // Set up mocks to generate a suggestion
       vi.mocked(groupSimilarPhotos).mockResolvedValue([mockGroup]);
       vi.mocked(generateCurationRecommendation).mockReturnValue(mockRecommendation);
-      vi.mocked(generateCamIntellectMessage).mockReturnValue('Test message');
+      vi.mocked(generateScoutAiMessage).mockReturnValue('Test message');
       vi.mocked(createActionsFromRecommendation).mockReturnValue(mockActions);
       vi.mocked(applyCurationActions).mockResolvedValue(mockResult);
 
@@ -507,9 +507,9 @@ describe('CamIntellectContext', () => {
 
     beforeEach(async () => {
       render(
-        <CamIntellectProvider userId="test-user">
+        <ScoutAiProvider userId="test-user">
           <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
-        </CamIntellectProvider>
+        </ScoutAiProvider>
       );
 
       await waitFor(() => {
@@ -518,7 +518,7 @@ describe('CamIntellectContext', () => {
     });
 
     it('should generate suggestions from similarity groups', async () => {
-      const { generateCurationRecommendation, generateCamIntellectMessage } = await import('../../utils/curationLogic');
+      const { generateCurationRecommendation, generateScoutAiMessage } = await import('../../utils/curationLogic');
       
       const mockGroup = {
         id: 'group-1',
@@ -538,7 +538,7 @@ describe('CamIntellectContext', () => {
       };
 
       vi.mocked(generateCurationRecommendation).mockReturnValue(mockRecommendation);
-      vi.mocked(generateCamIntellectMessage).mockReturnValue('Generated message');
+      vi.mocked(generateScoutAiMessage).mockReturnValue('Generated message');
 
       const result = contextValue.generateSuggestion([mockGroup]);
 
@@ -553,7 +553,7 @@ describe('CamIntellectContext', () => {
     });
 
     it('should set medium confidence for lower confidence recommendations', async () => {
-      const { generateCurationRecommendation, generateCamIntellectMessage } = await import('../../utils/curationLogic');
+      const { generateCurationRecommendation, generateScoutAiMessage } = await import('../../utils/curationLogic');
       
       const mockGroup = {
         id: 'group-1',
@@ -573,7 +573,7 @@ describe('CamIntellectContext', () => {
       };
 
       vi.mocked(generateCurationRecommendation).mockReturnValue(lowConfidenceRecommendation);
-      vi.mocked(generateCamIntellectMessage).mockReturnValue('Generated message');
+      vi.mocked(generateScoutAiMessage).mockReturnValue('Generated message');
 
       const result = contextValue.generateSuggestion([mockGroup]);
 
@@ -586,9 +586,9 @@ describe('CamIntellectContext', () => {
 
     beforeEach(async () => {
       render(
-        <CamIntellectProvider userId="test-user">
+        <ScoutAiProvider userId="test-user">
           <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
-        </CamIntellectProvider>
+        </ScoutAiProvider>
       );
 
       await waitFor(() => {
@@ -599,7 +599,7 @@ describe('CamIntellectContext', () => {
     it('should handle partial failures in photo actions', async () => {
       const { applyCurationActions, createActionsFromRecommendation } = await import('../../utils/photoActions');
       const { groupSimilarPhotos } = await import('../../utils/photoSimilarity');
-      const { generateCurationRecommendation, generateCamIntellectMessage } = await import('../../utils/curationLogic');
+      const { generateCurationRecommendation, generateScoutAiMessage } = await import('../../utils/curationLogic');
 
       const mockGroup = {
         id: 'group-1',
@@ -634,7 +634,7 @@ describe('CamIntellectContext', () => {
       // Set up mocks to generate a suggestion
       vi.mocked(groupSimilarPhotos).mockResolvedValue([mockGroup]);
       vi.mocked(generateCurationRecommendation).mockReturnValue(mockRecommendation);
-      vi.mocked(generateCamIntellectMessage).mockReturnValue('Test message');
+      vi.mocked(generateScoutAiMessage).mockReturnValue('Test message');
       vi.mocked(createActionsFromRecommendation).mockReturnValue(mockActions);
       vi.mocked(applyCurationActions).mockResolvedValue(mockResult);
 
@@ -685,9 +685,9 @@ describe('CamIntellectContext', () => {
       let contextValue: any;
 
       render(
-        <CamIntellectProvider userId="test-user">
+        <ScoutAiProvider userId="test-user">
           <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
-        </CamIntellectProvider>
+        </ScoutAiProvider>
       );
 
       await waitFor(() => {

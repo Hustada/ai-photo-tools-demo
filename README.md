@@ -212,7 +212,7 @@ AI Suggestions → User Interface → User Decisions → {
 
 **Intelligent Prompt Engineering:**
 The system builds sophisticated prompts that include:
-- **Industry Expertise:** "CamIntellect" persona with deep construction knowledge
+- **Industry Expertise:** "Scout AI" persona with deep construction knowledge
 - **CompanyCam Standards:** Integration with existing tag vocabularies
 - **User Context:** Project names, user roles, and company-specific terminology
 - **Historical Examples:** Similar photo analysis from vector memory search
@@ -233,7 +233,7 @@ const promptParts = [
   "Based on all provided information, generate suggestions in JSON format."
 ];
 
-// CamIntellect system prompt + context → GPT-4o response:
+// Scout AI system prompt + context → GPT-4o response:
 {
   "suggested_tags": ["electrical", "junction-box", "rough-in", "inspection"],
   "suggested_description": "Electrical rough-in inspection showing proper junction box installation in commercial space",

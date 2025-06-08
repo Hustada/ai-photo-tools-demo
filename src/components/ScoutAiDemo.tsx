@@ -1,21 +1,21 @@
 // © 2025 Mark Hustad — MIT License
 
 import React, { useEffect, useState } from 'react';
-import { useCamIntellect } from '../contexts/CamIntellectContext';
-import { CamIntellectNotification } from './CamIntellectNotification';
+import { useScoutAi } from '../contexts/ScoutAiContext';
+import { ScoutAiNotification } from './ScoutAiNotification';
 import type { Photo } from '../types';
-import type { CamIntellectSuggestion, CurationRecommendation } from '../types/camintellect';
+import type { ScoutAiSuggestion, CurationRecommendation } from '../types/scoutai';
 
-interface CamIntellectDemoProps {
+interface ScoutAiDemoProps {
   photos: Photo[];
   visible: boolean;
   onPhotoUpdate: (photo: Photo) => void;
 }
 
-export const CamIntellectDemo: React.FC<CamIntellectDemoProps> = ({ photos, visible, onPhotoUpdate }) => {
-  const camIntellect = useCamIntellect();
+export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPhotoUpdate }) => {
+  const scoutAi = useScoutAi();
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
-  const [showDetails, setShowDetails] = useState<CamIntellectSuggestion | null>(null);
+  const [showDetails, setShowDetails] = useState<ScoutAiSuggestion | null>(null);
   const [selectedPhotoActions, setSelectedPhotoActions] = useState<{[photoId: string]: 'keep' | 'archive'}>({});
 
   // Analyze photos when they become available
@@ -23,40 +23,40 @@ export const CamIntellectDemo: React.FC<CamIntellectDemoProps> = ({ photos, visi
     if (photos.length >= 2 && !hasAnalyzed && visible) {
       // Delay analysis slightly to let the UI settle
       const timer = setTimeout(() => {
-        console.log('[CamIntellectDemo] Starting analysis of', photos.length, 'photos');
-        camIntellect.analyzeSimilarPhotos(photos);
+        console.log('[ScoutAiDemo] Starting analysis of', photos.length, 'photos');
+        scoutAi.analyzeSimilarPhotos(photos);
         setHasAnalyzed(true);
       }, 2000);
 
       return () => clearTimeout(timer);
     }
-  }, [photos, hasAnalyzed, visible, camIntellect]);
+  }, [photos, hasAnalyzed, visible, scoutAi]);
 
   // Handle manual trigger for testing
   const handleManualAnalysis = () => {
-    console.log('[CamIntellectDemo] Manual analysis triggered');
+    console.log('[ScoutAiDemo] Manual analysis triggered');
     setHasAnalyzed(false);
-    camIntellect.analyzeSimilarPhotos(photos);
+    scoutAi.analyzeSimilarPhotos(photos);
     setHasAnalyzed(true);
   };
 
   const handleAcceptSuggestion = async (suggestionId: string) => {
-    console.log('[CamIntellectDemo] Accepting suggestion:', suggestionId);
-    await camIntellect.acceptSuggestion(suggestionId, photos, onPhotoUpdate);
+    console.log('[ScoutAiDemo] Accepting suggestion:', suggestionId);
+    await scoutAi.acceptSuggestion(suggestionId, photos, onPhotoUpdate);
   };
 
   const handleRejectSuggestion = async (suggestionId: string) => {
-    console.log('[CamIntellectDemo] Rejecting suggestion:', suggestionId);
-    await camIntellect.rejectSuggestion(suggestionId);
+    console.log('[ScoutAiDemo] Rejecting suggestion:', suggestionId);
+    await scoutAi.rejectSuggestion(suggestionId);
   };
 
   const handleDismissSuggestion = (suggestionId: string) => {
-    console.log('[CamIntellectDemo] Dismissing suggestion:', suggestionId);
-    camIntellect.dismissSuggestion(suggestionId);
+    console.log('[ScoutAiDemo] Dismissing suggestion:', suggestionId);
+    scoutAi.dismissSuggestion(suggestionId);
   };
 
-  const handleViewDetails = (suggestion: CamIntellectSuggestion) => {
-    console.log('[CamIntellectDemo] Viewing details for suggestion:', suggestion.id);
+  const handleViewDetails = (suggestion: ScoutAiSuggestion) => {
+    console.log('[ScoutAiDemo] Viewing details for suggestion:', suggestion.id);
     setShowDetails(suggestion);
     
     // Initialize photo selections based on current recommendation
@@ -96,14 +96,14 @@ export const CamIntellectDemo: React.FC<CamIntellectDemoProps> = ({ photos, visi
         reason: action === 'keep' ? 'User selected to keep' : 'User selected to archive'
       }));
       
-      console.log('[CamIntellectDemo] Applying modified actions:', actions);
-      await camIntellect.applyCurationActions(actions, photos, onPhotoUpdate);
+      console.log('[ScoutAiDemo] Applying modified actions:', actions);
+      await scoutAi.applyCurationActions(actions, photos, onPhotoUpdate);
       
       // Mark suggestion as accepted and close modal
-      await camIntellect.acceptSuggestion(showDetails.id, photos, onPhotoUpdate);
+      await scoutAi.acceptSuggestion(showDetails.id, photos, onPhotoUpdate);
       setShowDetails(null);
     } catch (error) {
-      console.error('[CamIntellectDemo] Failed to apply changes:', error);
+      console.error('[ScoutAiDemo] Failed to apply changes:', error);
     }
   };
 
@@ -115,20 +115,20 @@ export const CamIntellectDemo: React.FC<CamIntellectDemoProps> = ({ photos, visi
     <div className="space-y-4">
       {/* Demo Controls */}
       <div className="bg-gray-100 p-4 rounded-lg border-2 border-dashed border-gray-300">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">🧪 CamIntellect Demo Controls</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">🧪 Scout AI Demo Controls</h3>
         <div className="flex items-center space-x-4 text-sm">
           <span className="text-gray-600">
             Photos loaded: <strong>{photos.length}</strong>
           </span>
           <span className="text-gray-600">
-            Suggestions: <strong>{camIntellect.suggestions.length}</strong>
+            Suggestions: <strong>{scoutAi.suggestions.length}</strong>
           </span>
           <span className="text-gray-600">
-            Status: <strong>{camIntellect.isAnalyzing ? 'Analyzing...' : 'Ready'}</strong>
+            Status: <strong>{scoutAi.isAnalyzing ? 'Analyzing...' : 'Ready'}</strong>
           </span>
           <button
             onClick={handleManualAnalysis}
-            disabled={camIntellect.isAnalyzing || photos.length < 2}
+            disabled={scoutAi.isAnalyzing || photos.length < 2}
             className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Trigger Analysis
@@ -136,19 +136,19 @@ export const CamIntellectDemo: React.FC<CamIntellectDemoProps> = ({ photos, visi
         </div>
         {photos.length < 2 && (
           <p className="text-amber-600 text-sm mt-2">
-            💡 Load at least 2 photos to see CamIntellect suggestions
+            💡 Load at least 2 photos to see Scout AI suggestions
           </p>
         )}
-        {camIntellect.error && (
+        {scoutAi.error && (
           <p className="text-red-600 text-sm mt-2">
-            ❌ Error: {camIntellect.error}
+            ❌ Error: {scoutAi.error}
           </p>
         )}
       </div>
 
-      {/* CamIntellect Suggestions */}
-      {camIntellect.suggestions.map((suggestion) => (
-        <CamIntellectNotification
+      {/* Scout AI Suggestions */}
+      {scoutAi.suggestions.map((suggestion) => (
+        <ScoutAiNotification
           key={suggestion.id}
           suggestion={suggestion}
           onAccept={handleAcceptSuggestion}
@@ -163,7 +163,7 @@ export const CamIntellectDemo: React.FC<CamIntellectDemoProps> = ({ photos, visi
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-4xl w-full mx-4 max-h-[85vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">CamIntellect Suggestion Details</h3>
+              <h3 className="text-lg font-semibold">Scout AI Suggestion Details</h3>
               <button
                 onClick={() => setShowDetails(null)}
                 className="text-gray-500 hover:text-gray-700 text-xl"

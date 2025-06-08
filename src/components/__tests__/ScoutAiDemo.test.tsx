@@ -3,12 +3,12 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { CamIntellectDemo } from '../CamIntellectDemo';
+import { ScoutAiDemo } from '../ScoutAiDemo';
 import type { Photo } from '../../types';
-import type { CamIntellectSuggestion, CurationRecommendation } from '../../types/camintellect';
+import type { ScoutAiSuggestion, CurationRecommendation } from '../../types/scoutai';
 
-// Mock the CamIntellect context
-const mockCamIntellectContext = {
+// Mock the Scout AI context
+const mockScoutAiContext = {
   suggestions: [],
   userPreferences: null,
   isAnalyzing: false,
@@ -24,8 +24,8 @@ const mockCamIntellectContext = {
   restorePhoto: vi.fn()
 };
 
-vi.mock('../../contexts/CamIntellectContext', () => ({
-  useCamIntellect: () => mockCamIntellectContext
+vi.mock('../../contexts/ScoutAiContext', () => ({
+  useScoutAi: () => mockScoutAiContext
 }));
 
 // Helper to create mock photos
@@ -81,7 +81,7 @@ const mockRecommendation: CurationRecommendation = {
   confidence: 0.9
 };
 
-const mockSuggestion: CamIntellectSuggestion = {
+const mockSuggestion: ScoutAiSuggestion = {
   id: 'suggestion-1',
   type: 'photo_curation',
   message: 'I noticed 2 photos that look like retry shots of the same thing. Would you like me to recommend the best 1 that capture everything you need?',
@@ -94,16 +94,16 @@ const mockSuggestion: CamIntellectSuggestion = {
 
 const mockOnPhotoUpdate = vi.fn();
 
-describe('CamIntellectDemo', () => {
+describe('ScoutAiDemo', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset mock context to default state
-    mockCamIntellectContext.suggestions = [];
-    mockCamIntellectContext.isAnalyzing = false;
-    mockCamIntellectContext.error = null;
-    mockCamIntellectContext.analyzeSimilarPhotos.mockResolvedValue([]);
-    mockCamIntellectContext.acceptSuggestion.mockResolvedValue({ success: true, appliedActions: [], failedActions: [], updatedPhotos: [] });
-    mockCamIntellectContext.rejectSuggestion.mockResolvedValue(undefined);
+    mockScoutAiContext.suggestions = [];
+    mockScoutAiContext.isAnalyzing = false;
+    mockScoutAiContext.error = null;
+    mockScoutAiContext.analyzeSimilarPhotos.mockResolvedValue([]);
+    mockScoutAiContext.acceptSuggestion.mockResolvedValue({ success: true, appliedActions: [], failedActions: [], updatedPhotos: [] });
+    mockScoutAiContext.rejectSuggestion.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -113,7 +113,7 @@ describe('CamIntellectDemo', () => {
   describe('Component Visibility', () => {
     it('should not render when visible is false', () => {
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={false} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -125,21 +125,21 @@ describe('CamIntellectDemo', () => {
 
     it('should render when visible is true', () => {
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
         />
       );
 
-      expect(screen.getByText('🧪 CamIntellect Demo Controls')).toBeInTheDocument();
+      expect(screen.getByText('🧪 Scout AI Demo Controls')).toBeInTheDocument();
     });
   });
 
   describe('Demo Controls Display', () => {
     it('should display correct photo count', () => {
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -152,7 +152,7 @@ describe('CamIntellectDemo', () => {
 
     it('should display suggestion count', () => {
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -165,7 +165,7 @@ describe('CamIntellectDemo', () => {
 
     it('should display Ready status when not analyzing', () => {
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -177,10 +177,10 @@ describe('CamIntellectDemo', () => {
     });
 
     it('should display Analyzing status when analyzing', () => {
-      mockCamIntellectContext.isAnalyzing = true;
+      mockScoutAiContext.isAnalyzing = true;
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -192,7 +192,7 @@ describe('CamIntellectDemo', () => {
 
     it('should enable trigger button when photos available and not analyzing', () => {
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -204,10 +204,10 @@ describe('CamIntellectDemo', () => {
     });
 
     it('should disable trigger button when analyzing', () => {
-      mockCamIntellectContext.isAnalyzing = true;
+      mockScoutAiContext.isAnalyzing = true;
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -220,7 +220,7 @@ describe('CamIntellectDemo', () => {
 
     it('should disable trigger button when less than 2 photos', () => {
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={[mockPhotos[0]]} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -233,23 +233,23 @@ describe('CamIntellectDemo', () => {
 
     it('should show helpful message when insufficient photos', () => {
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={[mockPhotos[0]]} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
         />
       );
 
-      expect(screen.getByText('💡 Load at least 2 photos to see CamIntellect suggestions')).toBeInTheDocument();
+      expect(screen.getByText('💡 Load at least 2 photos to see Scout AI suggestions')).toBeInTheDocument();
     });
   });
 
   describe('Error Display', () => {
     it('should display error message when error exists', () => {
-      mockCamIntellectContext.error = 'Analysis failed';
+      mockScoutAiContext.error = 'Analysis failed';
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -261,7 +261,7 @@ describe('CamIntellectDemo', () => {
 
     it('should not display error section when no error', () => {
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -275,7 +275,7 @@ describe('CamIntellectDemo', () => {
   describe('Manual Analysis Trigger', () => {
     it('should call analyzeSimilarPhotos when trigger button clicked', async () => {
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -288,12 +288,12 @@ describe('CamIntellectDemo', () => {
         fireEvent.click(triggerButton);
       });
 
-      expect(mockCamIntellectContext.analyzeSimilarPhotos).toHaveBeenCalledWith(mockPhotos);
+      expect(mockScoutAiContext.analyzeSimilarPhotos).toHaveBeenCalledWith(mockPhotos);
     });
 
     it('should handle multiple trigger clicks', async () => {
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -310,7 +310,7 @@ describe('CamIntellectDemo', () => {
         fireEvent.click(triggerButton);
       });
 
-      expect(mockCamIntellectContext.analyzeSimilarPhotos).toHaveBeenCalledTimes(2);
+      expect(mockScoutAiContext.analyzeSimilarPhotos).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -319,7 +319,7 @@ describe('CamIntellectDemo', () => {
       vi.useFakeTimers();
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -336,7 +336,7 @@ describe('CamIntellectDemo', () => {
         vi.advanceTimersByTime(100);
       });
 
-      expect(mockCamIntellectContext.analyzeSimilarPhotos).toHaveBeenCalledWith(mockPhotos);
+      expect(mockScoutAiContext.analyzeSimilarPhotos).toHaveBeenCalledWith(mockPhotos);
 
       vi.useRealTimers();
     });
@@ -345,7 +345,7 @@ describe('CamIntellectDemo', () => {
       vi.useFakeTimers();
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={[mockPhotos[0]]} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -356,7 +356,7 @@ describe('CamIntellectDemo', () => {
         vi.advanceTimersByTime(3000);
       });
 
-      expect(mockCamIntellectContext.analyzeSimilarPhotos).not.toHaveBeenCalled();
+      expect(mockScoutAiContext.analyzeSimilarPhotos).not.toHaveBeenCalled();
 
       vi.useRealTimers();
     });
@@ -365,7 +365,7 @@ describe('CamIntellectDemo', () => {
       vi.useFakeTimers();
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={false} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -376,7 +376,7 @@ describe('CamIntellectDemo', () => {
         vi.advanceTimersByTime(3000);
       });
 
-      expect(mockCamIntellectContext.analyzeSimilarPhotos).not.toHaveBeenCalled();
+      expect(mockScoutAiContext.analyzeSimilarPhotos).not.toHaveBeenCalled();
 
       vi.useRealTimers();
     });
@@ -385,7 +385,7 @@ describe('CamIntellectDemo', () => {
       vi.useFakeTimers();
       
       const { rerender } = render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -398,7 +398,7 @@ describe('CamIntellectDemo', () => {
 
       // Rerender with same props
       rerender(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -409,7 +409,7 @@ describe('CamIntellectDemo', () => {
         vi.advanceTimersByTime(2000);
       });
 
-      expect(mockCamIntellectContext.analyzeSimilarPhotos).toHaveBeenCalledTimes(1);
+      expect(mockScoutAiContext.analyzeSimilarPhotos).toHaveBeenCalledTimes(1);
 
       vi.useRealTimers();
     });
@@ -417,10 +417,10 @@ describe('CamIntellectDemo', () => {
 
   describe('Suggestion Display and Interaction', () => {
     it('should display suggestion count when suggestions exist', () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion];
+      mockScoutAiContext.suggestions = [mockSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -433,11 +433,11 @@ describe('CamIntellectDemo', () => {
       expect(suggestionElements.length).toBeGreaterThan(0);
     });
 
-    it('should render CamIntellectNotification for each suggestion', () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion];
+    it('should render ScoutAiNotification for each suggestion', () => {
+      mockScoutAiContext.suggestions = [mockSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -448,10 +448,10 @@ describe('CamIntellectDemo', () => {
     });
 
     it('should handle accepting suggestions', async () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion];
+      mockScoutAiContext.suggestions = [mockSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -465,7 +465,7 @@ describe('CamIntellectDemo', () => {
         fireEvent.click(acceptButton);
       });
 
-      expect(mockCamIntellectContext.acceptSuggestion).toHaveBeenCalledWith(
+      expect(mockScoutAiContext.acceptSuggestion).toHaveBeenCalledWith(
         'suggestion-1',
         mockPhotos,
         mockOnPhotoUpdate
@@ -473,10 +473,10 @@ describe('CamIntellectDemo', () => {
     });
 
     it('should handle rejecting suggestions', async () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion];
+      mockScoutAiContext.suggestions = [mockSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -489,14 +489,14 @@ describe('CamIntellectDemo', () => {
         fireEvent.click(rejectButton);
       });
 
-      expect(mockCamIntellectContext.rejectSuggestion).toHaveBeenCalledWith('suggestion-1');
+      expect(mockScoutAiContext.rejectSuggestion).toHaveBeenCalledWith('suggestion-1');
     });
 
     it('should handle dismissing suggestions', () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion];
+      mockScoutAiContext.suggestions = [mockSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -507,14 +507,14 @@ describe('CamIntellectDemo', () => {
       
       fireEvent.click(dismissButton);
 
-      expect(mockCamIntellectContext.dismissSuggestion).toHaveBeenCalledWith('suggestion-1');
+      expect(mockScoutAiContext.dismissSuggestion).toHaveBeenCalledWith('suggestion-1');
     });
 
     it('should handle viewing details', () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion];
+      mockScoutAiContext.suggestions = [mockSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -526,16 +526,16 @@ describe('CamIntellectDemo', () => {
       fireEvent.click(detailsButton);
 
       // Details modal should appear
-      expect(screen.getByText('CamIntellect Suggestion Details')).toBeInTheDocument();
+      expect(screen.getByText('Scout AI Suggestion Details')).toBeInTheDocument();
     });
   });
 
   describe('Details Modal', () => {
     const renderModalAndOpen = () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion];
+      mockScoutAiContext.suggestions = [mockSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -563,7 +563,7 @@ describe('CamIntellectDemo', () => {
       renderModalAndOpen();
       
       // Wait for modal to fully render
-      expect(screen.getByText('CamIntellect Suggestion Details')).toBeInTheDocument();
+      expect(screen.getByText('Scout AI Suggestion Details')).toBeInTheDocument();
       
       // Check for the new modal structure
       expect(screen.getByText('Current Selection:')).toBeInTheDocument();
@@ -590,14 +590,14 @@ describe('CamIntellectDemo', () => {
       const closeButton = screen.getByText('✕');
       fireEvent.click(closeButton);
 
-      expect(screen.queryByText('CamIntellect Suggestion Details')).not.toBeInTheDocument();
+      expect(screen.queryByText('Scout AI Suggestion Details')).not.toBeInTheDocument();
     });
 
     it('should show modal when viewing details', () => {
       renderModalAndOpen();
       
       // Modal should be visible
-      expect(screen.getByText('CamIntellect Suggestion Details')).toBeInTheDocument();
+      expect(screen.getByText('Scout AI Suggestion Details')).toBeInTheDocument();
       expect(screen.getByText('Message:')).toBeInTheDocument();
       expect(screen.getByText('Confidence:')).toBeInTheDocument();
       expect(screen.getByText('Current Selection:')).toBeInTheDocument();
@@ -606,17 +606,17 @@ describe('CamIntellectDemo', () => {
   });
 
   describe('Multiple Suggestions', () => {
-    const secondSuggestion: CamIntellectSuggestion = {
+    const secondSuggestion: ScoutAiSuggestion = {
       ...mockSuggestion,
       id: 'suggestion-2',
       message: 'Found more similar photos to organize'
     };
 
     it('should display correct suggestion count', () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion, secondSuggestion];
+      mockScoutAiContext.suggestions = [mockSuggestion, secondSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -629,11 +629,11 @@ describe('CamIntellectDemo', () => {
       expect(suggestionElements.length).toBeGreaterThan(0);
     });
 
-    it('should render multiple CamIntellectNotifications', () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion, secondSuggestion];
+    it('should render multiple ScoutAiNotifications', () => {
+      mockScoutAiContext.suggestions = [mockSuggestion, secondSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -645,10 +645,10 @@ describe('CamIntellectDemo', () => {
     });
 
     it('should handle interactions with each suggestion independently', async () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion, secondSuggestion];
+      mockScoutAiContext.suggestions = [mockSuggestion, secondSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -661,7 +661,7 @@ describe('CamIntellectDemo', () => {
         fireEvent.click(acceptButtons[0]);
       });
 
-      expect(mockCamIntellectContext.acceptSuggestion).toHaveBeenCalledWith(
+      expect(mockScoutAiContext.acceptSuggestion).toHaveBeenCalledWith(
         'suggestion-1',
         mockPhotos,
         mockOnPhotoUpdate
@@ -671,7 +671,7 @@ describe('CamIntellectDemo', () => {
         fireEvent.click(acceptButtons[1]);
       });
 
-      expect(mockCamIntellectContext.acceptSuggestion).toHaveBeenCalledWith(
+      expect(mockScoutAiContext.acceptSuggestion).toHaveBeenCalledWith(
         'suggestion-2',
         mockPhotos,
         mockOnPhotoUpdate
@@ -682,7 +682,7 @@ describe('CamIntellectDemo', () => {
   describe('Edge Cases', () => {
     it('should handle empty photos array', () => {
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={[]} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -690,17 +690,17 @@ describe('CamIntellectDemo', () => {
       );
 
       expect(screen.getByText('Photos loaded:')).toBeInTheDocument();
-      expect(screen.getByText('💡 Load at least 2 photos to see CamIntellect suggestions')).toBeInTheDocument();
+      expect(screen.getByText('💡 Load at least 2 photos to see Scout AI suggestions')).toBeInTheDocument();
     });
 
     it('should handle undefined suggestion data gracefully', () => {
-      mockCamIntellectContext.suggestions = [{
+      mockScoutAiContext.suggestions = [{
         ...mockSuggestion,
         recommendations: []
       }];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -712,11 +712,11 @@ describe('CamIntellectDemo', () => {
     });
 
     it('should handle suggestion action errors gracefully', async () => {
-      mockCamIntellectContext.acceptSuggestion.mockRejectedValue(new Error('Action failed'));
-      mockCamIntellectContext.suggestions = [mockSuggestion];
+      mockScoutAiContext.acceptSuggestion.mockRejectedValue(new Error('Action failed'));
+      mockScoutAiContext.suggestions = [mockSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -730,7 +730,7 @@ describe('CamIntellectDemo', () => {
         fireEvent.click(acceptButton);
       });
 
-      expect(mockCamIntellectContext.acceptSuggestion).toHaveBeenCalled();
+      expect(mockScoutAiContext.acceptSuggestion).toHaveBeenCalled();
     });
   });
 
@@ -747,7 +747,7 @@ describe('CamIntellectDemo', () => {
 
     it('should log manual analysis trigger', async () => {
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -760,14 +760,14 @@ describe('CamIntellectDemo', () => {
         fireEvent.click(triggerButton);
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith('[CamIntellectDemo] Manual analysis triggered');
+      expect(consoleSpy).toHaveBeenCalledWith('[ScoutAiDemo] Manual analysis triggered');
     });
 
     it('should log suggestion acceptance', async () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion];
+      mockScoutAiContext.suggestions = [mockSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -780,14 +780,14 @@ describe('CamIntellectDemo', () => {
         fireEvent.click(acceptButton);
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith('[CamIntellectDemo] Accepting suggestion:', 'suggestion-1');
+      expect(consoleSpy).toHaveBeenCalledWith('[ScoutAiDemo] Accepting suggestion:', 'suggestion-1');
     });
 
     it('should log suggestion rejection', async () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion];
+      mockScoutAiContext.suggestions = [mockSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -800,14 +800,14 @@ describe('CamIntellectDemo', () => {
         fireEvent.click(rejectButton);
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith('[CamIntellectDemo] Rejecting suggestion:', 'suggestion-1');
+      expect(consoleSpy).toHaveBeenCalledWith('[ScoutAiDemo] Rejecting suggestion:', 'suggestion-1');
     });
 
     it('should log suggestion dismissal', () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion];
+      mockScoutAiContext.suggestions = [mockSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -818,14 +818,14 @@ describe('CamIntellectDemo', () => {
       
       fireEvent.click(dismissButton);
 
-      expect(consoleSpy).toHaveBeenCalledWith('[CamIntellectDemo] Dismissing suggestion:', 'suggestion-1');
+      expect(consoleSpy).toHaveBeenCalledWith('[ScoutAiDemo] Dismissing suggestion:', 'suggestion-1');
     });
 
     it('should log viewing details', () => {
-      mockCamIntellectContext.suggestions = [mockSuggestion];
+      mockScoutAiContext.suggestions = [mockSuggestion];
       
       render(
-        <CamIntellectDemo 
+        <ScoutAiDemo 
           photos={mockPhotos} 
           visible={true} 
           onPhotoUpdate={mockOnPhotoUpdate}
@@ -836,7 +836,7 @@ describe('CamIntellectDemo', () => {
       
       fireEvent.click(detailsButton);
 
-      expect(consoleSpy).toHaveBeenCalledWith('[CamIntellectDemo] Viewing details for suggestion:', 'suggestion-1');
+      expect(consoleSpy).toHaveBeenCalledWith('[ScoutAiDemo] Viewing details for suggestion:', 'suggestion-1');
     });
   });
 });

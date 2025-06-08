@@ -10,14 +10,14 @@ import React, {
 } from 'react';
 import type { Photo } from '../types';
 import type {
-  CamIntellectContextType,
-  CamIntellectSuggestion,
+  ScoutAiContextType,
+  ScoutAiSuggestion,
   UserCurationPreferences,
   PhotoSimilarityGroup,
   CurationActionResult
-} from '../types/camintellect';
+} from '../types/scoutai';
 import { groupSimilarPhotos } from '../utils/photoSimilarity';
-import { generateCurationRecommendation, generateCamIntellectMessage } from '../utils/curationLogic';
+import { generateCurationRecommendation, generateScoutAiMessage } from '../utils/curationLogic';
 import { 
   applyCurationActions, 
   createActionsFromRecommendation,
@@ -25,18 +25,18 @@ import {
   restorePhoto as restorePhotoUtil
 } from '../utils/photoActions';
 
-const CamIntellectContext = createContext<CamIntellectContextType | undefined>(undefined);
+const ScoutAiContext = createContext<ScoutAiContextType | undefined>(undefined);
 
-interface CamIntellectProviderProps {
+interface ScoutAiProviderProps {
   children: ReactNode;
   userId: string;
 }
 
-export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({ 
+export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({ 
   children, 
   userId
 }) => {
-  const [suggestions, setSuggestions] = useState<CamIntellectSuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<ScoutAiSuggestion[]>([]);
   const [userPreferences, setUserPreferences] = useState<UserCurationPreferences | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
   useEffect(() => {
     const loadUserPreferences = () => {
       try {
-        const stored = localStorage.getItem(`camintellect-preferences-${userId}`);
+        const stored = localStorage.getItem(`scoutai-preferences-${userId}`);
         if (stored) {
           const preferences = JSON.parse(stored) as UserCurationPreferences;
           setUserPreferences(preferences);
@@ -69,10 +69,10 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
             }
           };
           setUserPreferences(defaultPreferences);
-          localStorage.setItem(`camintellect-preferences-${userId}`, JSON.stringify(defaultPreferences));
+          localStorage.setItem(`scoutai-preferences-${userId}`, JSON.stringify(defaultPreferences));
         }
       } catch (err) {
-        console.warn('[CamIntellect] Failed to load user preferences:', err);
+        console.warn('[Scout AI] Failed to load user preferences:', err);
         // Set minimal default if localStorage fails
         setUserPreferences({
           userId,
@@ -93,7 +93,7 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
   // Analyze photos for similarity and generate suggestions
   const analyzeSimilarPhotos = useCallback(async (photos: Photo[]): Promise<PhotoSimilarityGroup[]> => {
     if (!userPreferences) {
-      console.warn('[CamIntellect] User preferences not loaded yet');
+      console.warn('[Scout AI] User preferences not loaded yet');
       return [];
     }
 
@@ -101,22 +101,22 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
     setError(null);
 
     try {
-      console.log('[CamIntellect] Analyzing', photos.length, 'photos for similarity');
+      console.log('[Scout AI] Analyzing', photos.length, 'photos for similarity');
       
       // Use user's quality threshold for grouping
       const groups = await groupSimilarPhotos(photos, userPreferences.qualityThreshold);
       
-      console.log('[CamIntellect] Found', groups.length, 'similar photo groups');
+      console.log('[Scout AI] Found', groups.length, 'similar photo groups');
       
       if (groups.length > 0) {
         // Generate recommendations for each group
         const recommendations = groups.map(group => generateCurationRecommendation(group));
         
-        // Create CamIntellect suggestion
-        const suggestion: CamIntellectSuggestion = {
+        // Create Scout AI suggestion
+        const suggestion: ScoutAiSuggestion = {
           id: `suggestion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           type: 'photo_curation',
-          message: generateCamIntellectMessage(recommendations),
+          message: generateScoutAiMessage(recommendations),
           recommendations,
           confidence: recommendations.length > 0 ? 
             recommendations.reduce((sum, rec) => sum + rec.confidence, 0) / recommendations.length > 0.7 ? 'high' : 'medium' 
@@ -127,13 +127,13 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
         };
 
         setSuggestions(prev => [suggestion, ...prev]);
-        console.log('[CamIntellect] Generated suggestion:', suggestion.message);
+        console.log('[Scout AI] Generated suggestion:', suggestion.message);
       }
 
       return groups;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Photo analysis failed';
-      console.error('[CamIntellect] Analysis error:', err);
+      console.error('[Scout AI] Analysis error:', err);
       setError(errorMessage);
       return [];
     } finally {
@@ -142,13 +142,13 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
   }, [userPreferences]);
 
   // Generate a suggestion from similarity groups (used by analyzeSimilarPhotos)
-  const generateSuggestion = useCallback((groups: PhotoSimilarityGroup[]): CamIntellectSuggestion => {
+  const generateSuggestion = useCallback((groups: PhotoSimilarityGroup[]): ScoutAiSuggestion => {
     const recommendations = groups.map(group => generateCurationRecommendation(group));
     
     return {
       id: `suggestion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'photo_curation',
-      message: generateCamIntellectMessage(recommendations),
+      message: generateScoutAiMessage(recommendations),
       recommendations,
       confidence: recommendations.length > 0 ? 
         recommendations.reduce((sum, rec) => sum + rec.confidence, 0) / recommendations.length > 0.7 ? 'high' : 'medium' 
@@ -178,7 +178,7 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
       // Create actions from all recommendations in the suggestion
       const allActions = suggestion.recommendations.flatMap(createActionsFromRecommendation);
       
-      console.log('[CamIntellect] Applying', allActions.length, 'actions for suggestion:', suggestionId);
+      console.log('[Scout AI] Applying', allActions.length, 'actions for suggestion:', suggestionId);
       
       // Apply the curation actions to the photos
       const result = await applyCurationActions(allActions, photos, onPhotoUpdate);
@@ -203,15 +203,15 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
         };
 
         await updateUserPreferences(updatedPreferences);
-        console.log('[CamIntellect] Successfully accepted suggestion and applied', result.appliedActions.length, 'actions');
+        console.log('[Scout AI] Successfully accepted suggestion and applied', result.appliedActions.length, 'actions');
       } else {
-        console.warn('[CamIntellect] Some actions failed when accepting suggestion:', result.error);
+        console.warn('[Scout AI] Some actions failed when accepting suggestion:', result.error);
         setError(result.error || 'Some photo actions failed to apply');
       }
 
       return result;
     } catch (err) {
-      console.error('[CamIntellect] Failed to accept suggestion:', err);
+      console.error('[Scout AI] Failed to accept suggestion:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to accept suggestion';
       setError(errorMessage);
       throw err;
@@ -241,9 +241,9 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
       };
 
       await updateUserPreferences(updatedPreferences);
-      console.log('[CamIntellect] Rejected suggestion:', suggestionId);
+      console.log('[Scout AI] Rejected suggestion:', suggestionId);
     } catch (err) {
-      console.error('[CamIntellect] Failed to reject suggestion:', err);
+      console.error('[Scout AI] Failed to reject suggestion:', err);
       setError(err instanceof Error ? err.message : 'Failed to reject suggestion');
     }
   }, [userPreferences]);
@@ -257,7 +257,7 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
           : suggestion
       )
     );
-    console.log('[CamIntellect] Dismissed suggestion:', suggestionId);
+    console.log('[Scout AI] Dismissed suggestion:', suggestionId);
   }, []);
 
   // Update user preferences and persist to localStorage
@@ -272,10 +272,10 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
       };
 
       setUserPreferences(updatedPreferences);
-      localStorage.setItem(`camintellect-preferences-${userId}`, JSON.stringify(updatedPreferences));
-      console.log('[CamIntellect] Updated user preferences');
+      localStorage.setItem(`scoutai-preferences-${userId}`, JSON.stringify(updatedPreferences));
+      console.log('[Scout AI] Updated user preferences');
     } catch (err) {
-      console.error('[CamIntellect] Failed to update preferences:', err);
+      console.error('[Scout AI] Failed to update preferences:', err);
       setError(err instanceof Error ? err.message : 'Failed to update preferences');
     }
   }, [userPreferences, userId]);
@@ -308,7 +308,7 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
     await restorePhotoUtil(photoId, photos, onPhotoUpdate);
   }, []);
 
-  const contextValue: CamIntellectContextType = {
+  const contextValue: ScoutAiContextType = {
     suggestions,
     userPreferences,
     isAnalyzing,
@@ -325,16 +325,16 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
   };
 
   return (
-    <CamIntellectContext.Provider value={contextValue}>
+    <ScoutAiContext.Provider value={contextValue}>
       {children}
-    </CamIntellectContext.Provider>
+    </ScoutAiContext.Provider>
   );
 };
 
-export const useCamIntellect = (): CamIntellectContextType => {
-  const context = useContext(CamIntellectContext);
+export const useScoutAi = (): ScoutAiContextType => {
+  const context = useContext(ScoutAiContext);
   if (context === undefined) {
-    throw new Error('useCamIntellect must be used within a CamIntellectProvider');
+    throw new Error('useScoutAi must be used within a ScoutAiProvider');
   }
   return context;
 };
