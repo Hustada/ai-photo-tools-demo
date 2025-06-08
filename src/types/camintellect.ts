@@ -60,6 +60,21 @@ export interface PhotoQualityMetrics {
   documentationValue: number;    // Overall documentation value (0-1)
 }
 
+export interface PhotoAction {
+  type: 'archive' | 'keep' | 'tag' | 'delete';
+  photoId: string;
+  reason?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface CurationActionResult {
+  success: boolean;
+  appliedActions: PhotoAction[];
+  failedActions: PhotoAction[];
+  updatedPhotos: Photo[];
+  error?: string;
+}
+
 export interface CamIntellectContextType {
   suggestions: CamIntellectSuggestion[];
   userPreferences: UserCurationPreferences | null;
@@ -69,8 +84,13 @@ export interface CamIntellectContextType {
   // Actions
   analyzeSimilarPhotos: (photos: Photo[]) => Promise<PhotoSimilarityGroup[]>;
   generateSuggestion: (groups: PhotoSimilarityGroup[]) => CamIntellectSuggestion;
-  acceptSuggestion: (suggestionId: string) => Promise<void>;
+  acceptSuggestion: (suggestionId: string, photos: Photo[], onPhotoUpdate: (photo: Photo) => void) => Promise<CurationActionResult>;
   rejectSuggestion: (suggestionId: string) => Promise<void>;
   dismissSuggestion: (suggestionId: string) => void;
   updateUserPreferences: (preferences: Partial<UserCurationPreferences>) => Promise<void>;
+  
+  // Photo management actions
+  applyCurationActions: (actions: PhotoAction[], photos: Photo[], onPhotoUpdate: (photo: Photo) => void) => Promise<CurationActionResult>;
+  archivePhoto: (photoId: string, reason: string, photos: Photo[], onPhotoUpdate: (photo: Photo) => void) => Promise<void>;
+  restorePhoto: (photoId: string, photos: Photo[], onPhotoUpdate: (photo: Photo) => void) => Promise<void>;
 }

@@ -233,6 +233,7 @@ const HomePageContent: React.FC = () => {
         <CamIntellectDemo 
           photos={photoData.photos} 
           visible={photoData.photos.length > 0}
+          onPhotoUpdate={photoData.updatePhotoInCache}
         />
 
         {/* Loading State */}

@@ -13,10 +13,17 @@ import type {
   CamIntellectContextType,
   CamIntellectSuggestion,
   UserCurationPreferences,
-  PhotoSimilarityGroup
+  PhotoSimilarityGroup,
+  CurationActionResult
 } from '../types/camintellect';
 import { groupSimilarPhotos } from '../utils/photoSimilarity';
 import { generateCurationRecommendation, generateCamIntellectMessage } from '../utils/curationLogic';
+import { 
+  applyCurationActions, 
+  createActionsFromRecommendation,
+  archivePhoto as archivePhotoUtil,
+  restorePhoto as restorePhotoUtil
+} from '../utils/photoActions';
 
 const CamIntellectContext = createContext<CamIntellectContextType | undefined>(undefined);
 
@@ -27,7 +34,7 @@ interface CamIntellectProviderProps {
 
 export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({ 
   children, 
-  userId 
+  userId
 }) => {
   const [suggestions, setSuggestions] = useState<CamIntellectSuggestion[]>([]);
   const [userPreferences, setUserPreferences] = useState<UserCurationPreferences | null>(null);
@@ -153,34 +160,63 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
   }, []);
 
   // Accept a suggestion and update user preferences
-  const acceptSuggestion = useCallback(async (suggestionId: string): Promise<void> => {
-    if (!userPreferences) return;
+  const acceptSuggestion = useCallback(async (
+    suggestionId: string, 
+    photos: Photo[], 
+    onPhotoUpdate: (photo: Photo) => void
+  ): Promise<CurationActionResult> => {
+    if (!userPreferences) {
+      throw new Error('User preferences not loaded');
+    }
+
+    const suggestion = suggestions.find(s => s.id === suggestionId);
+    if (!suggestion) {
+      throw new Error(`Suggestion not found: ${suggestionId}`);
+    }
 
     try {
-      setSuggestions(prev => 
-        prev.map(suggestion => 
-          suggestion.id === suggestionId 
-            ? { ...suggestion, status: 'accepted' as const }
-            : suggestion
-        )
-      );
+      // Create actions from all recommendations in the suggestion
+      const allActions = suggestion.recommendations.flatMap(createActionsFromRecommendation);
+      
+      console.log('[CamIntellect] Applying', allActions.length, 'actions for suggestion:', suggestionId);
+      
+      // Apply the curation actions to the photos
+      const result = await applyCurationActions(allActions, photos, onPhotoUpdate);
+      
+      if (result.success) {
+        // Update suggestion status to accepted
+        setSuggestions(prev => 
+          prev.map(s => 
+            s.id === suggestionId 
+              ? { ...s, status: 'accepted' as const }
+              : s
+          )
+        );
 
-      // Update user learning data
-      const updatedPreferences: UserCurationPreferences = {
-        ...userPreferences,
-        learningData: {
-          ...userPreferences.learningData,
-          acceptedRecommendations: [...userPreferences.learningData.acceptedRecommendations, suggestionId]
-        }
-      };
+        // Update user learning data
+        const updatedPreferences: UserCurationPreferences = {
+          ...userPreferences,
+          learningData: {
+            ...userPreferences.learningData,
+            acceptedRecommendations: [...userPreferences.learningData.acceptedRecommendations, suggestionId]
+          }
+        };
 
-      await updateUserPreferences(updatedPreferences);
-      console.log('[CamIntellect] Accepted suggestion:', suggestionId);
+        await updateUserPreferences(updatedPreferences);
+        console.log('[CamIntellect] Successfully accepted suggestion and applied', result.appliedActions.length, 'actions');
+      } else {
+        console.warn('[CamIntellect] Some actions failed when accepting suggestion:', result.error);
+        setError(result.error || 'Some photo actions failed to apply');
+      }
+
+      return result;
     } catch (err) {
       console.error('[CamIntellect] Failed to accept suggestion:', err);
-      setError(err instanceof Error ? err.message : 'Failed to accept suggestion');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to accept suggestion';
+      setError(errorMessage);
+      throw err;
     }
-  }, [userPreferences]);
+  }, [userPreferences, suggestions]);
 
   // Reject a suggestion and update user preferences
   const rejectSuggestion = useCallback(async (suggestionId: string): Promise<void> => {
@@ -244,6 +280,34 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
     }
   }, [userPreferences, userId]);
 
+  // Apply curation actions directly
+  const applyCurationActionsMethod = useCallback(async (
+    actions: any[], 
+    photos: Photo[], 
+    onPhotoUpdate: (photo: Photo) => void
+  ): Promise<CurationActionResult> => {
+    return await applyCurationActions(actions, photos, onPhotoUpdate);
+  }, []);
+
+  // Archive a photo
+  const archivePhoto = useCallback(async (
+    photoId: string, 
+    reason: string, 
+    photos: Photo[], 
+    onPhotoUpdate: (photo: Photo) => void
+  ): Promise<void> => {
+    await archivePhotoUtil(photoId, reason, photos, onPhotoUpdate);
+  }, []);
+
+  // Restore a photo
+  const restorePhoto = useCallback(async (
+    photoId: string, 
+    photos: Photo[], 
+    onPhotoUpdate: (photo: Photo) => void
+  ): Promise<void> => {
+    await restorePhotoUtil(photoId, photos, onPhotoUpdate);
+  }, []);
+
   const contextValue: CamIntellectContextType = {
     suggestions,
     userPreferences,
@@ -254,7 +318,10 @@ export const CamIntellectProvider: React.FC<CamIntellectProviderProps> = ({
     acceptSuggestion,
     rejectSuggestion,
     dismissSuggestion,
-    updateUserPreferences
+    updateUserPreferences,
+    applyCurationActions: applyCurationActionsMethod,
+    archivePhoto,
+    restorePhoto
   };
 
   return (

@@ -47,6 +47,10 @@ export interface Photo {
   // Tags are not directly on the photo object from GET /photos
   // We'll fetch them separately and can add them here if desired for local state
   tags?: Tag[];
+  // Archive state for CamIntellect photo management
+  archive_state?: 'active' | 'archived' | 'pending_deletion';
+  archived_at?: number;
+  archive_reason?: string;
 }
 
 // For the response from GET /photos which is an array of Photo objects

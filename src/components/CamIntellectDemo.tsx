@@ -8,9 +8,10 @@ import type { Photo } from '../types';
 interface CamIntellectDemoProps {
   photos: Photo[];
   visible: boolean;
+  onPhotoUpdate: (photo: Photo) => void;
 }
 
-export const CamIntellectDemo: React.FC<CamIntellectDemoProps> = ({ photos, visible }) => {
+export const CamIntellectDemo: React.FC<CamIntellectDemoProps> = ({ photos, visible, onPhotoUpdate }) => {
   const camIntellect = useCamIntellect();
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const [showDetails, setShowDetails] = useState<any>(null);
@@ -39,7 +40,7 @@ export const CamIntellectDemo: React.FC<CamIntellectDemoProps> = ({ photos, visi
 
   const handleAcceptSuggestion = async (suggestionId: string) => {
     console.log('[CamIntellectDemo] Accepting suggestion:', suggestionId);
-    await camIntellect.acceptSuggestion(suggestionId);
+    await camIntellect.acceptSuggestion(suggestionId, photos, onPhotoUpdate);
   };
 
   const handleRejectSuggestion = async (suggestionId: string) => {
