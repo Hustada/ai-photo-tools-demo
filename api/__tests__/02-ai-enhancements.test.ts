@@ -261,6 +261,28 @@ describe('/api/ai-enhancements', () => {
       )
     })
 
+    it('should handle acceptedAiTags array with filtering', async () => {
+      mockKv.get.mockResolvedValue(null)
+      mockKv.set.mockResolvedValue('OK')
+      
+      const req = createMockReq('POST', {}, {
+        photoId: 'test-photo',
+        userId: 'test-user',
+        acceptedAiTags: ['valid-tag', '', '  ', 'another-tag', null, 'final-tag']
+      })
+      const res = createMockRes()
+
+      await handler(req, res)
+
+      expect(mockKv.set).toHaveBeenCalledWith(
+        'photo_enhancement:test-photo',
+        expect.objectContaining({
+          accepted_ai_tags: ['valid-tag', 'another-tag', 'final-tag'],
+        })
+      )
+      expect(res.status).toHaveBeenCalledWith(200)
+    })
+
     it('should return 500 when KV fails during POST', async () => {
       mockKv.get.mockResolvedValue(null)
       mockKv.set.mockRejectedValue(new Error('KV write failed'))
@@ -404,6 +426,32 @@ describe('/api/ai-enhancements', () => {
         message: 'No changes made to enhancements.', 
         enhancement: existingEnhancement 
       })
+    })
+
+    it('should handle kv errors during DELETE operation', async () => {
+      const existingEnhancement = {
+        photo_id: 'test-photo',
+        user_id: 'test-user',
+        ai_description: 'Test description',
+        accepted_ai_tags: ['tag1'],
+        created_at: '2025-01-01T00:00:00.000Z',
+        updated_at: '2025-01-01T00:00:00.000Z',
+      }
+      
+      mockKv.get.mockResolvedValue(existingEnhancement)
+      mockKv.set.mockRejectedValue(new Error('KV operation failed'))
+      
+      const req = createMockReq('DELETE', {}, {
+        photoId: 'test-photo',
+        userId: 'test-user',
+        tagToRemove: 'tag1'
+      })
+      const res = createMockRes()
+
+      await handler(req, res)
+
+      expect(res.status).toHaveBeenCalledWith(500)
+      expect(res.json).toHaveBeenCalledWith({ error: 'Failed to delete/clear enhancement.' })
     })
   })
 

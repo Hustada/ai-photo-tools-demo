@@ -54,7 +54,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       photoId: bodyPhotoId,
       userId,
       description,
+      aiDescription,
       tagToAdd,
+      acceptedAiTags,
       suggestionSource,
     } = body;
 
@@ -87,20 +89,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         enhancement.user_id = userId; // Update user if a different user modifies
       }
 
-      if (typeof description === 'string') {
-        enhancement.ai_description = description;
-      } else if (description === null) { // Explicitly clear description
+      // Handle description updates (support both field names for compatibility)
+      const descriptionValue = aiDescription || description;
+      if (typeof descriptionValue === 'string') {
+        enhancement.ai_description = descriptionValue;
+      } else if (descriptionValue === null) { // Explicitly clear description
         enhancement.ai_description = null;
       }
 
-
-      if (typeof tagToAdd === 'string' && tagToAdd.trim() !== '') {
+      // Handle tag updates - support both single tag and array of tags
+      if (Array.isArray(acceptedAiTags)) {
+        // New frontend sends full array of accepted AI tags
+        enhancement.accepted_ai_tags = acceptedAiTags.filter(tag => typeof tag === 'string' && tag.trim() !== '');
+        console.log(`API_POST_ENHANCEMENT: Set accepted_ai_tags to:`, enhancement.accepted_ai_tags);
+      } else if (typeof tagToAdd === 'string' && tagToAdd.trim() !== '') {
+        // Legacy single tag support
         if (!enhancement.accepted_ai_tags.includes(tagToAdd)) {
-          enhancement.accepted_ai_tags.forEach((tag: string) => {
-            // No action needed here, just added explicit type to 'tag' parameter
-          });
           enhancement.accepted_ai_tags.push(tagToAdd);
         }
+        console.log(`API_POST_ENHANCEMENT: Added single tag "${tagToAdd}", tags now:`, enhancement.accepted_ai_tags);
       }
       
       if (suggestionSource && typeof suggestionSource === 'string') {

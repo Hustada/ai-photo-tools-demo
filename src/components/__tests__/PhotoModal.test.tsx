@@ -81,6 +81,7 @@ const mockAiSuggestionData: PhotoCardAiSuggestionState = {
 describe('PhotoModal', () => {
   const mockOnClose = vi.fn()
   const mockOnAddTagToCompanyCam = vi.fn()
+  const mockOnAddAiTag = vi.fn()
   const mockOnFetchAiSuggestions = vi.fn()
   const mockOnSaveAiDescription = vi.fn()
   const mockOnShowNextPhoto = vi.fn()
@@ -97,6 +98,7 @@ describe('PhotoModal', () => {
       onClose: mockOnClose,
       apiKey: 'test-api-key',
       onAddTagToCompanyCam: mockOnAddTagToCompanyCam,
+      onAddAiTag: mockOnAddAiTag,
       onFetchAiSuggestions: mockOnFetchAiSuggestions,
       onSaveAiDescription: mockOnSaveAiDescription,
       onShowNextPhoto: mockOnShowNextPhoto,
@@ -381,12 +383,8 @@ describe('PhotoModal', () => {
 
   describe('AI tag adding', () => {
     beforeEach(() => {
-      // Mock successful service calls
-      vi.mocked(companyCamService.listCompanyCamTags).mockResolvedValue([
-        { id: 'tag-5', display_value: 'Wiring', value: 'wiring' }
-      ])
-      vi.mocked(companyCamService.addTagsToPhoto).mockResolvedValue(undefined)
-      mockOnAddTagToCompanyCam.mockResolvedValue(undefined)
+      // Mock AI tag adding (which doesn't use CompanyCam service directly)
+      mockOnAddAiTag.mockResolvedValue(undefined)
     })
 
     it('should add AI suggested tag when clicked', async () => {
@@ -397,28 +395,12 @@ describe('PhotoModal', () => {
       await user.click(tagButton)
 
       await waitFor(() => {
-        expect(companyCamService.listCompanyCamTags).toHaveBeenCalledWith('test-api-key')
+        expect(mockOnAddAiTag).toHaveBeenCalledWith('modal-photo-123', 'wiring', defaultProps.photo)
       })
-
-      await waitFor(() => {
-        expect(companyCamService.addTagsToPhoto).toHaveBeenCalledWith(
-          'test-api-key',
-          'modal-photo-123',
-          ['tag-5']
-        )
-      })
-
-      expect(mockOnAddTagToCompanyCam).toHaveBeenCalledWith('modal-photo-123', 'wiring')
     })
 
     it('should create new tag if it does not exist', async () => {
       const user = userEvent.setup()
-      
-      // Mock that tag doesn't exist, then create it
-      vi.mocked(companyCamService.listCompanyCamTags).mockResolvedValue([])
-      vi.mocked(companyCamService.createCompanyCamTagDefinition).mockResolvedValue(
-        { id: 'new-tag-6', display_value: 'Conduit', value: 'conduit' }
-      )
 
       render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
@@ -426,27 +408,16 @@ describe('PhotoModal', () => {
       await user.click(tagButton)
 
       await waitFor(() => {
-        expect(companyCamService.createCompanyCamTagDefinition).toHaveBeenCalledWith(
-          'test-api-key',
-          'conduit'
-        )
-      })
-
-      await waitFor(() => {
-        expect(companyCamService.addTagsToPhoto).toHaveBeenCalledWith(
-          'test-api-key',
-          'modal-photo-123',
-          ['new-tag-6']
-        )
+        expect(mockOnAddAiTag).toHaveBeenCalledWith('modal-photo-123', 'conduit', defaultProps.photo)
       })
     })
 
     it('should show loading state while adding tag', async () => {
       const user = userEvent.setup()
       
-      // Delay the service call to see loading state
-      vi.mocked(companyCamService.listCompanyCamTags).mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve([]), 100))
+      // Delay the onAddAiTag call to see loading state
+      mockOnAddAiTag.mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve(undefined), 100))
       )
 
       render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
@@ -459,21 +430,24 @@ describe('PhotoModal', () => {
 
     it('should handle API key missing error', async () => {
       const user = userEvent.setup()
-      render(<PhotoModal {...defaultProps} apiKey="" aiSuggestionData={mockAiSuggestionData} />)
+      // AI tag adding doesn't require API key, so simulate an error from onAddAiTag instead
+      mockOnAddAiTag.mockRejectedValue(new Error('User not available for adding AI tag'))
+      
+      render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
       const tagButton = screen.getByText('wiring')
       await user.click(tagButton)
 
-      expect(screen.getByText(/API key is missing/)).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText("Error: Failed to add tag 'wiring'. User not available for adding AI tag")).toBeInTheDocument()
+      })
     })
 
     it('should handle tag creation errors', async () => {
       const user = userEvent.setup()
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       
-      vi.mocked(companyCamService.listCompanyCamTags).mockRejectedValue(
-        new Error('Service unavailable')
-      )
+      mockOnAddAiTag.mockRejectedValue(new Error('Service unavailable'))
 
       render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
@@ -489,6 +463,36 @@ describe('PhotoModal', () => {
       })
 
       consoleSpy.mockRestore()
+    })
+
+    it('should handle string errors in tag addition', async () => {
+      const user = userEvent.setup()
+      
+      mockOnAddAiTag.mockRejectedValue('Network connection failed')
+
+      render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
+
+      const tagButton = screen.getByText('wiring')
+      await user.click(tagButton)
+
+      await waitFor(() => {
+        expect(screen.getByText("Error: Failed to add tag 'wiring'. Network connection failed")).toBeInTheDocument()
+      })
+    })
+
+    it('should handle unknown errors in tag addition', async () => {
+      const user = userEvent.setup()
+      
+      mockOnAddAiTag.mockRejectedValue({ code: 500, message: 'Unknown error' })
+
+      render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
+
+      const tagButton = screen.getByText('wiring')
+      await user.click(tagButton)
+
+      await waitFor(() => {
+        expect(screen.getByText("Error: Failed to add tag 'wiring'. Unknown error")).toBeInTheDocument()
+      })
     })
   })
 
@@ -531,7 +535,7 @@ describe('PhotoModal', () => {
       const saveButton = screen.getByText('Save Description')
       await user.click(saveButton)
 
-      expect(mockOnSaveAiDescription).toHaveBeenCalledWith('modal-photo-123', 'New description')
+      expect(mockOnSaveAiDescription).toHaveBeenCalledWith('modal-photo-123', 'New description', expect.any(Object))
     })
 
     it('should show loading state while saving description', async () => {
@@ -559,6 +563,31 @@ describe('PhotoModal', () => {
 
       const saveButton = screen.getByText('Save Description')
       expect(saveButton).toBeDisabled()
+    })
+
+    it('should handle description save errors gracefully', async () => {
+      const user = userEvent.setup()
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      mockOnSaveAiDescription.mockRejectedValue(new Error('Save failed'))
+
+      render(<PhotoModal {...defaultProps} />)
+
+      const textarea = screen.getByDisplayValue('Electrical work in progress')
+      await user.clear(textarea)
+      await user.type(textarea, 'New description')
+
+      const saveButton = screen.getByText('Save Description')
+      await user.click(saveButton)
+
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Error saving description from modal:',
+          expect.any(Error)
+        )
+      })
+
+      consoleErrorSpy.mockRestore()
     })
   })
 

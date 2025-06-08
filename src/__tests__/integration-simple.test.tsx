@@ -90,6 +90,7 @@ describe('Integration Tests - Component Workflows', () => {
       })
 
       const mockOnAddTagToCompanyCam = vi.fn()
+      const mockOnAddAiTag = vi.fn()
 
       // Render PhotoCard
       const { rerender } = render(
@@ -98,6 +99,7 @@ describe('Integration Tests - Component Workflows', () => {
           onPhotoClick={() => {}}
           onTagClick={() => {}}
           onAddTagToCompanyCam={mockOnAddTagToCompanyCam}
+          onAddAiTag={mockOnAddAiTag}
           onFetchAiSuggestions={mockOnFetchAiSuggestions}
           aiSuggestionData={currentAiData}
         />
@@ -119,6 +121,7 @@ describe('Integration Tests - Component Workflows', () => {
           onPhotoClick={() => {}}
           onTagClick={() => {}}
           onAddTagToCompanyCam={mockOnAddTagToCompanyCam}
+          onAddAiTag={mockOnAddAiTag}
           onFetchAiSuggestions={mockOnFetchAiSuggestions}
           aiSuggestionData={currentAiData}
         />
@@ -132,9 +135,10 @@ describe('Integration Tests - Component Workflows', () => {
       const tagButton = screen.getByText('ai-tag-1')
       await user.click(tagButton)
 
-      expect(mockOnAddTagToCompanyCam).toHaveBeenCalledWith(
+      expect(mockOnAddAiTag).toHaveBeenCalledWith(
         'integration-photo-1',
-        'ai-tag-1'
+        'ai-tag-1',
+        mockPhoto
       )
     })
 
@@ -188,6 +192,7 @@ describe('Integration Tests - Component Workflows', () => {
 
       const mockOnSaveAiDescription = vi.fn()
       const mockOnAddTagToCompanyCam = vi.fn()
+      const mockOnAddAiTag = vi.fn()
 
       // Render modal
       const { rerender } = render(
@@ -196,6 +201,7 @@ describe('Integration Tests - Component Workflows', () => {
           onClose={() => {}}
           apiKey="test-api-key"
           onAddTagToCompanyCam={mockOnAddTagToCompanyCam}
+          onAddAiTag={mockOnAddAiTag}
           onFetchAiSuggestions={mockOnFetchAiSuggestions}
           onSaveAiDescription={mockOnSaveAiDescription}
           onShowNextPhoto={() => {}}
@@ -221,6 +227,7 @@ describe('Integration Tests - Component Workflows', () => {
           onClose={() => {}}
           apiKey="test-api-key"
           onAddTagToCompanyCam={mockOnAddTagToCompanyCam}
+          onAddAiTag={mockOnAddAiTag}
           onFetchAiSuggestions={mockOnFetchAiSuggestions}
           onSaveAiDescription={mockOnSaveAiDescription}
           onShowNextPhoto={() => {}}
@@ -241,9 +248,10 @@ describe('Integration Tests - Component Workflows', () => {
       const tagButton = screen.getByText('modal-tag-1')
       await user.click(tagButton)
 
-      expect(mockOnAddTagToCompanyCam).toHaveBeenCalledWith(
+      expect(mockOnAddAiTag).toHaveBeenCalledWith(
         'integration-photo-1',
-        'modal-tag-1'
+        'modal-tag-1',
+        mockPhoto
       )
 
       // Step 3: Edit description
@@ -256,7 +264,8 @@ describe('Integration Tests - Component Workflows', () => {
 
       expect(mockOnSaveAiDescription).toHaveBeenCalledWith(
         'integration-photo-1',
-        'Updated integration description'
+        'Updated integration description',
+        mockPhoto
       )
     })
 
@@ -299,10 +308,8 @@ describe('Integration Tests - Component Workflows', () => {
     it('should handle service errors in modal', async () => {
       const user = userEvent.setup()
 
-      // Mock service to fail
-      vi.mocked(companyCamService.addTagsToPhoto).mockRejectedValue(
-        new Error('Service error')
-      )
+      // Mock onAddAiTag to fail
+      const mockOnAddAiTag = vi.fn().mockRejectedValue(new Error('Service error'))
 
       render(
         <PhotoModal
@@ -310,6 +317,7 @@ describe('Integration Tests - Component Workflows', () => {
           onClose={() => {}}
           apiKey="test-api-key"
           onAddTagToCompanyCam={() => {}}
+          onAddAiTag={mockOnAddAiTag}
           onFetchAiSuggestions={() => Promise.resolve()}
           onSaveAiDescription={() => Promise.resolve()}
           onShowNextPhoto={() => {}}
@@ -335,9 +343,9 @@ describe('Integration Tests - Component Workflows', () => {
       const tagButton = screen.getByText('error-tag')
       await user.click(tagButton)
 
-      // Should handle error gracefully (exact behavior depends on implementation)
+      // Should call the onAddAiTag function
       await waitFor(() => {
-        expect(companyCamService.addTagsToPhoto).toHaveBeenCalled()
+        expect(mockOnAddAiTag).toHaveBeenCalled()
       })
     })
   })
@@ -464,12 +472,15 @@ describe('Integration Tests - Component Workflows', () => {
         }
       })
 
+      const mockOnAddAiTag = vi.fn()
+
       render(
         <PhotoCard
           photo={mockPhoto}
           onPhotoClick={() => {}}
           onTagClick={() => {}}
           onAddTagToCompanyCam={mockOnAddTagToCompanyCam}
+          onAddAiTag={mockOnAddAiTag}
           onFetchAiSuggestions={() => Promise.resolve()}
           aiSuggestionData={{
             suggestedTags: ['new-tag'],
@@ -487,16 +498,11 @@ describe('Integration Tests - Component Workflows', () => {
       const tagButton = screen.getByText('new-tag')
       await user.click(tagButton)
 
-      expect(mockOnAddTagToCompanyCam).toHaveBeenCalledWith(
+      expect(mockOnAddAiTag).toHaveBeenCalledWith(
         'integration-photo-1',
-        'new-tag'
+        'new-tag',
+        mockPhoto
       )
-
-      await waitFor(() => {
-        expect(companyCamService.listCompanyCamTags).toHaveBeenCalledWith('test-api-key')
-        expect(companyCamService.createCompanyCamTagDefinition).toHaveBeenCalledWith('test-api-key', 'new-tag')
-        expect(companyCamService.addTagsToPhoto).toHaveBeenCalledWith('test-api-key', 'integration-photo-1', ['new-tag-1'])
-      })
     })
   })
 })

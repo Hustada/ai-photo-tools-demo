@@ -71,6 +71,7 @@ describe('PhotoCard', () => {
   const mockOnPhotoClick = vi.fn()
   const mockOnTagClick = vi.fn()
   const mockOnAddTagToCompanyCam = vi.fn()
+  const mockOnAddAiTag = vi.fn()
   const mockOnFetchAiSuggestions = vi.fn()
 
   const defaultProps = {
@@ -78,6 +79,7 @@ describe('PhotoCard', () => {
     onPhotoClick: mockOnPhotoClick,
     onTagClick: mockOnTagClick,
     onAddTagToCompanyCam: mockOnAddTagToCompanyCam,
+    onAddAiTag: mockOnAddAiTag,
     onFetchAiSuggestions: mockOnFetchAiSuggestions
   }
 
@@ -362,9 +364,10 @@ describe('PhotoCard', () => {
       const tagButton = screen.getByText('shingles') // Get the first suggested tag button
       await user.click(tagButton)
 
-      expect(mockOnAddTagToCompanyCam).toHaveBeenCalledWith(
+      expect(mockOnAddAiTag).toHaveBeenCalledWith(
         'test-photo-123',
-        'shingles'
+        'shingles',
+        mockPhoto
       )
     })
 
@@ -376,6 +379,66 @@ describe('PhotoCard', () => {
       await user.click(aiButton)
 
       expect(mockOnPhotoClick).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('AI Tag Error Handling', () => {
+    it('should handle AI tag addition errors gracefully', async () => {
+      const user = userEvent.setup()
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
+      mockOnAddAiTag.mockRejectedValue(new Error('Failed to add tag'))
+      
+      render(<PhotoCard {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
+
+      const tagButton = screen.getByText('shingles')
+      await user.click(tagButton)
+
+      expect(mockOnAddAiTag).toHaveBeenCalledWith(
+        'test-photo-123',
+        'shingles',
+        mockPhoto
+      )
+      
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          "[PhotoCard] Error calling onAddAiTag for tag 'shingles':",
+          expect.any(Error)
+        )
+      })
+
+      consoleErrorSpy.mockRestore()
+    })
+  })
+
+  describe('Advanced Tag Styling', () => {
+    it('should apply correct styling for active AI tags when onTagClick is not provided', () => {
+      const propsWithoutTagClick = {
+        ...defaultProps,
+        onTagClick: undefined,
+        activeTagIds: ['tag-2'] // Progress tag is AI enhanced
+      }
+      
+      render(<PhotoCard {...propsWithoutTagClick} />)
+
+      const activeAiTag = screen.getByText('Progress')
+      
+      // Should have AI tag active styling (line 114)
+      expect(activeAiTag).toHaveClass('bg-teal-500')
+    })
+
+    it('should apply correct styling for inactive tags when onTagClick is not provided', () => {
+      const propsWithoutTagClick = {
+        ...defaultProps,
+        onTagClick: undefined
+      }
+      
+      render(<PhotoCard {...propsWithoutTagClick} />)
+
+      const normalTag = screen.getByText('Roofing')
+      
+      // Should have non-clickable styling (line 120)
+      expect(normalTag).toHaveClass('bg-gray-700')
     })
   })
 
