@@ -6,7 +6,7 @@ import { useUserContext } from '../contexts/UserContext';
 import type { Photo, Tag } from '../types';
 
 // Import our extracted hooks
-import { usePhotoData } from '../hooks/usePhotoData';
+import { usePhotosQuery } from '../hooks/usePhotosQuery';
 import { useAiEnhancements } from '../hooks/useAiEnhancements';
 import { useTagManagement } from '../hooks/useTagManagement';
 import { usePhotoModal } from '../hooks/usePhotoModal';
@@ -30,26 +30,31 @@ const HomePageContent: React.FC = () => {
     error: userError,
   } = useUserContext();
 
-  // Initialize our hooks
-  const photoData = usePhotoData();
+  // Initialize our hooks with React Query
+  const photosQuery = usePhotosQuery({
+    enabled: !!localStorage.getItem('companyCamApiKey')
+  });
+  
   const aiEnhancements = useAiEnhancements(currentUser, {
-    onPhotoUpdate: photoData.updatePhotoInCache,
+    onPhotoUpdate: photosQuery.updatePhotoInCache,
     currentPhoto: undefined, // Will be set per photo as needed
   });
-  const tagFiltering = useTagFiltering(photoData.photos);
+  
+  const tagFiltering = useTagFiltering(photosQuery.photos);
   const tagManagement = useTagManagement(tagFiltering.filteredPhotos, currentUser, {
     onPhotoUpdate: (photoId: string, newTag: Tag, isFromAiSuggestion: boolean) => {
       // Update the photo in cache with new tag
-      const photoToUpdate = photoData.allFetchedPhotos.find(p => p.id === photoId);
+      const photoToUpdate = photosQuery.allPhotos.find(p => p.id === photoId);
       if (photoToUpdate) {
         const updatedPhoto = {
           ...photoToUpdate,
           tags: [...(photoToUpdate.tags || []), newTag],
         };
-        photoData.updatePhotoInCache(updatedPhoto);
+        photosQuery.updatePhotoInCache(updatedPhoto);
       }
     },
   });
+  
   const photoModal = usePhotoModal(tagFiltering.filteredPhotos);
 
   // Check for API key and redirect if missing
@@ -60,10 +65,8 @@ const HomePageContent: React.FC = () => {
       navigate('/login');
       return;
     }
-
-    // Initial photo fetch
-    photoData.fetchPhotos(1);
-  }, [navigate, photoData.fetchPhotos]);
+    // React Query will automatically fetch when enabled and apiKey is available
+  }, [navigate]);
 
   // Note: AI enhancements are already loaded and merged by usePhotoData.fetchPhotos()
   // No need for separate loading here
@@ -75,15 +78,15 @@ const HomePageContent: React.FC = () => {
         window.innerHeight + document.documentElement.scrollTop >=
         document.documentElement.offsetHeight - 1000
       ) {
-        if (photoData.hasMorePhotos && !photoData.isLoading) {
-          photoData.loadMore();
+        if (photosQuery.hasMorePhotos && !photosQuery.isFetching) {
+          photosQuery.loadMore();
         }
       }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [photoData.hasMorePhotos, photoData.isLoading, photoData.loadMore]);
+  }, [photosQuery.hasMorePhotos, photosQuery.isFetching, photosQuery.loadMore]);
 
   const handleLogout = () => {
     console.log('HomePage: Logging out.');
@@ -92,7 +95,7 @@ const HomePageContent: React.FC = () => {
   };
 
   const handleRefreshPhotos = () => {
-    photoData.refreshPhotos();
+    photosQuery.refresh();
   };
 
   // Handle user context loading and errors
@@ -183,7 +186,7 @@ const HomePageContent: React.FC = () => {
                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
                     }`}
                 >
-                  {tag.display_value} ({photoData.allFetchedPhotos.filter(p => p.tags?.some(t => t.id === tag.id)).length})
+                  {tag.display_value} ({photosQuery.allPhotos.filter(p => p.tags?.some(t => t.id === tag.id)).length})
                 </button>
               ))}
             </div>
@@ -214,14 +217,14 @@ const HomePageContent: React.FC = () => {
         <div className="mb-6 text-center">
           <button
             onClick={handleRefreshPhotos}
-            disabled={photoData.isLoading || !localStorage.getItem('companyCamApiKey')}
+            disabled={photosQuery.isLoading || !localStorage.getItem('companyCamApiKey')}
             className="px-6 py-2.5 bg-sky-600 text-white rounded-lg hover:bg-sky-500 disabled:bg-gray-600 disabled:opacity-70 transition-all duration-150 ease-in-out shadow-md hover:shadow-lg transform hover:scale-105"
           >
-            {photoData.isLoading && photoData.photos.length === 0 ? 'Fetching Photos...' : 'Refresh Photos'}
+            {photosQuery.isLoading && photosQuery.photos.length === 0 ? 'Fetching Photos...' : 'Refresh Photos'}
           </button>
         </div>
 
-        {photoData.error && <p className="text-red-400 text-center mb-4 p-3 bg-red-900 border border-red-700 rounded-md">Error: {photoData.error}</p>}
+        {photosQuery.error && <p className="text-red-400 text-center mb-4 p-3 bg-red-900 border border-red-700 rounded-md">Error: {photosQuery.error.message}</p>}
 
         {tagManagement.tagError && (
           <div className="mb-6 bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-md">
@@ -231,13 +234,13 @@ const HomePageContent: React.FC = () => {
 
         {/* Scout AI Demo Section */}
         <ScoutAiDemo 
-          photos={photoData.photos} 
-          visible={photoData.photos.length > 0}
-          onPhotoUpdate={photoData.updatePhotoInCache}
+          photos={photosQuery.photos} 
+          visible={photosQuery.photos.length > 0}
+          onPhotoUpdate={photosQuery.updatePhotoInCache}
         />
 
         {/* Loading State */}
-        {photoData.isLoading && photoData.photos.length === 0 && (
+        {photosQuery.isLoading && photosQuery.photos.length === 0 && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
             <p className="mt-4 text-gray-300">Loading photos...</p>
@@ -263,7 +266,7 @@ const HomePageContent: React.FC = () => {
           })}
         </div>
 
-        {tagFiltering.filteredPhotos.length > 0 && photoData.isLoading && (
+        {tagFiltering.filteredPhotos.length > 0 && photosQuery.isLoadingMore && (
           <div className="text-center mt-8">
             <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
             <p className="mt-2 text-gray-300">Loading more photos...</p>

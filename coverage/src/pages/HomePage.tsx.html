@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">90.29% </span>
+                <span class="strong">90.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>214/237</span>
+                <span class='fraction'>215/238</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">82.69% </span>
+                <span class="strong">82.35% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>43/52</span>
+                <span class='fraction'>42/51</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">90.29% </span>
+                <span class="strong">90.33% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>214/237</span>
+                <span class='fraction'>215/238</span>
             </div>
         
             
@@ -375,7 +375,10 @@
 <a name='L310'></a><a href='#L310'>310</a>
 <a name='L311'></a><a href='#L311'>311</a>
 <a name='L312'></a><a href='#L312'>312</a>
-<a name='L313'></a><a href='#L313'>313</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L313'></a><a href='#L313'>313</a>
+<a name='L314'></a><a href='#L314'>314</a>
+<a name='L315'></a><a href='#L315'>315</a>
+<a name='L316'></a><a href='#L316'>316</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -411,8 +414,12 @@
 <span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-yes">20x</span>
@@ -427,6 +434,7 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -438,8 +446,6 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">18x</span>
 <span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -641,10 +647,10 @@
 <span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">20x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">20x</span>
@@ -695,7 +701,7 @@ import { useUserContext } from '../contexts/UserContext';
 import type { Photo, Tag } from '../types';
 &nbsp;
 // Import our extracted hooks
-import { usePhotoData } from '../hooks/usePhotoData';
+import { usePhotosQuery } from '../hooks/usePhotosQuery';
 import { useAiEnhancements } from '../hooks/useAiEnhancements';
 import { useTagManagement } from '../hooks/useTagManagement';
 import { usePhotoModal } from '../hooks/usePhotoModal';
@@ -719,26 +725,31 @@ const HomePageContent: React.FC = () =&gt; {
     error: userError,
   } = useUserContext();
 &nbsp;
-  // Initialize our hooks
-  const photoData = usePhotoData();
+  // Initialize our hooks with React Query
+  const photosQuery = usePhotosQuery({
+    enabled: !!localStorage.getItem('companyCamApiKey')
+  });
+  
   const aiEnhancements = useAiEnhancements(currentUser, {
-    onPhotoUpdate: photoData.updatePhotoInCache,
+    onPhotoUpdate: photosQuery.updatePhotoInCache,
     currentPhoto: undefined, // Will be set per photo as needed
   });
-  const tagFiltering = useTagFiltering(photoData.photos);
+  
+  const tagFiltering = useTagFiltering(photosQuery.photos);
   const tagManagement = useTagManagement(tagFiltering.filteredPhotos, currentUser, {
     onPhotoUpdate: (photoId: string, newTag: Tag, isFromAiSuggestion: boolean) =&gt; {
       // Update the photo in cache with new tag
-      const photoToUpdate = photoData.allFetchedPhotos.find(p =&gt; p.id === photoId);
+      const photoToUpdate = photosQuery.allPhotos.find(p =&gt; p.id === photoId);
       if (photoToUpdate) {
         const updatedPhoto = {
           ...photoToUpdate,
           tags: [...(photoToUpdate.<span class="branch-0 cbranch-no" title="branch not covered" >tags || []), n</span>ewTag],
         };
-        photoData.updatePhotoInCache(updatedPhoto);
+        photosQuery.updatePhotoInCache(updatedPhoto);
       }
     },
   });
+  
   const photoModal = usePhotoModal(tagFiltering.filteredPhotos);
 &nbsp;
   // Check for API key and redirect if missing
@@ -749,10 +760,8 @@ const HomePageContent: React.FC = () =&gt; {
       navigate('/login');
       return;
     }
-&nbsp;
-    // Initial photo fetch
-    photoData.fetchPhotos(1);
-  }, [navigate, photoData.fetchPhotos]);
+    // React Query will automatically fetch when enabled and apiKey is available
+  }, [navigate]);
 &nbsp;
   // Note: AI enhancements are already loaded and merged by usePhotoData.fetchPhotos()
   // No need for separate loading here
@@ -764,15 +773,15 @@ const HomePageContent: React.FC = () =&gt; {
 <span class="cstat-no" title="statement not covered" >        window.innerHeight + document.documentElement.scrollTop &gt;=</span>
 <span class="cstat-no" title="statement not covered" >        document.documentElement.offsetHeight - 1000</span>
 <span class="cstat-no" title="statement not covered" >      ) {</span>
-<span class="cstat-no" title="statement not covered" >        if (photoData.hasMorePhotos &amp;&amp; !photoData.isLoading) {</span>
-<span class="cstat-no" title="statement not covered" >          photoData.loadMore();</span>
+<span class="cstat-no" title="statement not covered" >        if (photosQuery.hasMorePhotos &amp;&amp; !photosQuery.isFetching) {</span>
+<span class="cstat-no" title="statement not covered" >          photosQuery.loadMore();</span>
 <span class="cstat-no" title="statement not covered" >        }</span>
 <span class="cstat-no" title="statement not covered" >      }</span>
 <span class="cstat-no" title="statement not covered" >    };</span>
 &nbsp;
     window.addEventListener('scroll', handleScroll);
     return () =&gt; window.removeEventListener('scroll', handleScroll);
-  }, [photoData.hasMorePhotos, photoData.isLoading, photoData.loadMore]);
+  }, [photosQuery.hasMorePhotos, photosQuery.isFetching, photosQuery.loadMore]);
 &nbsp;
   const handleLogout = () =&gt; {
     console.log('HomePage: Logging out.');
@@ -781,7 +790,7 @@ const HomePageContent: React.FC = () =&gt; {
   };
 &nbsp;
   const handleRefreshPhotos = () =&gt; {
-    photoData.refreshPhotos();
+    photosQuery.refresh();
   };
 &nbsp;
   // Handle user context loading and errors
@@ -872,7 +881,7 @@ const HomePageContent: React.FC = () =&gt; {
                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
                     }`}
                 &gt;
-                  {tag.display_value} ({photoData.allFetchedPhotos.filter(p =&gt; p.tags?.some(t =&gt; t.id === tag.id)).length})
+                  {tag.display_value} ({photosQuery.allPhotos.filter(p =&gt; p.tags?.some(t =&gt; t.id === tag.id)).length})
                 &lt;/button&gt;
               ))}
             &lt;/div&gt;
@@ -903,14 +912,14 @@ const HomePageContent: React.FC = () =&gt; {
         &lt;div className="mb-6 text-center"&gt;
           &lt;button
             onClick={handleRefreshPhotos}
-            disabled={photoData.isLoading || !localStorage.getItem('companyCamApiKey')}
+            disabled={photosQuery.isLoading || !localStorage.getItem('companyCamApiKey')}
             className="px-6 py-2.5 bg-sky-600 text-white rounded-lg hover:bg-sky-500 disabled:bg-gray-600 disabled:opacity-70 transition-all duration-150 ease-in-out shadow-md hover:shadow-lg transform hover:scale-105"
           &gt;
-            {photoData.isLoading &amp;&amp; photoData.photos.length === 0 ? 'Fetching Photos...' : 'Refresh Photos'}
+            {photosQuery.isLoading &amp;&amp; photosQuery.photos.length === 0 ? 'Fetching Photos...' : 'Refresh Photos'}
           &lt;/button&gt;
         &lt;/div&gt;
 &nbsp;
-        {photoData.error &amp;&amp; &lt;p className="text-red-400 text-center mb-4 p-3 bg-red-900 border border-red-700 rounded-md"&gt;Error: {photoData.error}&lt;/p&gt;}
+        {photosQuery.error &amp;&amp; &lt;p className="text-red-400 text-center mb-4 p-3 bg-red-900 border border-red-700 rounded-md"&gt;Error: {photosQuery.error.message}&lt;/p&gt;}
 &nbsp;
         {tagManagement.tagError &amp;&amp; (
           &lt;div className="mb-6 bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-md"&gt;
@@ -920,13 +929,13 @@ const HomePageContent: React.FC = () =&gt; {
 &nbsp;
         {/* Scout AI Demo Section */}
         &lt;ScoutAiDemo 
-          photos={photoData.photos} 
-          visible={photoData.photos.length &gt; 0}
-          onPhotoUpdate={photoData.updatePhotoInCache}
+          photos={photosQuery.photos} 
+          visible={photosQuery.photos.length &gt; 0}
+          onPhotoUpdate={photosQuery.updatePhotoInCache}
         /&gt;
 &nbsp;
         {/* Loading State */}
-        {photoData.isLoading &amp;&amp; photoData.photos.length === 0 &amp;&amp; (
+        {photosQuery.isLoading &amp;&amp; photosQuery.photos.length === 0 &amp;&amp; (
           &lt;div className="text-center py-12"&gt;
             &lt;div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"&gt;&lt;/div&gt;
             &lt;p className="mt-4 text-gray-300"&gt;Loading photos...&lt;/p&gt;
@@ -952,7 +961,7 @@ const HomePageContent: React.FC = () =&gt; {
           })}
         &lt;/div&gt;
 &nbsp;
-        {tagFiltering.filteredPhotos.length &gt; 0 &amp;&amp; photoData.isLoading &amp;&amp; (
+        {tagFiltering.filteredPhotos.length &gt; 0 &amp;&amp; photosQuery.isLoadingMore &amp;&amp; (
           &lt;div className="text-center mt-8"&gt;
             &lt;div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-white"&gt;&lt;/div&gt;
             &lt;p className="mt-2 text-gray-300"&gt;Loading more photos...&lt;/p&gt;
@@ -1006,7 +1015,7 @@ export default HomePage;</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-06-08T18:01:21.295Z
+                at 2025-06-08T18:31:26.251Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

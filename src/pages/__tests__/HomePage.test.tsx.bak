@@ -145,19 +145,19 @@ describe('HomePage', () => {
     
     // Default mock implementations
     vi.mocked(usePhotosQuery).mockReturnValue({
-        photos: [mockPhoto],
-        allPhotos: [mockPhoto],
-        isLoading: false,
-        isFetching: false,
-        isLoadingMore: false,
-        error: null,
-        currentPage: 1,
-        hasMorePhotos: false,
-        loadMore: vi.fn(),
-        refresh: vi.fn(),
-        updatePhotoInCache: vi.fn(),
-        setPage: vi.fn(),
-      })
+      photos: [mockPhoto],
+      allPhotos: [mockPhoto],
+      isLoading: false,
+      isFetching: false,
+      isLoadingMore: false,
+      error: null,
+      currentPage: 1,
+      hasMorePhotos: false,
+      loadMore: vi.fn(),
+      refresh: vi.fn(),
+      updatePhotoInCache: vi.fn(),
+      setPage: vi.fn(),
+    })
 
     vi.mocked(useTagManagement).mockReturnValue({
       activeTagIds: [],
@@ -362,19 +362,12 @@ describe('HomePage', () => {
 
     it('should handle refresh photos button', async () => {
       const mockRefreshPhotos = vi.fn()
-      vi.mocked(usePhotosQuery).mockReturnValue({
+      vi.mocked(usePhotoData).mockReturnValue({
         photos: [mockPhoto],
-        allPhotos: [mockPhoto],
         isLoading: false,
-        isFetching: false,
-        isLoadingMore: false,
         error: null,
-        currentPage: 1,
-        hasMorePhotos: false,
-        loadMore: vi.fn(),
-        refresh: mockRefreshPhotos,
-        updatePhotoInCache: vi.fn(),
-        setPage: vi.fn(),
+        fetchPhotos: vi.fn(),
+        refreshPhotos: mockRefreshPhotos,
       })
 
       const user = userEvent.setup()
@@ -395,19 +388,12 @@ describe('HomePage', () => {
     })
 
     it('should disable refresh button when loading', () => {
-      vi.mocked(usePhotosQuery).mockReturnValue({
+      vi.mocked(usePhotoData).mockReturnValue({
         photos: [],
-        allPhotos: [],
         isLoading: true,
-        isFetching: true,
-        isLoadingMore: false,
         error: null,
-        currentPage: 1,
-        hasMorePhotos: false,
-        loadMore: vi.fn(),
-        refresh: vi.fn(),
-        updatePhotoInCache: vi.fn(),
-        setPage: vi.fn(),
+        fetchPhotos: vi.fn(),
+        refreshPhotos: vi.fn(),
       })
 
       renderHomePage()
@@ -465,19 +451,12 @@ describe('HomePage', () => {
 
   describe('Loading More Photos', () => {
     it('should show loading more indicator when loading with existing photos', () => {
-      vi.mocked(usePhotosQuery).mockReturnValue({
+      vi.mocked(usePhotoData).mockReturnValue({
         photos: [mockPhoto],
-        allPhotos: [mockPhoto],
-        isLoading: false,
-        isFetching: true,
-        isLoadingMore: true, // This is the key - we're loading more photos
+        isLoading: true,
         error: null,
-        currentPage: 2,
-        hasMorePhotos: true,
-        loadMore: vi.fn(),
-        refresh: vi.fn(),
-        updatePhotoInCache: vi.fn(),
-        setPage: vi.fn(),
+        fetchPhotos: vi.fn(),
+        refreshPhotos: vi.fn(),
       })
 
       vi.mocked(useTagFiltering).mockReturnValue({
@@ -579,19 +558,16 @@ describe('HomePage', () => {
       })
       
       const mockUpdatePhotoInCache = vi.fn()
-      vi.mocked(usePhotosQuery).mockReturnValue({
+      vi.mocked(usePhotoData).mockReturnValue({
         photos: [mockPhoto],
-        allPhotos: [mockPhoto],
+        allFetchedPhotos: [mockPhoto],
         isLoading: false,
-        isFetching: false,
-        isLoadingMore: false,
         error: null,
-        currentPage: 1,
         hasMorePhotos: false,
+        fetchPhotos: vi.fn(),
+        refreshPhotos: vi.fn(),
         loadMore: vi.fn(),
-        refresh: vi.fn(),
         updatePhotoInCache: mockUpdatePhotoInCache,
-        setPage: vi.fn(),
       })
       
       renderHomePage()

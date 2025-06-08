@@ -1,0 +1,100 @@
+// © 2025 Mark Hustad — MIT License
+
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import * as fs from 'fs';
+import * as path from 'path';
+
+interface ApiPhotoEnhancement {
+  photo_id: string;
+  user_id: string;
+  ai_description?: string;
+  accepted_ai_tags: string[];
+  created_at: string;
+  updated_at: string;
+  suggestion_source?: string;
+}
+
+interface BatchRequest {
+  photoIds: string[];
+}
+
+interface BatchResponse {
+  enhancements: Record<string, ApiPhotoEnhancement>;
+  errors?: Record<string, string>;
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  console.log('--- ai-enhancements-batch.ts function invoked ---');
+
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  try {
+    const { photoIds }: BatchRequest = req.body;
+
+    if (!photoIds || !Array.isArray(photoIds) || photoIds.length === 0) {
+      return res.status(400).json({ error: 'photoIds array is required' });
+    }
+
+    console.log(`Batch fetching AI enhancements for ${photoIds.length} photos:`, photoIds);
+
+    const enhancements: Record<string, ApiPhotoEnhancement> = {};
+    const errors: Record<string, string> = {};
+
+    // Load existing AI enhancements from the file system
+    // This simulates a database lookup in a real implementation
+    const dataDir = path.join(process.cwd(), 'data', 'ai-enhancements');
+    
+    // Check if the data directory exists
+    if (!fs.existsSync(dataDir)) {
+      console.log('AI enhancements data directory does not exist, returning empty results');
+      return res.status(200).json({ enhancements: {} });
+    }
+
+    // Read all enhancement files in parallel
+    await Promise.all(photoIds.map(async (photoId) => {
+      try {
+        const filePath = path.join(dataDir, `${photoId}.json`);
+        
+        if (fs.existsSync(filePath)) {
+          const fileContent = fs.readFileSync(filePath, 'utf-8');
+          const enhancement: ApiPhotoEnhancement = JSON.parse(fileContent);
+          enhancements[photoId] = enhancement;
+          console.log(`Loaded AI enhancement for photo ${photoId}`);
+        } else {
+          // No enhancement exists for this photo - this is normal
+          console.log(`No AI enhancement file found for photo ${photoId}`);
+        }
+      } catch (error) {
+        console.error(`Error reading AI enhancement file for ${photoId}:`, error);
+        errors[photoId] = error instanceof Error ? error.message : 'File read error';
+      }
+    }));
+
+    console.log(`Batch fetch complete: ${Object.keys(enhancements).length} enhancements, ${Object.keys(errors).length} errors`);
+
+    const batchResponse: BatchResponse = {
+      enhancements,
+      ...(Object.keys(errors).length > 0 && { errors })
+    };
+
+    return res.status(200).json(batchResponse);
+
+  } catch (error) {
+    console.error('Error in batch AI enhancements endpoint:', error);
+    return res.status(500).json({ 
+      error: 'Failed to fetch AI enhancements', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
