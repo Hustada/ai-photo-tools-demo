@@ -12,11 +12,15 @@ import { useTagManagement } from '../hooks/useTagManagement';
 import { usePhotoModal } from '../hooks/usePhotoModal';
 import { useTagFiltering } from '../hooks/useTagFiltering';
 
+// Import CamIntellect
+import { CamIntellectProvider, useCamIntellect } from '../contexts/CamIntellectContext';
+
 // Import components
 import PhotoModal from '../components/PhotoModal';
 import PhotoCard from '../components/PhotoCard';
+import { CamIntellectDemo } from '../components/CamIntellectDemo';
 
-const HomePage: React.FC = () => {
+const HomePageContent: React.FC = () => {
   const navigate = useNavigate();
   const {
     currentUser,
@@ -225,6 +229,12 @@ const HomePage: React.FC = () => {
           </div>
         )}
 
+        {/* CamIntellect Demo Section */}
+        <CamIntellectDemo 
+          photos={photoData.photos} 
+          visible={photoData.photos.length > 0}
+        />
+
         {/* Loading State */}
         {photoData.isLoading && photoData.photos.length === 0 && (
           <div className="text-center py-12">
@@ -281,6 +291,21 @@ const HomePage: React.FC = () => {
         />
       )}
     </div>
+  );
+};
+
+// Wrapper component with CamIntellectProvider
+const HomePage: React.FC = () => {
+  const { currentUser } = useUserContext();
+  
+  if (!currentUser) {
+    return <HomePageContent />;
+  }
+
+  return (
+    <CamIntellectProvider userId={currentUser.id}>
+      <HomePageContent />
+    </CamIntellectProvider>
   );
 };
 
