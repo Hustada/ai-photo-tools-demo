@@ -1,8 +1,7 @@
 // © 2025 Mark Hustad — MIT License
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import * as fs from 'fs';
-import * as path from 'path';
+import { kv } from '@vercel/kv';
 
 interface ApiPhotoEnhancement {
   photo_id: string;
@@ -22,6 +21,8 @@ interface BatchResponse {
   enhancements: Record<string, ApiPhotoEnhancement>;
   errors?: Record<string, string>;
 }
+
+const getEnhancementKey = (photoId: string): string => `photo_enhancement:${photoId}`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('--- ai-enhancements-batch.ts function invoked ---');
@@ -51,33 +52,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const enhancements: Record<string, ApiPhotoEnhancement> = {};
     const errors: Record<string, string> = {};
 
-    // Load existing AI enhancements from the file system
-    // This simulates a database lookup in a real implementation
-    const dataDir = path.join(process.cwd(), 'data', 'ai-enhancements');
-    
-    // Check if the data directory exists
-    if (!fs.existsSync(dataDir)) {
-      console.log('AI enhancements data directory does not exist, returning empty results');
-      return res.status(200).json({ enhancements: {} });
-    }
-
-    // Read all enhancement files in parallel
+    // Load existing AI enhancements from Vercel KV store
     await Promise.all(photoIds.map(async (photoId) => {
       try {
-        const filePath = path.join(dataDir, `${photoId}.json`);
+        const key = getEnhancementKey(photoId);
+        const enhancement = await kv.get<ApiPhotoEnhancement>(key);
         
-        if (fs.existsSync(filePath)) {
-          const fileContent = fs.readFileSync(filePath, 'utf-8');
-          const enhancement: ApiPhotoEnhancement = JSON.parse(fileContent);
+        if (enhancement) {
           enhancements[photoId] = enhancement;
           console.log(`Loaded AI enhancement for photo ${photoId}`);
         } else {
           // No enhancement exists for this photo - this is normal
-          console.log(`No AI enhancement file found for photo ${photoId}`);
+          console.log(`No AI enhancement found for photo ${photoId}`);
         }
       } catch (error) {
-        console.error(`Error reading AI enhancement file for ${photoId}:`, error);
-        errors[photoId] = error instanceof Error ? error.message : 'File read error';
+        console.error(`Error fetching AI enhancement for ${photoId}:`, error);
+        errors[photoId] = error instanceof Error ? error.message : 'KV fetch error';
       }
     }));
 

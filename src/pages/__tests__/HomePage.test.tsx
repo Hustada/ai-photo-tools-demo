@@ -201,7 +201,17 @@ describe('HomePage', () => {
       loadPersistedEnhancements: vi.fn(),
     })
 
-    mockLocalStorage.getItem.mockReturnValue('test-api-key')
+    // Mock localStorage to return appropriate values
+    mockLocalStorage.getItem.mockImplementation((key: string) => {
+      if (key === 'companyCamApiKey') {
+        return 'test-api-key';
+      }
+      // Return null for ScoutAI preferences keys to avoid JSON parsing errors
+      if (key.startsWith('scoutai-preferences-')) {
+        return null;
+      }
+      return null;
+    });
   })
 
   afterEach(() => {
