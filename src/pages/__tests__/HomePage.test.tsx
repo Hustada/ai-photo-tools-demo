@@ -65,6 +65,14 @@ vi.mock('../../hooks/useAiEnhancements', () => ({
   useAiEnhancements: vi.fn(),
 }))
 
+vi.mock('../../hooks/useRetentionCleanup', () => ({
+  useRetentionCleanup: vi.fn(),
+}))
+
+vi.mock('../../hooks/useNotificationManager', () => ({
+  useNotificationManager: vi.fn(),
+}))
+
 import { useNavigate } from 'react-router-dom'
 import { useUserContext } from '../../contexts/UserContext'
 import { usePhotosQuery } from '../../hooks/usePhotosQuery'
@@ -72,6 +80,8 @@ import { useTagManagement } from '../../hooks/useTagManagement'
 import { useTagFiltering } from '../../hooks/useTagFiltering'
 import { usePhotoModal } from '../../hooks/usePhotoModal'
 import { useAiEnhancements } from '../../hooks/useAiEnhancements'
+import { useRetentionCleanup } from '../../hooks/useRetentionCleanup'
+import { useNotificationManager } from '../../hooks/useNotificationManager'
 
 const mockUser: CurrentUser = {
   id: 'user-123',
@@ -122,9 +132,19 @@ describe('HomePage', () => {
       currentUser: user,
       companyDetails: null,
       projects: [],
+      userSettings: {
+        retentionPolicy: {
+          archiveRetentionDays: 30,
+          deletionGraceDays: 7,
+          notificationDaysBefore: 3,
+          enabled: true,
+        },
+        deletionNotifications: [],
+      },
       loading: false,
       error: null,
       fetchUserContext: vi.fn(),
+      updateUserSettings: vi.fn(),
     })
     
     return render(
@@ -199,6 +219,22 @@ describe('HomePage', () => {
       saveAiDescription: vi.fn(),
       getAiDataForPhoto: vi.fn().mockReturnValue(undefined),
       loadPersistedEnhancements: vi.fn(),
+    })
+
+    vi.mocked(useRetentionCleanup).mockReturnValue({
+      runCleanup: vi.fn(),
+      scheduledCleanupInterval: null,
+      isCleanupEnabled: true,
+    })
+
+    vi.mocked(useNotificationManager).mockReturnValue({
+      notifications: [],
+      activeNotifications: [],
+      dismissNotification: vi.fn(),
+      dismissAllNotifications: vi.fn(),
+      getNotificationsForPhoto: vi.fn().mockReturnValue([]),
+      hasActiveNotifications: false,
+      notificationCount: 0,
     })
 
     // Mock localStorage to return appropriate values
@@ -533,9 +569,19 @@ describe('HomePage', () => {
           { id: 'project-1', name: 'Project 1' },
           { id: 'project-2', name: 'Project 2' }
         ],
+        userSettings: {
+          retentionPolicy: {
+            archiveRetentionDays: 30,
+            deletionGraceDays: 7,
+            notificationDaysBefore: 3,
+            enabled: true,
+          },
+          deletionNotifications: [],
+        },
         loading: false,
         error: null,
         fetchUserContext: vi.fn(),
+        updateUserSettings: vi.fn(),
       })
       
       render(
@@ -554,9 +600,19 @@ describe('HomePage', () => {
         currentUser: mockUser,
         companyDetails: null,
         projects: [{ id: 'project-1', name: 'Project 1' }],
+        userSettings: {
+          retentionPolicy: {
+            archiveRetentionDays: 30,
+            deletionGraceDays: 7,
+            notificationDaysBefore: 3,
+            enabled: true,
+          },
+          deletionNotifications: [],
+        },
         loading: false,
         error: null,
         fetchUserContext: vi.fn(),
+        updateUserSettings: vi.fn(),
       })
       
       render(

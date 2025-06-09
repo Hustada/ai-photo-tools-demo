@@ -11,14 +11,18 @@ import { useAiEnhancements } from '../hooks/useAiEnhancements';
 import { useTagManagement } from '../hooks/useTagManagement';
 import { usePhotoModal } from '../hooks/usePhotoModal';
 import { useTagFiltering } from '../hooks/useTagFiltering';
+import { useRetentionCleanup } from '../hooks/useRetentionCleanup';
+import { useNotificationManager } from '../hooks/useNotificationManager';
 
 // Import Scout AI
-import { ScoutAiProvider, useScoutAi } from '../contexts/ScoutAiContext';
+import { ScoutAiProvider } from '../contexts/ScoutAiContext';
 
 // Import components
 import PhotoModal from '../components/PhotoModal';
 import PhotoCard from '../components/PhotoCard';
 import { ScoutAiDemo } from '../components/ScoutAiDemo';
+import { NotificationsPanel } from '../components/NotificationsPanel';
+import { RetentionPolicySettings } from '../components/RetentionPolicySettings';
 
 const HomePageContent: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +32,7 @@ const HomePageContent: React.FC = () => {
     projects: userProjects,
     loading: userLoading,
     error: userError,
+    userSettings,
   } = useUserContext();
 
   // Initialize our hooks with React Query
@@ -42,7 +47,7 @@ const HomePageContent: React.FC = () => {
   
   const tagFiltering = useTagFiltering(photosQuery.photos);
   const tagManagement = useTagManagement(tagFiltering.filteredPhotos, currentUser, {
-    onPhotoUpdate: (photoId: string, newTag: Tag, isFromAiSuggestion: boolean) => {
+    onPhotoUpdate: (photoId: string, newTag: Tag, _isFromAiSuggestion: boolean) => {
       // Update the photo in cache with new tag
       const photoToUpdate = photosQuery.allPhotos.find(p => p.id === photoId);
       if (photoToUpdate) {
@@ -56,6 +61,20 @@ const HomePageContent: React.FC = () => {
   });
   
   const photoModal = usePhotoModal(tagFiltering.filteredPhotos);
+
+  // Initialize retention cleanup and notifications
+  useRetentionCleanup({
+    photos: photosQuery.photos,
+    onPhotosUpdate: (updatedPhotos: Photo[]) => {
+      // Update each photo in cache
+      updatedPhotos.forEach(photo => {
+        photosQuery.updatePhotoInCache(photo);
+      });
+    },
+    enabled: userSettings.retentionPolicy.enabled,
+  });
+
+  const notificationManager = useNotificationManager();
 
   // Check for API key and redirect if missing
   useEffect(() => {
@@ -238,6 +257,26 @@ const HomePageContent: React.FC = () => {
           visible={photosQuery.photos.length > 0}
           onPhotoUpdate={photosQuery.updatePhotoInCache}
         />
+
+        {/* Notifications Panel */}
+        {notificationManager.hasActiveNotifications && (
+          <div className="mb-6">
+            <NotificationsPanel
+              photos={photosQuery.photos}
+              onPhotosUpdate={(updatedPhotos: Photo[]) => {
+                // Update each photo in cache
+                updatedPhotos.forEach(photo => {
+                  photosQuery.updatePhotoInCache(photo);
+                });
+              }}
+            />
+          </div>
+        )}
+
+        {/* Retention Policy Settings */}
+        <div className="mb-6">
+          <RetentionPolicySettings />
+        </div>
 
         {/* Loading State */}
         {photosQuery.isLoading && photosQuery.photos.length === 0 && (

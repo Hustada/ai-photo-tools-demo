@@ -3,7 +3,27 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import PhotoCard, { type PhotoCardAiSuggestionState } from '../PhotoCard'
+import { UserContextProvider } from '../../contexts/UserContext'
 import type { Photo, Tag } from '../../types'
+
+// Mock UserContext
+vi.mock('../../contexts/UserContext', async () => {
+  const actual = await vi.importActual('../../contexts/UserContext')
+  return {
+    ...actual,
+    useUserContext: vi.fn(() => ({
+      userSettings: {
+        retentionPolicy: {
+          archiveRetentionDays: 30,
+          deletionGraceDays: 7,
+          notificationDaysBefore: 3,
+          enabled: true,
+        },
+        deletionNotifications: [],
+      },
+    })),
+  }
+})
 
 // Mock data
 const mockPhoto: Photo = {

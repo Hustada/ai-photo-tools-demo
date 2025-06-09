@@ -95,11 +95,34 @@ export interface Project {
   // For now, keeping it simple for the UserContext
 }
 
+export interface RetentionPolicy {
+  archiveRetentionDays: number; // Days before archived photos are marked for deletion
+  deletionGraceDays: number; // Days to wait after marking for deletion before final removal
+  notificationDaysBefore: number; // Days before deletion to notify user
+  enabled: boolean; // Whether time-based deletion is enabled
+}
+
+export interface DeletionNotification {
+  id: string;
+  photoId: string;
+  type: 'deletion_warning' | 'deletion_scheduled';
+  scheduledDeletionDate: number; // timestamp
+  createdAt: number; // timestamp
+  dismissed: boolean;
+}
+
+export interface UserSettings {
+  retentionPolicy: RetentionPolicy;
+  deletionNotifications: DeletionNotification[];
+}
+
 export interface UserContextType {
   currentUser: CurrentUser | null;
   companyDetails: CompanyDetails | null;
   projects: Project[];
+  userSettings: UserSettings;
   loading: boolean;
   error: string | null;
   fetchUserContext: () => Promise<void>; // Function to trigger data fetching
+  updateUserSettings: (settings: Partial<UserSettings>) => void;
 }

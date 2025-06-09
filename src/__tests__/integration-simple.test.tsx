@@ -8,6 +8,21 @@ import PhotoModal from '../components/PhotoModal'
 import type { Photo } from '../types'
 import { companyCamService } from '../services/companyCamService'
 
+// Mock UserContext
+vi.mock('../contexts/UserContext', () => ({
+  useUserContext: vi.fn(() => ({
+    userSettings: {
+      retentionPolicy: {
+        archiveRetentionDays: 30,
+        deletionGraceDays: 7,
+        notificationDaysBefore: 3,
+        enabled: true,
+      },
+      deletionNotifications: [],
+    },
+  })),
+}))
+
 // Mock the service
 vi.mock('../services/companyCamService', () => ({
   companyCamService: {

@@ -14,6 +14,8 @@ import type {
   CompanyDetails,
   Project,
   UserContextType,
+  UserSettings,
+  RetentionPolicy,
 } from '../types'; // Path adjusted from ./types
 import { companyCamService } from '../services/companyCamService'; // Path adjusted from ./services/companyCamService
 
@@ -23,14 +25,53 @@ interface UserContextProviderProps {
   children: ReactNode;
 }
 
+const defaultRetentionPolicy: RetentionPolicy = {
+  archiveRetentionDays: 30, // Archive photos are deleted after 30 days
+  deletionGraceDays: 7, // 7 day grace period after marking for deletion
+  notificationDaysBefore: 3, // Notify user 3 days before deletion
+  enabled: true, // Time-based deletion enabled by default
+};
+
+const defaultUserSettings: UserSettings = {
+  retentionPolicy: defaultRetentionPolicy,
+  deletionNotifications: [],
+};
+
 export const UserContextProvider: React.FC<UserContextProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [companyDetails, setCompanyDetails] = useState<CompanyDetails | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [userSettings, setUserSettings] = useState<UserSettings>(defaultUserSettings);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const location = useLocation(); // Get location object
   // API key will be retrieved from localStorage within fetchUserContext
+
+  const loadUserSettings = useCallback(() => {
+    try {
+      const savedSettings = localStorage.getItem('userSettings');
+      if (savedSettings) {
+        const parsed = JSON.parse(savedSettings) as UserSettings;
+        setUserSettings(prev => ({ ...prev, ...parsed }));
+        console.log('[UserContext] User settings loaded from localStorage:', parsed);
+      }
+    } catch (error) {
+      console.error('[UserContext] Error loading user settings from localStorage:', error);
+    }
+  }, []);
+
+  const updateUserSettings = useCallback((partialSettings: Partial<UserSettings>) => {
+    setUserSettings(prev => {
+      const newSettings = { ...prev, ...partialSettings };
+      try {
+        localStorage.setItem('userSettings', JSON.stringify(newSettings));
+        console.log('[UserContext] User settings saved to localStorage:', newSettings);
+      } catch (error) {
+        console.error('[UserContext] Error saving user settings to localStorage:', error);
+      }
+      return newSettings;
+    });
+  }, []);
 
   const fetchUserContext = useCallback(async () => {
     const apiKeyFromStorage = localStorage.getItem('companyCamApiKey');
@@ -99,8 +140,9 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
 
   useEffect(() => {
     console.log('[UserContext] useEffect triggered due to fetchUserContext or location change. Pathname:', location.pathname);
+    loadUserSettings(); // Load settings first
     fetchUserContext();
-  }, [fetchUserContext, location.pathname]); // Add location.pathname as a dependency
+  }, [fetchUserContext, loadUserSettings, location.pathname]); // Add location.pathname as a dependency
 
   return (
     <UserContext.Provider
@@ -108,9 +150,11 @@ export const UserContextProvider: React.FC<UserContextProviderProps> = ({ childr
         currentUser,
         companyDetails,
         projects,
+        userSettings,
         loading,
         error,
         fetchUserContext, // Expose refetch capability
+        updateUserSettings,
       }}
     >
       {children}
