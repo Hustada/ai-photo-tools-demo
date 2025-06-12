@@ -10,6 +10,7 @@ import type { ScoutAiSuggestion, UserCurationPreferences } from '../../types/sco
 // Mock the utility functions
 vi.mock('../../utils/photoSimilarity', () => ({
   groupSimilarPhotos: vi.fn(),
+  calculatePhotoSimilarityAsync: vi.fn(),
 }));
 
 vi.mock('../../utils/curationLogic', () => ({
@@ -22,6 +23,26 @@ vi.mock('../../utils/photoActions', () => ({
   createActionsFromRecommendation: vi.fn(),
   archivePhoto: vi.fn(),
   restorePhoto: vi.fn(),
+}));
+
+// Create a reusable mock implementation
+const createMockVisualSimilarity = (similarityGroups: any[] = []) => ({
+  state: {
+    isAnalyzing: false,
+    progress: 0,
+    error: null,
+    similarityGroups,
+    similarityMatrix: new Map()
+  },
+  analyzeSimilarity: vi.fn().mockResolvedValue(undefined),
+  getSimilarityScore: vi.fn(),
+  getGroupForPhoto: vi.fn(),
+  clearAnalysis: vi.fn(),
+  cancelAnalysis: vi.fn()
+});
+
+vi.mock('../../hooks/useVisualSimilarity', () => ({
+  useVisualSimilarity: vi.fn(() => createMockVisualSimilarity())
 }));
 
 // Mock photos for testing
@@ -192,7 +213,7 @@ describe('ScoutAiContext', () => {
     });
 
     it('should generate suggestions when similar photos are found', async () => {
-      const { groupSimilarPhotos } = await import('../../utils/photoSimilarity');
+      const { useVisualSimilarity } = await import('../../hooks/useVisualSimilarity');
       const { generateCurationRecommendation, generateScoutAiMessage } = await import('../../utils/curationLogic');
       
       const mockGroup = {
@@ -219,7 +240,8 @@ describe('ScoutAiContext', () => {
         confidence: 0.9
       };
 
-      vi.mocked(groupSimilarPhotos).mockResolvedValue([mockGroup]);
+      // Mock visual similarity hook to return similarity groups
+      vi.mocked(useVisualSimilarity).mockReturnValue(createMockVisualSimilarity([mockGroup]));
       vi.mocked(generateCurationRecommendation).mockReturnValue(mockRecommendation);
       vi.mocked(generateScoutAiMessage).mockReturnValue('Test message');
 
@@ -235,7 +257,6 @@ describe('ScoutAiContext', () => {
         expect(screen.getByTestId('suggestions-count')).toHaveTextContent('1');
       });
 
-      expect(groupSimilarPhotos).toHaveBeenCalledWith(mockPhotos, expect.any(Number));
       expect(generateCurationRecommendation).toHaveBeenCalledWith(mockGroup);
       expect(generateScoutAiMessage).toHaveBeenCalled();
     });
@@ -388,7 +409,7 @@ describe('ScoutAiContext', () => {
 
     it('should accept suggestions with photo actions', async () => {
       const { applyCurationActions, createActionsFromRecommendation } = await import('../../utils/photoActions');
-      const { groupSimilarPhotos } = await import('../../utils/photoSimilarity');
+      const { useVisualSimilarity } = await import('../../hooks/useVisualSimilarity');
       const { generateCurationRecommendation, generateScoutAiMessage } = await import('../../utils/curationLogic');
       
       const mockGroup = {
@@ -420,8 +441,23 @@ describe('ScoutAiContext', () => {
         updatedPhotos: [mockPhotos[0], mockPhotos[1]]
       };
 
+      // Mock visual similarity hook to return similarity groups
+      vi.mocked(useVisualSimilarity).mockReturnValue({
+        state: {
+          isAnalyzing: false,
+          progress: 0,
+          error: null,
+          similarityGroups: [mockGroup],
+          similarityMatrix: new Map()
+        },
+        analyzeSimilarity: vi.fn().mockResolvedValue(undefined),
+        getSimilarityScore: vi.fn(),
+        getGroupForPhoto: vi.fn(),
+        clearAnalysis: vi.fn(),
+        cancelAnalysis: vi.fn()
+      });
+
       // Set up mocks to generate a suggestion
-      vi.mocked(groupSimilarPhotos).mockResolvedValue([mockGroup]);
       vi.mocked(generateCurationRecommendation).mockReturnValue(mockRecommendation);
       vi.mocked(generateScoutAiMessage).mockReturnValue('Test message');
       vi.mocked(createActionsFromRecommendation).mockReturnValue(mockActions);
@@ -598,7 +634,7 @@ describe('ScoutAiContext', () => {
 
     it('should handle partial failures in photo actions', async () => {
       const { applyCurationActions, createActionsFromRecommendation } = await import('../../utils/photoActions');
-      const { groupSimilarPhotos } = await import('../../utils/photoSimilarity');
+      const { useVisualSimilarity } = await import('../../hooks/useVisualSimilarity');
       const { generateCurationRecommendation, generateScoutAiMessage } = await import('../../utils/curationLogic');
 
       const mockGroup = {
@@ -631,8 +667,23 @@ describe('ScoutAiContext', () => {
         error: 'Some actions failed'
       };
 
+      // Mock visual similarity hook to return similarity groups
+      vi.mocked(useVisualSimilarity).mockReturnValue({
+        state: {
+          isAnalyzing: false,
+          progress: 0,
+          error: null,
+          similarityGroups: [mockGroup],
+          similarityMatrix: new Map()
+        },
+        analyzeSimilarity: vi.fn().mockResolvedValue(undefined),
+        getSimilarityScore: vi.fn(),
+        getGroupForPhoto: vi.fn(),
+        clearAnalysis: vi.fn(),
+        cancelAnalysis: vi.fn()
+      });
+
       // Set up mocks to generate a suggestion
-      vi.mocked(groupSimilarPhotos).mockResolvedValue([mockGroup]);
       vi.mocked(generateCurationRecommendation).mockReturnValue(mockRecommendation);
       vi.mocked(generateScoutAiMessage).mockReturnValue('Test message');
       vi.mocked(createActionsFromRecommendation).mockReturnValue(mockActions);

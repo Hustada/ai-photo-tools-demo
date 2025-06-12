@@ -87,6 +87,14 @@ export interface UndoAction {
   }>;
 }
 
+export interface VisualSimilarityState {
+  isAnalyzing: boolean;
+  progress: number;
+  error: string | null;
+  similarityGroups: PhotoSimilarityGroup[];
+  similarityMatrix: Map<string, Map<string, SimilarityAnalysis>>;
+}
+
 export interface ScoutAiContextType {
   suggestions: ScoutAiSuggestion[];
   userPreferences: UserCurationPreferences | null;
@@ -111,4 +119,12 @@ export interface ScoutAiContextType {
   undoLastAction: (photos: Photo[], onPhotoUpdate: (photo: Photo) => void) => Promise<void>;
   clearUndoStack: () => void;
   clearSuggestions: () => void;
+  
+  // Visual similarity functionality
+  visualSimilarity: {
+    state: VisualSimilarityState;
+    getSimilarityScore: (photo1Id: string, photo2Id: string) => SimilarityAnalysis | null;
+    getGroupForPhoto: (photoId: string) => PhotoSimilarityGroup | null;
+    cancelAnalysis: () => void;
+  };
 }

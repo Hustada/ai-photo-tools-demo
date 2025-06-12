@@ -285,7 +285,15 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
             <div>
               <h3 className="text-lg font-semibold text-blue-900">Scout AI</h3>
               <p className="text-sm text-blue-700">
-                {scoutAi.isAnalyzing ? 'Analyzing photos...' : `${photos.length} photos loaded`}
+                {scoutAi.isAnalyzing ? (
+                  scoutAi.visualSimilarity && scoutAi.visualSimilarity.state.isAnalyzing ? (
+                    `AI visual analysis: ${scoutAi.visualSimilarity.state.progress}% complete`
+                  ) : (
+                    'Analyzing photos...'
+                  )
+                ) : (
+                  `${photos.length} photos loaded`
+                )}
               </p>
             </div>
           </div>
@@ -321,6 +329,41 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
             💡 Load at least 2 photos to use Scout AI analysis
           </p>
         )}
+        
+        {/* Visual similarity progress bar */}
+        {scoutAi.visualSimilarity && scoutAi.visualSimilarity.state.isAnalyzing && (
+          <div className="mt-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-blue-700">AI Visual Analysis Progress</span>
+              <span className="text-xs text-blue-700">{scoutAi.visualSimilarity.state.progress}%</span>
+            </div>
+            <div className="w-full bg-blue-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${scoutAi.visualSimilarity.state.progress}%` }}
+              ></div>
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-xs text-blue-600">
+                {scoutAi.visualSimilarity.state.progress < 20 
+                  ? 'Smart filtering for potential duplicates...'
+                  : scoutAi.visualSimilarity.state.progress < 70
+                  ? 'AI analyzing candidate photos...'
+                  : 'Comparing visual similarities...'
+                }
+              </span>
+              {scoutAi.visualSimilarity.cancelAnalysis && (
+                <button
+                  onClick={scoutAi.visualSimilarity.cancelAnalysis}
+                  className="text-xs text-red-600 hover:text-red-800 underline"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {scoutAi.error && (
           <p className="text-red-600 text-sm bg-red-50 p-2 rounded mt-2">
             ❌ Error: {scoutAi.error}
@@ -468,18 +511,23 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
                             ? 'border-amber-500 bg-amber-50'
                             : 'border-gray-200'
                         }`}>
-                          {photo.photo_url && photo.photo_url.startsWith('http') ? (
-                            <img 
-                              src={photo.photo_url} 
-                              alt={`Photo ${photo.id}`}
-                              className="w-full h-24 object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                target.nextElementSibling?.classList.remove('hidden');
-                              }}
-                            />
-                          ) : null}
+                          {(() => {
+                            const thumbnailUrl = photo.uris.find((uri) => uri.type === 'thumbnail')?.uri 
+                                              || photo.uris.find((uri) => uri.type === 'web')?.uri
+                                              || photo.uris.find((uri) => uri.type === 'original')?.uri;
+                            return thumbnailUrl ? (
+                              <img 
+                                src={thumbnailUrl} 
+                                alt={`Photo ${photo.id}`}
+                                className="w-full h-24 object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null;
+                          })()}
                           <div className={`w-full h-24 bg-gray-200 flex items-center justify-center text-gray-500 text-xs ${photo.photo_url && photo.photo_url.startsWith('http') ? 'hidden' : ''}`}>
                             <div className="text-center">
                               <div className="text-lg mb-1">📷</div>

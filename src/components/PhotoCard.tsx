@@ -49,7 +49,9 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
   onFetchAiSuggestions,
 }) => {
   const { userSettings } = useUserContext();
-  const thumbnailUrl = photo.uris.find((uri) => uri.type === 'thumbnail')?.uri || photo.photo_url;
+  const thumbnailUrl = photo.uris.find((uri) => uri.type === 'thumbnail')?.uri 
+                    || photo.uris.find((uri) => uri.type === 'web')?.uri
+                    || photo.uris.find((uri) => uri.type === 'original')?.uri;
   
   const retentionStatus = getRetentionStatus(photo, userSettings.retentionPolicy);
 

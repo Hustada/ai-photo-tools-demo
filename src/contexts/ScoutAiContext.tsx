@@ -19,6 +19,7 @@ import type {
 } from '../types/scoutai';
 import { groupSimilarPhotos } from '../utils/photoSimilarity';
 import { generateCurationRecommendation, generateScoutAiMessage } from '../utils/curationLogic';
+import { useVisualSimilarity } from '../hooks/useVisualSimilarity';
 import { 
   applyCurationActions, 
   createActionsFromRecommendation,
@@ -41,6 +42,13 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
   const [userPreferences, setUserPreferences] = useState<UserCurationPreferences | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Initialize visual similarity analysis hook
+  const visualSimilarity = useVisualSimilarity({
+    similarityThreshold: userPreferences?.qualityThreshold || 0.6,
+    batchSize: 3, // Smaller batches for better progress tracking
+    maxConcurrent: 2 // Limit concurrent API calls
+  });
   const [undoStack, setUndoStack] = useState<Array<{
     id: string;
     suggestionId: string;
@@ -108,7 +116,7 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     console.log('[Scout AI] Cleared all suggestions');
   }, []);
 
-  // Analyze photos for similarity and generate suggestions
+  // Analyze photos for similarity and generate suggestions using AI-powered visual analysis
   const analyzeSimilarPhotos = useCallback(async (photos: Photo[], clearExisting = true): Promise<PhotoSimilarityGroup[]> => {
     if (!userPreferences) {
       console.warn('[Scout AI] User preferences not loaded yet');
@@ -121,15 +129,19 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     // Clear existing suggestions if requested
     if (clearExisting) {
       setSuggestions([]);
+      visualSimilarity.clearAnalysis();
     }
 
     try {
-      console.log('[Scout AI] Analyzing', photos.length, 'photos for similarity');
+      console.log('[Scout AI] Analyzing', photos.length, 'photos for AI-powered visual similarity');
       
-      // Use user's quality threshold for grouping
-      const groups = await groupSimilarPhotos(photos, userPreferences.qualityThreshold);
+      // Use the visual similarity hook for AI-powered analysis
+      await visualSimilarity.analyzeSimilarity(photos);
       
-      console.log('[Scout AI] Found', groups.length, 'similar photo groups');
+      // Get the similarity groups from the analysis
+      const groups = visualSimilarity.state.similarityGroups;
+      
+      console.log('[Scout AI] Found', groups.length, 'similar photo groups via AI analysis');
       
       if (groups.length > 0) {
         // Generate recommendations for each group
@@ -150,7 +162,29 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
         };
 
         setSuggestions([suggestion]); // Replace existing suggestions
-        console.log('[Scout AI] Generated suggestion:', suggestion.message);
+        console.log('[Scout AI] Generated AI-powered suggestion:', suggestion.message);
+      } else {
+        // Fallback to basic similarity if AI analysis doesn't find groups
+        console.log('[Scout AI] No AI groups found, falling back to basic similarity analysis');
+        const fallbackGroups = groupSimilarPhotos(photos, userPreferences.qualityThreshold);
+        
+        if (fallbackGroups.length > 0) {
+          const recommendations = fallbackGroups.map(group => generateCurationRecommendation(group));
+          
+          const suggestion: ScoutAiSuggestion = {
+            id: `suggestion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: 'photo_curation',
+            message: generateScoutAiMessage(recommendations),
+            recommendations,
+            confidence: 'medium', // Lower confidence for fallback analysis
+            actionable: true,
+            createdAt: new Date(),
+            status: 'pending'
+          };
+
+          setSuggestions([suggestion]);
+          return fallbackGroups;
+        }
       }
 
       return groups;
@@ -162,7 +196,7 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     } finally {
       setIsAnalyzing(false);
     }
-  }, [userPreferences]);
+  }, [userPreferences, visualSimilarity]);
 
   // Generate a suggestion from similarity groups (used by analyzeSimilarPhotos)
   const generateSuggestion = useCallback((groups: PhotoSimilarityGroup[]): ScoutAiSuggestion => {
@@ -397,8 +431,8 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
   const contextValue: ScoutAiContextType = {
     suggestions,
     userPreferences,
-    isAnalyzing,
-    error,
+    isAnalyzing: isAnalyzing || visualSimilarity.state.isAnalyzing,
+    error: error || visualSimilarity.state.error,
     undoStack,
     analyzeSimilarPhotos,
     generateSuggestion,
@@ -411,7 +445,14 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     restorePhoto,
     undoLastAction,
     clearUndoStack,
-    clearSuggestions
+    clearSuggestions,
+    // Expose visual similarity functionality
+    visualSimilarity: {
+      state: visualSimilarity.state,
+      getSimilarityScore: visualSimilarity.getSimilarityScore,
+      getGroupForPhoto: visualSimilarity.getGroupForPhoto,
+      cancelAnalysis: visualSimilarity.cancelAnalysis
+    }
   };
 
   return (

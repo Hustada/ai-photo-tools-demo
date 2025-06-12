@@ -24,6 +24,7 @@ export const companyCamService = {
       const params: Record<string, string | number | string[] | undefined> = {
         page,
         per_page: perPage,
+        sort: '-created_at', // Sort by newest first (descending created_at)
       };
       if (tagIds && tagIds.length > 0) {
         params.tag_ids = tagIds; // API expects 'tag_ids' as array

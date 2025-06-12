@@ -20,7 +20,7 @@ const mockPhoto1: Photo = {
   company_id: 'company-1',
   uri: 'https://example.com/photo1.jpg',
   captured_at: '2025-01-01T10:00:00Z',
-  coordinates: { latitude: 40.7128, longitude: -74.0060 },
+  coordinates: [{ latitude: 40.7128, longitude: -74.0060 }],
   description: 'Roofing progress photo',
   tags: ['roofing', 'progress']
 };
@@ -33,7 +33,7 @@ const mockPhoto2: Photo = {
   company_id: 'company-1',
   uri: 'https://example.com/photo2.jpg',
   captured_at: '2025-01-01T10:05:00Z', // 5 minutes later
-  coordinates: { latitude: 40.7129, longitude: -74.0061 }, // Very close location
+  coordinates: [{ latitude: 40.7129, longitude: -74.0061 }], // Very close location
   description: 'Roofing progress photo - different angle',
   tags: ['roofing', 'progress']
 };
@@ -46,7 +46,7 @@ const mockPhoto3: Photo = {
   company_id: 'company-1',
   uri: 'https://example.com/photo3.jpg',
   captured_at: '2025-01-02T14:00:00Z', // Next day
-  coordinates: { latitude: 40.7500, longitude: -73.9800 }, // Different location
+  coordinates: [{ latitude: 40.7500, longitude: -73.9800 }], // Different location
   description: 'HVAC installation',
   tags: ['hvac', 'installation']
 };
@@ -86,7 +86,7 @@ describe('photoSimilarity utilities', () => {
     });
 
     it('should handle missing coordinates gracefully', () => {
-      const photoWithoutCoords = { ...mockPhoto1, coordinates: undefined };
+      const photoWithoutCoords = { ...mockPhoto1, coordinates: [] };
       const score = calculateSpatialProximity(photoWithoutCoords, mockPhoto2);
       expect(score).toBe(0.0); // No spatial data available
     });
