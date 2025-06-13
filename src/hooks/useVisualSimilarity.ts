@@ -270,8 +270,8 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
         setState(prev => ({ ...prev, progress: 45 }));
         console.log('[VisualSimilarity] Finding visual similarity groups...');
         
-        // Conservative threshold - looking for "redundant documentation" not exact duplicates
-        const tensorFlowGroups = findVisualSimilarities(visualFeatures, 0.90); 
+        // More aggressive threshold - looking for "redundant documentation" not exact duplicates
+        const tensorFlowGroups = findVisualSimilarities(visualFeatures, 0.85); 
         const tfStats = getTensorFlowStats();
         
         console.log('[VisualSimilarity] TensorFlow analysis complete:', {
@@ -299,7 +299,7 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
           modelLoadTime: tfStats.modelLoadTime,
           averageExtractionTime: Math.round(tfStats.averageExtractionTime),
           groupsFound: tensorFlowGroups.length,
-          threshold: 0.90
+          threshold: 0.85
         });
       } else {
         console.log('[VisualSimilarity] Layer 2: TensorFlow.js analysis DISABLED');

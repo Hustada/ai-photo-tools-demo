@@ -9,6 +9,8 @@ export default function TestSimilarity() {
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [showCustomTest, setShowCustomTest] = useState<boolean>(false);
   const [showAllGroups, setShowAllGroups] = useState<boolean>(false); // Toggle to show filtered groups
+  const [availableImages, setAvailableImages] = useState<string[]>([]);
+  const [loadingImages, setLoadingImages] = useState<boolean>(false);
 
   // Test 1: Skip all filtering - pure AI analysis
   const { analyzeSimilarity: testPureAI, state: pureAIState } = useVisualSimilarity({
@@ -43,16 +45,16 @@ export default function TestSimilarity() {
     similarityThreshold: 0.6
   });
 
-  // Test 4: Custom selected photos with Layer 1 (File Hash) enabled
+  // Test 4: Custom selected photos with Layer 1 + Layer 2 enabled
   const { analyzeSimilarity: testCustom, state: customState, getAllGroups, getFilteredGroups } = useVisualSimilarity({
     enabledLayers: {
       fileHash: true,      // ENABLED - Layer 1: Exact duplicate detection
-      tensorFlow: false,   // DISABLED - focus on testing Layer 1
-      metadata: false,     // DISABLED - focus on testing Layer 1
-      aiAnalysis: true     // ENABLED - AI comparison for remaining photos
+      tensorFlow: true,    // ENABLED - Layer 2: Visual feature analysis
+      metadata: false,     // DISABLED - focus on testing Layers 1+2
+      aiAnalysis: true     // ENABLED - AI comparison for final candidates
     },
     similarityThreshold: 0.5,
-    confidenceThreshold: 0.85 // 85% confidence minimum (production default)
+    confidenceThreshold: 0.70 // 70% confidence for testing iPhone photos
   });
 
   // Test 5: Permissive confidence filtering
@@ -67,25 +69,39 @@ export default function TestSimilarity() {
     confidenceThreshold: 0.65 // Lower 65% confidence for debugging
   });
 
-  // Available source images
-  const availableImages = [
-    'newworksite.jpg',     // Pyramid construction
-    'newworksite1.jpg',    // Construction workers
-    'newworksite2.jpg',    // Deck installation
-    'newworksite3.jpg',    // Blue house painting
-    'newworksite4.jpg',    // Next image
-    'newworksite5.jpg',    // Blue house painting (similar to 3)
-    'newworksite10.jpg',   // Deck/framing work
-    'newworksite15.jpg',   // House with yellow bottom
-    'newworksite20.jpg',   // AR/tech overlay
-    'newworksite23.jpg',   // Green/yellow house with robot
-    'newworksite24.jpg',   // Duplicate of 23
-    'newworksite26.jpg',   // Construction site with excavator
-    'newworksite27.jpg',   // Duplicate of 26
-    'newworksite28.jpg',   // Duplicate of 26
-    'newworksite29.jpg',   // Duplicate of 26
-    'newworksite30.jpg',   // Duplicate of 26
-  ];
+  // Load images from source-images directory
+  const loadImagesFromDirectory = async () => {
+    setLoadingImages(true);
+    try {
+      console.log('[TestSimilarity] Loading images from directory...');
+      const response = await fetch('/api/list-images');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load images: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('[TestSimilarity] Loaded images:', data);
+      
+      setAvailableImages(data.images || []);
+      console.log(`[TestSimilarity] ${data.total} images loaded successfully`);
+      
+    } catch (error) {
+      console.error('[TestSimilarity] Error loading images:', error);
+      alert('Failed to load images from directory. Check console for details.');
+      
+      // Fallback to hardcoded list
+      const fallbackImages = [
+        'newworksite.jpg', 'newworksite1.jpg', 'newworksite2.jpg', 'newworksite3.jpg',
+        'newworksite4.jpg', 'newworksite5.jpg', 'newworksite10.jpg', 'newworksite15.jpg',
+        'newworksite20.jpg', 'newworksite23.jpg', 'newworksite24.jpg', 'newworksite26.jpg',
+        'newworksite27.jpg', 'newworksite28.jpg', 'newworksite29.jpg', 'newworksite30.jpg'
+      ];
+      setAvailableImages(fallbackImages);
+    } finally {
+      setLoadingImages(false);
+    }
+  };
 
   // Create test photos from your source images
   const createTestPhotos = (count: number = 6): Photo[] => {
@@ -367,12 +383,34 @@ export default function TestSimilarity() {
           <h3>🖼️ Custom Photo Selection</h3>
           <p>Select 2 or more photos to test visual similarity (bypasses all filtering)</p>
           
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
-            gap: '10px',
-            marginBottom: '15px'
-          }}>
+          <div style={{ marginBottom: '15px' }}>
+            <button 
+              onClick={loadImagesFromDirectory}
+              disabled={loadingImages}
+              style={{ 
+                padding: '8px 12px', 
+                backgroundColor: loadingImages ? '#6c757d' : '#007acc', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: loadingImages ? 'not-allowed' : 'pointer',
+                marginRight: '10px'
+              }}
+            >
+              {loadingImages ? '🔄 Loading...' : '📁 Load Images'}
+            </button>
+            <span style={{ fontSize: '14px', color: '#666' }}>
+              {availableImages.length > 0 ? `${availableImages.length} images loaded` : 'Click to load images from source directory'}
+            </span>
+          </div>
+          
+          {availableImages.length > 0 && (
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
+              gap: '10px',
+              marginBottom: '15px'
+            }}>
             {availableImages.map(filename => (
               <div 
                 key={filename}
@@ -400,6 +438,8 @@ export default function TestSimilarity() {
                   {filename === 'newworksite23.jpg' && '🏡 Green House'}
                   {filename === 'newworksite24.jpg' && '🏡 Green House (Duplicate)'}
                   {filename.includes('26') || filename.includes('27') || filename.includes('28') || filename.includes('29') || filename.includes('30') ? '🚧 Construction Site' : ''}
+                  {filename.startsWith('cybermorph_IMG_') && '📱 iPhone Photo'}
+                  {!filename.startsWith('newworksite') && !filename.startsWith('cybermorph_IMG_') && '📷 Image'}
                 </div>
                 {selectedPhotos.includes(filename) && (
                   <div style={{ color: '#007acc', fontWeight: 'bold', fontSize: '14px' }}>
@@ -408,7 +448,8 @@ export default function TestSimilarity() {
                 )}
               </div>
             ))}
-          </div>
+            </div>
+          )}
           
           <div style={{ marginBottom: '15px' }}>
             <strong>Selected:</strong> {selectedPhotos.length} photos
@@ -713,7 +754,7 @@ export default function TestSimilarity() {
           <li><strong>Test 1 (Pure AI):</strong> Should detect semantic similarities between photos (similar activities, objects, scenes)</li>
           <li><strong>Test 2 (TensorFlow + AI):</strong> Should detect visual + semantic similarities using computer vision</li>
           <li><strong>Test 3 (Production):</strong> Should efficiently find exact duplicates and time-based clusters</li>
-          <li><strong>Custom Tests (85% confidence + Layer 1):</strong> File Hash + AI Analysis</li>
+          <li><strong>Custom Tests (85% confidence + Layers 1+2):</strong> File Hash + TensorFlow + AI Analysis</li>
           <li><strong>Debug Tests (65% confidence):</strong> Lower threshold for testing and comparison</li>
         </ul>
         
