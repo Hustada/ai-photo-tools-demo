@@ -43,13 +43,13 @@ export default function TestSimilarity() {
     similarityThreshold: 0.6
   });
 
-  // Test 4: Custom selected photos with strict confidence filtering
+  // Test 4: Custom selected photos with Layer 1 (File Hash) enabled
   const { analyzeSimilarity: testCustom, state: customState, getAllGroups, getFilteredGroups } = useVisualSimilarity({
     enabledLayers: {
-      fileHash: false,     // DISABLED - test visual similarity
-      tensorFlow: false,   // DISABLED - focus on AI
-      metadata: false,     // DISABLED - no filtering
-      aiAnalysis: true     // ENABLED - pure AI comparison
+      fileHash: true,      // ENABLED - Layer 1: Exact duplicate detection
+      tensorFlow: false,   // DISABLED - focus on testing Layer 1
+      metadata: false,     // DISABLED - focus on testing Layer 1
+      aiAnalysis: true     // ENABLED - AI comparison for remaining photos
     },
     similarityThreshold: 0.5,
     confidenceThreshold: 0.85 // 85% confidence minimum (production default)
@@ -498,20 +498,6 @@ export default function TestSimilarity() {
             </button>
             
             <button 
-              onClick={() => setSelectedPhotos(['newworksite23.jpg', 'newworksite24.jpg'])}
-              style={{ 
-                padding: '10px 15px', 
-                backgroundColor: '#17a2b8', 
-                color: 'white', 
-                border: 'none', 
-                borderRadius: '5px',
-                cursor: 'pointer'
-              }}
-            >
-              Quick: Exact Duplicates
-            </button>
-            
-            <button 
               onClick={runPermissiveTest}
               disabled={selectedPhotos.length < 2 || state.isAnalyzing}
               style={{ 
@@ -727,7 +713,7 @@ export default function TestSimilarity() {
           <li><strong>Test 1 (Pure AI):</strong> Should detect semantic similarities between photos (similar activities, objects, scenes)</li>
           <li><strong>Test 2 (TensorFlow + AI):</strong> Should detect visual + semantic similarities using computer vision</li>
           <li><strong>Test 3 (Production):</strong> Should efficiently find exact duplicates and time-based clusters</li>
-          <li><strong>Custom Tests (85% confidence):</strong> Production-ready, only very confident groups</li>
+          <li><strong>Custom Tests (85% confidence + Layer 1):</strong> File Hash + AI Analysis</li>
           <li><strong>Debug Tests (65% confidence):</strong> Lower threshold for testing and comparison</li>
         </ul>
         
