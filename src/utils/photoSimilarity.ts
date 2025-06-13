@@ -2,6 +2,10 @@
 
 import type { Photo } from '../types';
 import type { SimilarityAnalysis, PhotoSimilarityGroup, PhotoQualityMetrics } from '../types/camintellect';
+import OpenAI from 'openai';
+
+// We'll call our own API endpoint for embeddings, just like other parts of the app
+// No need to expose API keys to browser
 
 /**
  * Calculate temporal proximity between two photos based on capture time
@@ -192,6 +196,76 @@ export function calculateVisualContentSimilarity(description1: string, descripti
     (constructionIntersection.length / Math.max(constructionWords1.length, constructionWords2.length)) * 0.3 : 0;
   
   return Math.min(1.0, jaccardSimilarity + constructionBoost);
+}
+
+/**
+ * Calculate cosine similarity between two embedding vectors
+ */
+function cosineSimilarity(vecA: number[], vecB: number[]): number {
+  if (vecA.length !== vecB.length) {
+    throw new Error('Vector dimensions must match');
+  }
+  
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+  
+  normA = Math.sqrt(normA);
+  normB = Math.sqrt(normB);
+  
+  if (normA === 0 || normB === 0) {
+    return 0;
+  }
+  
+  return dotProduct / (normA * normB);
+}
+
+/**
+ * Calculate semantic similarity using OpenAI embeddings via our API
+ * This understands meaning, not just word overlap
+ */
+export async function calculateSemanticSimilarity(description1: string, description2: string): Promise<number> {
+  if (!description1 || !description2) {
+    return 0.0;
+  }
+
+  try {
+    console.log(`[SemanticSimilarity] Calling embeddings API for: "${description1.substring(0, 40)}..." vs "${description2.substring(0, 40)}..."`);
+    
+    // Call our API endpoint for embeddings
+    const response = await fetch('/api/embeddings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        descriptions: [description1.trim(), description2.trim()]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Embeddings API error: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    const similarity = result.similarity;
+    
+    console.log(`[SemanticSimilarity] API returned similarity: ${(similarity * 100).toFixed(1)}%`);
+    return Math.max(0, Math.min(1, similarity)); // Clamp to [0, 1]
+    
+  } catch (error) {
+    console.error('[SemanticSimilarity] API call failed:', error);
+    console.log('[SemanticSimilarity] Falling back to Jaccard similarity');
+    const result = calculateVisualContentSimilarity(description1, description2);
+    console.log(`[SemanticSimilarity] Jaccard fallback result: ${(result * 100).toFixed(1)}%`);
+    return result;
+  }
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   findLikelyDuplicateCandidates,
   batchGenerateDescriptions,
   calculateVisualContentSimilarity,
+  calculateSemanticSimilarity,
   calculateTemporalProximity,
   calculateSpatialProximity
 } from '../utils/photoSimilarity';
@@ -418,7 +419,7 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
           similarityMatrix.set(photo.id, new Map());
         });
       
-      // Find similarity groups among final candidates
+      // Find similarity groups among final candidates using semantic similarity
       for (let i = 0; i < finalCandidates.length; i++) {
         if (processedPhotos.has(finalCandidates[i].id)) continue;
         
@@ -434,8 +435,8 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
           const desc2 = descriptions.get(finalCandidates[j].id);
           if (!desc2) continue;
           
-          // Fast local comparison of AI descriptions
-          const visualSimilarity = calculateVisualContentSimilarity(desc1, desc2);
+          // Use semantic similarity (AI embeddings) for better understanding
+          const visualSimilarity = await calculateSemanticSimilarity(desc1, desc2);
           
           // Debug first few comparisons
           if (finalGroups.length === 0 && currentGroup.length <= 3) {
@@ -444,7 +445,8 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
               threshold: similarityThreshold,
               passes: visualSimilarity >= similarityThreshold,
               desc1: desc1.substring(0, 50) + '...',
-              desc2: desc2.substring(0, 50) + '...'
+              desc2: desc2.substring(0, 50) + '...',
+              method: 'semantic_embeddings'
             });
           }
           
@@ -458,7 +460,7 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
               contentSimilarity: finalCandidates[i].project_id === finalCandidates[j].project_id ? 1.0 : 0.0,
               temporalProximity: calculateTemporalProximity(finalCandidates[i], finalCandidates[j]),
               spatialProximity: calculateSpatialProximity(finalCandidates[i], finalCandidates[j]),
-              semanticSimilarity: visualSimilarity, // Using visual as proxy
+              semanticSimilarity: visualSimilarity, // Now using actual semantic similarity
               overallSimilarity: visualSimilarity
             };
             
