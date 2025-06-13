@@ -34,11 +34,14 @@ interface VisualSimilarityState {
   progress: number;
   error: string | null;
   similarityGroups: PhotoSimilarityGroup[];
+  filteredGroups: PhotoSimilarityGroup[]; // Groups above confidence threshold
+  allGroups: PhotoSimilarityGroup[]; // All groups including low confidence
   similarityMatrix: Map<string, Map<string, SimilarityAnalysis>>;
 }
 
 interface UseVisualSimilarityOptions {
   similarityThreshold?: number;
+  confidenceThreshold?: number; // Minimum confidence to render groups (default 0.85)
   batchSize?: number;
   maxConcurrent?: number;
   mode?: 'quick' | 'smart' | 'deep'; // Analysis intensity
@@ -55,6 +58,8 @@ interface UseVisualSimilarityReturn {
   analyzeSimilarity: (photos: Photo[]) => Promise<PhotoSimilarityGroup[]>;
   getSimilarityScore: (photo1Id: string, photo2Id: string) => SimilarityAnalysis | null;
   getGroupForPhoto: (photoId: string) => PhotoSimilarityGroup | null;
+  getAllGroups: () => PhotoSimilarityGroup[]; // Access all groups including filtered out
+  getFilteredGroups: () => PhotoSimilarityGroup[]; // Access only high-confidence groups
   clearAnalysis: () => void;
   cancelAnalysis: () => void;
 }
@@ -66,6 +71,7 @@ interface UseVisualSimilarityReturn {
 export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): UseVisualSimilarityReturn => {
   const {
     similarityThreshold = 0.6,
+    confidenceThreshold = 0.85, // 85% confidence minimum for rendering
     batchSize = 5,
     maxConcurrent = 3,
     mode = 'smart', // Default to smart mode
@@ -82,10 +88,28 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
     progress: 0,
     error: null,
     similarityGroups: [],
+    filteredGroups: [],
+    allGroups: [],
     similarityMatrix: new Map()
   });
 
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+
+  /**
+   * Filter groups by confidence threshold for rendering
+   */
+  const filterGroupsByConfidence = useCallback((groups: PhotoSimilarityGroup[]) => {
+    const filtered = groups.filter(group => group.confidence >= confidenceThreshold);
+    const rejected = groups.filter(group => group.confidence < confidenceThreshold);
+    
+    if (rejected.length > 0) {
+      console.log(`[VisualSimilarity] Confidence filtering: ${filtered.length}/${groups.length} groups above ${(confidenceThreshold * 100).toFixed(0)}% threshold (85% default)`);
+      console.log('[VisualSimilarity] Filtered out low-confidence groups:', 
+        rejected.map(g => `${g.id} (${(g.confidence * 100).toFixed(1)}%)`).join(', '));
+    }
+    
+    return filtered;
+  }, [confidenceThreshold]);
 
   const clearAnalysis = useCallback(() => {
     setState({
@@ -93,6 +117,8 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
       progress: 0,
       error: null,
       similarityGroups: [],
+      filteredGroups: [],
+      allGroups: [],
       similarityMatrix: new Map()
     });
   }, []);
@@ -120,6 +146,8 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
         ...prev,
         error: 'Need at least 2 photos for similarity analysis',
         similarityGroups: [],
+        filteredGroups: [],
+        allGroups: [],
         similarityMatrix: new Map()
       }));
       return [];
@@ -135,6 +163,8 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
       progress: 0,
       error: null,
       similarityGroups: [],
+      filteredGroups: [],
+      allGroups: [],
       similarityMatrix: new Map()
     }));
 
@@ -371,18 +401,22 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
         
         // Combine exact duplicates with visual groups
         const allSampleGroups = [...exactDuplicateGroups, ...visualGroups];
+        const filteredSampleGroups = filterGroupsByConfidence(allSampleGroups);
         
         setState(prev => ({
           ...prev,
           isAnalyzing: false,
           progress: 100,
-          similarityGroups: allSampleGroups
+          similarityGroups: filteredSampleGroups,
+          filteredGroups: filteredSampleGroups,
+          allGroups: allSampleGroups
         }));
         
         const apiCalls = samplePhotos.length;
         console.log(`[VisualSimilarity] Visual-only analysis complete: ${allSampleGroups.length} groups found (${exactDuplicateGroups.length} exact duplicates, ${visualGroups.length} visual groups) from ${samplePhotos.length} sampled photos`);
+        console.log(`[VisualSimilarity] Confidence filtering: ${filteredSampleGroups.length}/${allSampleGroups.length} groups above ${(confidenceThreshold * 100).toFixed(0)}% threshold (90% default)`);
         console.log(`[VisualSimilarity] Used ${apiCalls} API calls (sampled analysis)`);
-        return allSampleGroups;
+        return filteredSampleGroups;
       }
       
       console.log(`[VisualSimilarity] Found ${finalCandidates.length} candidate photos (reduced from ${photos.length})`);
@@ -520,12 +554,15 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
 
       // Combine exact duplicates with similarity groups
       const allGroups = [...exactDuplicateGroups, ...finalGroups];
+      const filteredGroups = filterGroupsByConfidence(allGroups);
       
       setState(prev => ({
         ...prev,
         isAnalyzing: false,
         progress: 100,
-        similarityGroups: allGroups,
+        similarityGroups: filteredGroups, // Only high-confidence groups for UI
+        filteredGroups: filteredGroups,
+        allGroups: allGroups, // Keep all groups for debugging
         similarityMatrix
       }));
 
@@ -533,6 +570,7 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
       const originalCalls = (photos.length * (photos.length - 1)) / 2;
       
       console.log(`[VisualSimilarity] Smart analysis complete: ${allGroups.length} groups found (${exactDuplicateGroups.length} exact duplicates, ${finalGroups.length} similarity groups)`);
+      console.log(`[VisualSimilarity] Confidence filtering: ${filteredGroups.length}/${allGroups.length} groups above ${(confidenceThreshold * 100).toFixed(0)}% threshold (90% default)`);
       console.log(`[VisualSimilarity] Efficiency analysis:`, {
         apiCalls: apiCalls,
         bruteForceApiCalls: originalCalls,
@@ -540,12 +578,13 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
         photosAnalyzed: photos.length,
         candidatesFiltered: finalCandidates.length,
         exactDuplicates: exactDuplicateGroups.length,
-        visualGroups: finalGroups.length
+        visualGroups: finalGroups.length,
+        filteredGroups: filteredGroups.length
       });
       
       logPipelineSummary(allGroups.length, photos.length);
       
-      return allGroups;
+      return filteredGroups;
 
     } catch (error) {
       if (controller.signal.aborted) {
@@ -581,11 +620,27 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
     ) || null;
   }, [state.similarityGroups]);
 
+  /**
+   * Get all groups including those filtered out by confidence threshold
+   */
+  const getAllGroups = useCallback((): PhotoSimilarityGroup[] => {
+    return state.allGroups;
+  }, [state.allGroups]);
+
+  /**
+   * Get only high-confidence groups (same as state.similarityGroups)
+   */
+  const getFilteredGroups = useCallback((): PhotoSimilarityGroup[] => {
+    return state.filteredGroups;
+  }, [state.filteredGroups]);
+
   return {
     state,
     analyzeSimilarity,
     getSimilarityScore,
     getGroupForPhoto,
+    getAllGroups,
+    getFilteredGroups,
     clearAnalysis,
     cancelAnalysis
   };

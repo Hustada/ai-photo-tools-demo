@@ -4,9 +4,11 @@ import type { Photo } from '../types';
 
 export default function TestSimilarity() {
   const [testResults, setTestResults] = useState<any[]>([]);
+  const [allResults, setAllResults] = useState<any[]>([]); // Include filtered groups
   const [currentTest, setCurrentTest] = useState<string>('');
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [showCustomTest, setShowCustomTest] = useState<boolean>(false);
+  const [showAllGroups, setShowAllGroups] = useState<boolean>(false); // Toggle to show filtered groups
 
   // Test 1: Skip all filtering - pure AI analysis
   const { analyzeSimilarity: testPureAI, state: pureAIState } = useVisualSimilarity({
@@ -41,15 +43,28 @@ export default function TestSimilarity() {
     similarityThreshold: 0.6
   });
 
-  // Test 4: Custom selected photos
-  const { analyzeSimilarity: testCustom, state: customState } = useVisualSimilarity({
+  // Test 4: Custom selected photos with strict confidence filtering
+  const { analyzeSimilarity: testCustom, state: customState, getAllGroups, getFilteredGroups } = useVisualSimilarity({
     enabledLayers: {
       fileHash: false,     // DISABLED - test visual similarity
       tensorFlow: false,   // DISABLED - focus on AI
       metadata: false,     // DISABLED - no filtering
       aiAnalysis: true     // ENABLED - pure AI comparison
     },
-    similarityThreshold: 0.5
+    similarityThreshold: 0.5,
+    confidenceThreshold: 0.85 // 85% confidence minimum (production default)
+  });
+
+  // Test 5: Permissive confidence filtering
+  const { analyzeSimilarity: testPermissive, state: permissiveState, getAllGroups: getAllPermissive } = useVisualSimilarity({
+    enabledLayers: {
+      fileHash: false,
+      tensorFlow: false, 
+      metadata: false,
+      aiAnalysis: true
+    },
+    similarityThreshold: 0.5,
+    confidenceThreshold: 0.65 // Lower 65% confidence for debugging
   });
 
   // Available source images
@@ -190,7 +205,16 @@ export default function TestSimilarity() {
     try {
       const results = await testCustom(customPhotos);
       setTestResults(results);
-      console.log('✅ Custom Test Results:', results);
+      const allGroups = getAllGroups();
+      setAllResults(allGroups);
+      console.log('✅ Custom Test Results (Filtered >= 85%):', results);
+      console.log('📊 All Groups (Including Low Confidence):', allGroups);
+      console.log('🔍 Debug - Confidence breakdown:');
+      allGroups.forEach((group, i) => {
+        const confidence = (group.confidence * 100).toFixed(1);
+        const filtered = group.confidence >= 0.85;
+        console.log(`  Group ${i + 1}: ${confidence}% confidence ${filtered ? '(SHOWN)' : '(FILTERED OUT)'}`);
+      });
     } catch (error) {
       console.error('❌ Custom Test Failed:', error);
     }
@@ -204,6 +228,45 @@ export default function TestSimilarity() {
     );
   };
 
+  const runPermissiveTest = async () => {
+    if (selectedPhotos.length < 2) {
+      alert('Please select at least 2 photos to compare');
+      return;
+    }
+
+    setCurrentTest('Permissive Confidence (45%)');
+    console.log('🧪 PERMISSIVE TEST: Lower confidence threshold');
+    
+    const customPhotos: Photo[] = selectedPhotos.map((filename, index) => {
+      const fullUrl = `${window.location.origin}/source-images/${filename}`;
+      return {
+        id: `permissive-photo-${index}`,
+        photo_url: fullUrl,
+        captured_at: new Date().toISOString(),
+        project_id: 'permissive-test-project',
+        creator_id: 'test-user',
+        description: null,
+        tags: [],
+        coordinates: [{
+          latitude: 40.7128 + (Math.random() - 0.5) * 0.001,
+          longitude: -74.0060 + (Math.random() - 0.5) * 0.001
+        }],
+        uris: [{ type: 'original', uri: fullUrl }]
+      };
+    });
+
+    try {
+      const results = await testPermissive(customPhotos);
+      setTestResults(results);
+      const allGroups = getAllPermissive();
+      setAllResults(allGroups);
+      console.log('✅ Permissive Test Results (45% threshold):', results);
+      console.log('📊 All Groups (Including Low Confidence):', allGroups);
+    } catch (error) {
+      console.error('❌ Permissive Test Failed:', error);
+    }
+  };
+
   const getCurrentState = () => {
     switch (currentTest) {
       case 'Pure AI Analysis (No Filtering)':
@@ -214,6 +277,8 @@ export default function TestSimilarity() {
         return productionState;
       case 'Custom Photo Selection':
         return customState;
+      case 'Permissive Confidence (45%)':
+        return permissiveState;
       default:
         return { isAnalyzing: false, progress: 0, error: null };
     }
@@ -433,20 +498,6 @@ export default function TestSimilarity() {
             </button>
             
             <button 
-              onClick={() => setSelectedPhotos(['newworksite3.jpg', 'newworksite5.jpg'])}
-              style={{ 
-                padding: '10px 15px', 
-                backgroundColor: '#17a2b8', 
-                color: 'white', 
-                border: 'none', 
-                borderRadius: '5px',
-                cursor: 'pointer'
-              }}
-            >
-              Quick: Blue Houses
-            </button>
-            
-            <button 
               onClick={() => setSelectedPhotos(['newworksite23.jpg', 'newworksite24.jpg'])}
               style={{ 
                 padding: '10px 15px', 
@@ -458,6 +509,21 @@ export default function TestSimilarity() {
               }}
             >
               Quick: Exact Duplicates
+            </button>
+            
+            <button 
+              onClick={runPermissiveTest}
+              disabled={selectedPhotos.length < 2 || state.isAnalyzing}
+              style={{ 
+                padding: '10px 15px', 
+                backgroundColor: selectedPhotos.length >= 2 ? '#fd7e14' : '#ccc',
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '5px',
+                cursor: selectedPhotos.length >= 2 && !state.isAnalyzing ? 'pointer' : 'not-allowed'
+              }}
+            >
+              Test Permissive (45%)
             </button>
           </div>
         </div>
@@ -513,28 +579,66 @@ export default function TestSimilarity() {
         }}>
           <h3>📊 Results for: {currentTest}</h3>
           <div style={{ marginBottom: '15px' }}>
-            <strong>Groups found: {testResults.length}</strong>
+            <strong>High-Confidence Groups: {testResults.length}</strong>
+            {allResults.length > testResults.length && (
+              <span style={{ marginLeft: '15px', color: '#856404' }}>
+                ({allResults.length - testResults.length} low-confidence groups filtered out)
+              </span>
+            )}
             {testResults.length === 0 && (
               <span style={{ color: '#dc3545', marginLeft: '10px' }}>
-                No similar groups detected
+                No high-confidence groups detected
               </span>
+            )}
+            
+            {allResults.length > testResults.length && (
+              <button
+                onClick={() => setShowAllGroups(!showAllGroups)}
+                style={{
+                  marginLeft: '15px',
+                  padding: '5px 10px',
+                  fontSize: '12px',
+                  backgroundColor: showAllGroups ? '#dc3545' : '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '3px',
+                  cursor: 'pointer'
+                }}
+              >
+                {showAllGroups ? 'Hide' : 'Show'} Filtered Groups
+              </button>
             )}
           </div>
           
-          {testResults.map((group, index) => (
-            <div key={group.id} style={{ 
-              margin: '15px 0', 
-              padding: '15px', 
-              backgroundColor: 'white', 
-              border: '2px solid #28a745',
-              borderRadius: '8px'
-            }}>
+          {(showAllGroups ? allResults : testResults).map((group, index) => {
+            const isFiltered = !testResults.includes(group);
+            return (
+              <div key={group.id} style={{ 
+                margin: '15px 0', 
+                padding: '15px', 
+                backgroundColor: isFiltered ? '#fff3cd' : 'white', 
+                border: `2px solid ${isFiltered ? '#ffc107' : '#28a745'}`,
+                borderRadius: '8px',
+                opacity: isFiltered ? 0.8 : 1
+              }}>
               <div style={{ marginBottom: '10px' }}>
                 <strong>🔗 Similar Group {index + 1}</strong>
+                {isFiltered && (
+                  <span style={{ 
+                    marginLeft: '10px', 
+                    padding: '2px 8px', 
+                    backgroundColor: '#dc3545', 
+                    color: 'white', 
+                    borderRadius: '10px', 
+                    fontSize: '12px' 
+                  }}>
+                    FILTERED OUT
+                  </span>
+                )}
                 <span style={{ 
                   marginLeft: '10px', 
                   padding: '2px 8px', 
-                  backgroundColor: '#28a745', 
+                  backgroundColor: isFiltered ? '#ffc107' : '#28a745', 
                   color: 'white', 
                   borderRadius: '10px', 
                   fontSize: '12px' 
@@ -592,7 +696,7 @@ export default function TestSimilarity() {
                         position: 'absolute',
                         top: '5px',
                         left: '5px',
-                        backgroundColor: '#28a745',
+                        backgroundColor: isFiltered ? '#ffc107' : '#28a745',
                         color: 'white',
                         padding: '2px 6px',
                         borderRadius: '10px',
@@ -605,8 +709,9 @@ export default function TestSimilarity() {
                   ))}
                 </div>
               </div>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -622,7 +727,8 @@ export default function TestSimilarity() {
           <li><strong>Test 1 (Pure AI):</strong> Should detect semantic similarities between photos (similar activities, objects, scenes)</li>
           <li><strong>Test 2 (TensorFlow + AI):</strong> Should detect visual + semantic similarities using computer vision</li>
           <li><strong>Test 3 (Production):</strong> Should efficiently find exact duplicates and time-based clusters</li>
-          <li><strong>Custom Tests:</strong> Should group photos you select based on visual similarity, regardless of content type</li>
+          <li><strong>Custom Tests (85% confidence):</strong> Production-ready, only very confident groups</li>
+          <li><strong>Debug Tests (65% confidence):</strong> Lower threshold for testing and comparison</li>
         </ul>
         
         <div style={{ 
@@ -633,13 +739,14 @@ export default function TestSimilarity() {
         }}>
           <strong>📊 How to Interpret Results:</strong>
           <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
-            <li><strong>Groups Found &gt; 0:</strong> The system detected visual similarities</li>
-            <li><strong>Confidence &gt; 70%:</strong> High confidence in similarity</li>
-            <li><strong>Visual Similarity &gt; 60%:</strong> Strong visual resemblance</li>
-            <li><strong>Visual Comparison:</strong> Side-by-side thumbnails let you verify if the AI got it right</li>
+            <li><strong>High-Confidence Groups:</strong> Green-bordered groups above the confidence threshold</li>
+            <li><strong>Filtered Groups:</strong> Yellow-bordered groups that were filtered out (shown when toggled)</li>
+            <li><strong>Confidence &gt; 85%:</strong> Production threshold for showing groups (adjustable per test)</li>
+            <li><strong>Visual Similarity &gt; 60%:</strong> Strong visual resemblance using semantic embeddings</li>
+            <li><strong>"FILTERED OUT" badge:</strong> Indicates low-confidence groups that wouldn't normally be shown</li>
           </ul>
           <p style={{ margin: '5px 0', fontSize: '14px' }}>
-            <strong>🔍 Test Strategy:</strong> Try selecting photos that you think look similar and see if the AI agrees with your visual judgment!
+            <strong>🔍 Test Strategy:</strong> Compare 85% vs 65% confidence thresholds to see how filtering affects results. Use "Show Filtered Groups" to understand what gets hidden!
           </p>
         </div>
       </div>
