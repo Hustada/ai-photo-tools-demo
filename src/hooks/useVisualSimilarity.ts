@@ -470,23 +470,39 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
         // Only create groups with multiple photos
         if (currentGroup.length > 1) {
           const groupId = `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Calculate average similarity within the group
+          let totalSimilarity = 0;
+          let comparisons = 0;
+          for (let x = 0; x < currentGroup.length; x++) {
+            for (let y = x + 1; y < currentGroup.length; y++) {
+              const sim = similarityMatrix.get(currentGroup[x].id)?.get(currentGroup[y].id);
+              if (sim) {
+                totalSimilarity += sim.visualSimilarity;
+                comparisons++;
+              }
+            }
+          }
+          const avgVisualSimilarity = comparisons > 0 ? totalSimilarity / comparisons : similarityThreshold;
+          
           const newGroup = {
             id: groupId,
             photos: currentGroup,
             similarity: {
-              visualSimilarity: similarityThreshold,
+              visualSimilarity: avgVisualSimilarity,
               contentSimilarity: 1.0,
               temporalProximity: calculateTemporalProximity(currentGroup[0], currentGroup[1]),
               spatialProximity: calculateSpatialProximity(currentGroup[0], currentGroup[1]),
-              semanticSimilarity: similarityThreshold,
-              overallSimilarity: similarityThreshold
+              semanticSimilarity: avgVisualSimilarity,
+              overallSimilarity: avgVisualSimilarity
             },
             groupType: 'retry_shots' as const, // Most likely for closely timed/located photos
-            confidence: Math.min(1.0, similarityThreshold * 1.2)
+            confidence: Math.min(1.0, avgVisualSimilarity * 1.1) // Slightly boost confidence
           };
           
           console.log(`[VisualSimilarity] Created group ${groupId} with ${currentGroup.length} photos:`, 
             currentGroup.map(p => p.id).join(', '));
+          console.log(`[VisualSimilarity] Group similarity - Visual: ${(avgVisualSimilarity * 100).toFixed(1)}%, Confidence: ${(newGroup.confidence * 100).toFixed(1)}%`);
           finalGroups.push(newGroup);
         }
       }
