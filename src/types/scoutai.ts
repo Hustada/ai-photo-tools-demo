@@ -15,7 +15,7 @@ export interface PhotoSimilarityGroup {
   id: string;
   photos: Photo[];
   similarity: SimilarityAnalysis;
-  groupType: 'incremental_progress' | 'angle_variations' | 'retry_shots' | 'redundant_documentation';
+  groupType: 'incremental_progress' | 'angle_variations' | 'retry_shots' | 'redundant_documentation' | 'exact_duplicates';
   confidence: number;            // How confident we are in this grouping (0-1)
 }
 

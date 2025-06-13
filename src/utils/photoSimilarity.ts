@@ -406,7 +406,10 @@ function determineGroupType(similarity: SimilarityAnalysis): PhotoSimilarityGrou
  * Fast pre-filtering to identify likely duplicate candidates
  * Reduces the number of photos that need expensive AI analysis
  */
-export function findLikelyDuplicateCandidates(photos: Photo[]): Photo[] {
+export function findLikelyDuplicateCandidates(
+  photos: Photo[], 
+  mode: 'strict' | 'permissive' = 'strict'
+): Photo[] {
   const candidates = new Set<Photo>();
   
   console.log(`[VisualSimilarity] Analyzing ${photos.length} photos for potential duplicates...`);
@@ -472,18 +475,35 @@ export function findLikelyDuplicateCandidates(photos: Photo[]): Photo[] {
       const spatial = calculateSpatialProximity(photo1, photo2);
       const sameProject = photo1.project_id === photo2.project_id;
       
-      // Smart criteria for duplicate detection
+      // Smart criteria for duplicate detection - mode-dependent
       const isVeryCloseInTime = temporal > 0.85; // Within ~5-15 minutes
       const isVeryCloseInSpace = spatial > 0.9;  // Within ~50 meters
+      const sameCreator = photo1.creator_id === photo2.creator_id;
       
-      // For logged-in users, all photos are from same user, so focus on project, time, and location
-      // Flag as candidates if same project AND either:
-      // 1. Close in both time and space (typical retakes at same location)
-      // 2. Very close in time even without GPS (rapid sequence shots)
-      const isDuplicateCandidate = sameProject && (
-        (isVeryCloseInTime && isVeryCloseInSpace) || // Same time AND place
-        (isVeryCloseInTime && temporal > 0.95)      // Almost identical timestamp (retakes)
-      );
+      let isDuplicateCandidate = false;
+      
+      if (mode === 'strict') {
+        // Production mode: Require reliable metadata
+        // For logged-in users, all photos are from same user, so focus on project, time, and location
+        isDuplicateCandidate = sameProject && (
+          (isVeryCloseInTime && isVeryCloseInSpace) || // Same time AND place
+          (isVeryCloseInTime && temporal > 0.95)      // Almost identical timestamp (retakes)
+        );
+      } else {
+        // Permissive mode: For testing with unreliable metadata
+        // Be more liberal - include photos that might be related even without perfect metadata
+        isDuplicateCandidate = (
+          (sameProject && isVeryCloseInTime) ||       // Same project + close time
+          (sameCreator && temporal > 0.7) ||          // Same person + somewhat close time
+          isVeryCloseInSpace ||                       // Very close location (rare but strong signal)
+          temporal > 0.95                             // Almost identical time (regardless of other factors)
+        );
+        
+        console.log(`[VisualSimilarity] Permissive check ${photo1.id} vs ${photo2.id}:`, {
+          sameProject, sameCreator, temporal: temporal.toFixed(3), spatial: spatial.toFixed(3),
+          passes: isDuplicateCandidate
+        });
+      }
       
       if (isDuplicateCandidate) {
         candidatePairCount++;

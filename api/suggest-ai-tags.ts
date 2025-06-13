@@ -5,6 +5,8 @@ import https from 'https';
 import OpenAI from 'openai';
 import existingCompanyCamTagsFromFile from './companycam-standard-tags.json';
 import { Pinecone } from '@pinecone-database/pinecone';
+import fs from 'fs';
+import path from 'path';
 
 // Initialize OpenAI client
 // Ensure OPENAI_API_KEY is set in your .env file
@@ -488,10 +490,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log(`Received request for AI suggestions. PhotoID: ${photoId}, Photo URL: ${photoUrl}, ProjectID: ${projectId || 'N/A'}, UserID: ${userId || 'N/A'}`);
 
     // 1. Get Google Vision labels (and other detections)
+    // Check if it's a localhost URL - if so, we need to load the image locally
+    let imageSource: any;
+    if (photoUrl.includes('localhost') || photoUrl.includes('127.0.0.1')) {
+      // For local images, we need to read the file and convert to base64
+      let filePath: string;
+      try {
+        // Extract the file path from the URL
+        const urlParts = new URL(photoUrl);
+        // The images are served from /source-images/ but stored at project root
+        // So /source-images/file.jpg maps to ./source-images/file.jpg
+        filePath = path.join(process.cwd(), urlParts.pathname.substring(1));
+        console.log('Loading local image from:', filePath);
+        
+        // Read the file and convert to base64
+        const imageBuffer = fs.readFileSync(filePath);
+        const base64Image = imageBuffer.toString('base64');
+        imageSource = { content: base64Image };
+      } catch (fileError: any) {
+        console.error('Failed to read local image file:', fileError);
+        console.error('Attempted file path:', filePath!);
+        console.error('Current working directory:', process.cwd());
+        throw new Error(`Failed to read local image: ${fileError.message}`);
+      }
+    } else {
+      // For remote URLs, use the imageUri
+      imageSource = { source: { imageUri: photoUrl } };
+    }
+    
     const visionApiPayload = {
       requests: [
         {
-          image: { source: { imageUri: photoUrl } },
+          image: imageSource,
           features: [
             { type: 'LABEL_DETECTION', maxResults: 15 },
             { type: 'WEB_DETECTION', maxResults: 10 },

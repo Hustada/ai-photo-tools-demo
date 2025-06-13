@@ -3,6 +3,7 @@ import React from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import TestSimilarity from './pages/test-similarity';
 
 // Simple component to protect routes
 const ProtectedRoute: React.FC = () => {
@@ -25,6 +26,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             {/* Routes nested under ProtectedRoute require an API key */}
             <Route path="/" element={<HomePage />} />
+            <Route path="/test-similarity" element={<TestSimilarity />} />
             {/* Add other protected routes here if needed */}
           </Route>
           {/* Fallback route for any undefined paths, could redirect to / or a 404 page */}

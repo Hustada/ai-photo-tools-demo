@@ -13,6 +13,20 @@ import {
   calculateTemporalProximity,
   calculateSpatialProximity
 } from '../utils/photoSimilarity';
+import { batchGenerateHashes, findExactDuplicates } from '../utils/fileHash';
+import { 
+  initializeTensorFlow, 
+  batchExtractFeatures, 
+  findVisualSimilarities, 
+  getTensorFlowStats,
+  resetTensorFlowStats 
+} from '../utils/tensorflowSimilarity';
+import { 
+  logPipelineStart, 
+  logPipelineLayer, 
+  logPipelineSummary, 
+  logPipelineError 
+} from '../utils/pipelineLogger';
 
 interface VisualSimilarityState {
   isAnalyzing: boolean;
@@ -27,6 +41,12 @@ interface UseVisualSimilarityOptions {
   batchSize?: number;
   maxConcurrent?: number;
   mode?: 'quick' | 'smart' | 'deep'; // Analysis intensity
+  enabledLayers?: {
+    fileHash?: boolean;      // Layer 1: Exact duplicate detection
+    tensorFlow?: boolean;    // Layer 2: Visual feature analysis
+    metadata?: boolean;      // Layer 3: Temporal/spatial filtering
+    aiAnalysis?: boolean;    // Layer 4: AI-powered analysis
+  };
 }
 
 interface UseVisualSimilarityReturn {
@@ -47,7 +67,13 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
     similarityThreshold = 0.6,
     batchSize = 5,
     maxConcurrent = 3,
-    mode = 'smart' // Default to smart mode
+    mode = 'smart', // Default to smart mode
+    enabledLayers = {
+      fileHash: true,
+      tensorFlow: true,
+      metadata: true,
+      aiAnalysis: true
+    }
   } = options;
 
   const [state, setState] = useState<VisualSimilarityState>({
@@ -113,12 +139,171 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
 
     try {
       console.log(`[VisualSimilarity] Starting smart analysis of ${photos.length} photos`);
+      console.log('[VisualSimilarity] Enabled layers:', enabledLayers);
+      logPipelineStart(photos.length);
       
-      // Step 1: Fast pre-filtering to find likely duplicate candidates (no AI needed)
-      setState(prev => ({ ...prev, progress: 10 }));
-      const candidates = findLikelyDuplicateCandidates(photos);
+      let exactDuplicateGroups: PhotoSimilarityGroup[] = [];
+      let remainingPhotos = [...photos];
       
-      if (candidates.length === 0) {
+      // Step 0: Check for exact duplicates using file hashes (instant, free)
+      if (enabledLayers.fileHash) {
+        setState(prev => ({ ...prev, progress: 5 }));
+        console.log('[VisualSimilarity] Layer 1: Checking for exact duplicates using file hashes...');
+      
+      const photoUrls = photos.map(photo => {
+        const webUri = photo.uris?.find(uri => uri.type === 'web')?.uri;
+        const originalUri = photo.uris?.find(uri => uri.type === 'original')?.uri;
+        return webUri || originalUri || photo.photo_url;
+      }).filter(Boolean);
+      
+      const hashMap = await batchGenerateHashes(photoUrls);
+      const photoHashMap = new Map<string, { hash: string; photoId: string }>();
+      
+      photos.forEach((photo, index) => {
+        const url = photoUrls[index];
+        const hash = hashMap.get(url);
+        if (url && hash) {
+          photoHashMap.set(url, { hash, photoId: photo.id });
+        }
+      });
+      
+        const exactDuplicates = findExactDuplicates(photoHashMap);
+        console.log(`[VisualSimilarity] Found ${exactDuplicates.length} exact duplicate groups`);
+        
+        const hashDuration = 100; // Approximate hash duration
+        logPipelineLayer('Layer 1: File Hash', 'Exact Duplicate Detection', photos.length, exactDuplicates.length, 100, {
+          hashesGenerated: hashMap.size,
+          duplicateGroups: exactDuplicates.length
+        });
+        
+        // Convert exact duplicates to PhotoSimilarityGroups
+        exactDuplicateGroups = exactDuplicates.map(dupGroup => {
+          const groupPhotos = photos.filter(photo => dupGroup.photoIds.includes(photo.id));
+          return {
+            id: `exact-duplicate-${dupGroup.hash.substring(0, 8)}`,
+            photos: groupPhotos,
+            similarity: {
+              overallSimilarity: 1.0,
+              visualSimilarity: 1.0,
+              temporalProximity: 0,
+              spatialProximity: 0,
+              contentSimilarity: 1.0,
+              semanticSimilarity: 1.0
+            },
+            groupType: 'exact_duplicates',
+            confidence: 1.0
+          };
+        });
+        
+        // Remove exact duplicates from further analysis
+        const duplicatePhotoIds = new Set(exactDuplicates.flatMap(group => group.photoIds));
+        remainingPhotos = photos.filter(photo => !duplicatePhotoIds.has(photo.id));
+        console.log(`[VisualSimilarity] Removed ${duplicatePhotoIds.size} exact duplicates, ${remainingPhotos.length} photos remaining`);
+      } else {
+        console.log('[VisualSimilarity] Layer 1: File hash detection DISABLED');
+      }
+      
+      if (controller.signal.aborted) {
+        throw new Error('Analysis cancelled');
+      }
+      
+      let candidatePhotos = remainingPhotos;
+      
+      // Step 1: TensorFlow.js Visual Feature Extraction (FREE, local processing)
+      if (enabledLayers.tensorFlow) {
+        setState(prev => ({ ...prev, progress: 15 }));
+        console.log('[VisualSimilarity] Layer 2: TensorFlow.js visual feature extraction...');
+        const tfStartTime = Date.now();
+        
+        // Initialize TensorFlow if needed
+        await initializeTensorFlow();
+        
+        // Extract visual features for remaining photos
+        const photoData = remainingPhotos.map(photo => ({
+          id: photo.id,
+          imageUrl: photo.uris?.find(uri => uri.type === 'web')?.uri 
+                  || photo.uris?.find(uri => uri.type === 'original')?.uri 
+                  || photo.photo_url
+        })).filter(p => p.imageUrl);
+        
+        setState(prev => ({ ...prev, progress: 35 }));
+        const visualFeatures = await batchExtractFeatures(photoData, 3);
+        
+        if (controller.signal.aborted) {
+          throw new Error('Analysis cancelled');
+        }
+        
+        console.log(`[VisualSimilarity] Extracted features for ${visualFeatures.length}/${remainingPhotos.length} photos`);
+        
+        // Find visual similarity groups using TensorFlow features
+        setState(prev => ({ ...prev, progress: 45 }));
+        console.log('[VisualSimilarity] Finding visual similarity groups...');
+        
+        // Conservative threshold - looking for "redundant documentation" not exact duplicates
+        const tensorFlowGroups = findVisualSimilarities(visualFeatures, 0.90); 
+        const tfStats = getTensorFlowStats();
+        
+        console.log('[VisualSimilarity] TensorFlow analysis complete:', {
+          groupsFound: tensorFlowGroups.length,
+          modelLoadTime: tfStats.modelLoadTime + 'ms',
+          averageExtractionTime: Math.round(tfStats.averageExtractionTime) + 'ms',
+          totalExtractions: tfStats.featuresExtracted,
+          totalComparisons: tfStats.comparisonsPerformed
+        });
+        
+        // Convert TensorFlow groups to candidates for API analysis
+        const tfCandidates = new Set<string>();
+        tensorFlowGroups.forEach(group => {
+          group.group.forEach(feature => {
+            const photo = remainingPhotos.find(p => p.id === feature.photoId);
+            if (photo) tfCandidates.add(photo.id);
+          });
+        });
+        
+        candidatePhotos = remainingPhotos.filter(photo => tfCandidates.has(photo.id));
+        console.log(`[VisualSimilarity] TensorFlow filtered ${remainingPhotos.length} photos to ${candidatePhotos.length} candidates for API analysis`);
+        
+        const tfDuration = Date.now() - tfStartTime;
+        logPipelineLayer('Layer 2: TensorFlow.js', 'Visual Feature Analysis', remainingPhotos.length, candidatePhotos.length, tfDuration, {
+          modelLoadTime: tfStats.modelLoadTime,
+          averageExtractionTime: Math.round(tfStats.averageExtractionTime),
+          groupsFound: tensorFlowGroups.length,
+          threshold: 0.90
+        });
+      } else {
+        console.log('[VisualSimilarity] Layer 2: TensorFlow.js analysis DISABLED');
+      }
+      
+      if (controller.signal.aborted) {
+        throw new Error('Analysis cancelled');
+      }
+      
+      let finalCandidates = candidatePhotos;
+      
+      // Step 3: Metadata-based pre-filtering
+      if (enabledLayers.metadata) {
+        setState(prev => ({ ...prev, progress: 50 }));
+        console.log('[VisualSimilarity] Layer 3: Metadata pre-filtering (PERMISSIVE mode for testing)');
+        const metadataStartTime = Date.now();
+        const metadataCandidates = findLikelyDuplicateCandidates(candidatePhotos, 'permissive');
+        const metadataDuration = Date.now() - metadataStartTime;
+        
+        // Combine TensorFlow candidates with metadata candidates
+        const allCandidates = new Set([...candidatePhotos.map(p => p.id), ...metadataCandidates.map(p => p.id)]);
+        finalCandidates = photos.filter(photo => allCandidates.has(photo.id));
+        
+        console.log(`[VisualSimilarity] Final candidate selection: ${finalCandidates.length} photos (${candidatePhotos.length} from TensorFlow, ${metadataCandidates.length} from metadata)`);
+        
+        logPipelineLayer('Layer 3: Metadata', 'Smart Pre-filtering (Permissive)', candidatePhotos.length, metadataCandidates.length, metadataDuration, {
+          mode: 'permissive',
+          inputSource: 'tensorflow_candidates',
+          finalCandidates: finalCandidates.length
+        });
+      } else {
+        console.log('[VisualSimilarity] Layer 3: Metadata filtering DISABLED');
+      }
+      
+      if (finalCandidates.length === 0) {
         console.log('[VisualSimilarity] No obvious duplicate candidates found via strict filtering');
         console.log('[VisualSimilarity] Trying secondary analysis for visual duplicates...');
         
@@ -183,67 +368,78 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
           }
         }
         
+        // Combine exact duplicates with visual groups
+        const allSampleGroups = [...exactDuplicateGroups, ...visualGroups];
+        
         setState(prev => ({
           ...prev,
           isAnalyzing: false,
           progress: 100,
-          similarityGroups: visualGroups
+          similarityGroups: allSampleGroups
         }));
         
         const apiCalls = samplePhotos.length;
-        console.log(`[VisualSimilarity] Visual-only analysis complete: ${visualGroups.length} groups found from ${samplePhotos.length} sampled photos`);
+        console.log(`[VisualSimilarity] Visual-only analysis complete: ${allSampleGroups.length} groups found (${exactDuplicateGroups.length} exact duplicates, ${visualGroups.length} visual groups) from ${samplePhotos.length} sampled photos`);
         console.log(`[VisualSimilarity] Used ${apiCalls} API calls (sampled analysis)`);
-        return visualGroups;
+        return allSampleGroups;
       }
       
-      console.log(`[VisualSimilarity] Found ${candidates.length} candidate photos (reduced from ${photos.length})`);
+      console.log(`[VisualSimilarity] Found ${finalCandidates.length} candidate photos (reduced from ${photos.length})`);
       
       if (controller.signal.aborted) {
         throw new Error('Analysis cancelled');
       }
 
-      // Step 2: Batch generate AI descriptions for candidates only
-      setState(prev => ({ ...prev, progress: 20 }));
-      const descriptions = await batchGenerateDescriptions(candidates);
+      let finalGroups: PhotoSimilarityGroup[] = [];
+      let similarityMatrix = new Map<string, Map<string, SimilarityAnalysis>>();
+      let descriptions = new Map<string, string>();
+      let aiDuration = 0;
       
-      if (controller.signal.aborted) {
-        throw new Error('Analysis cancelled');
-      }
-      
-      setState(prev => ({ ...prev, progress: 70 }));
-      
-      // Step 3: Compare descriptions locally (very fast, no more API calls)
-      const similarityMatrix = new Map<string, Map<string, SimilarityAnalysis>>();
-      const groups: PhotoSimilarityGroup[] = [];
-      const processedPhotos = new Set<string>();
-      
-      // Initialize similarity matrix for candidates
-      candidates.forEach(photo => {
-        similarityMatrix.set(photo.id, new Map());
-      });
-      
-      // Find similarity groups among candidates
-      for (let i = 0; i < candidates.length; i++) {
-        if (processedPhotos.has(candidates[i].id)) continue;
+      // Step 4: Batch generate AI descriptions for final candidates only (Google Vision + GPT-4)
+      if (enabledLayers.aiAnalysis && finalCandidates.length > 0) {
+        setState(prev => ({ ...prev, progress: 60 }));
+        console.log('[VisualSimilarity] Layer 4: Generating AI descriptions for candidates...');
+        const aiStartTime = Date.now();
+        descriptions = await batchGenerateDescriptions(finalCandidates);
+        aiDuration = Date.now() - aiStartTime;
         
-        const currentGroup: Photo[] = [candidates[i]];
-        processedPhotos.add(candidates[i].id);
+        if (controller.signal.aborted) {
+          throw new Error('Analysis cancelled');
+        }
         
-        const desc1 = descriptions.get(candidates[i].id);
+        setState(prev => ({ ...prev, progress: 80 }));
+        
+        // Step 5: Compare descriptions locally (very fast, no more API calls)
+        console.log('[VisualSimilarity] Comparing AI descriptions locally...');
+        const processedPhotos = new Set<string>();
+        
+        // Initialize similarity matrix for candidates
+        finalCandidates.forEach(photo => {
+          similarityMatrix.set(photo.id, new Map());
+        });
+      
+      // Find similarity groups among final candidates
+      for (let i = 0; i < finalCandidates.length; i++) {
+        if (processedPhotos.has(finalCandidates[i].id)) continue;
+        
+        const currentGroup: Photo[] = [finalCandidates[i]];
+        processedPhotos.add(finalCandidates[i].id);
+        
+        const desc1 = descriptions.get(finalCandidates[i].id);
         if (!desc1) continue;
         
-        for (let j = i + 1; j < candidates.length; j++) {
-          if (processedPhotos.has(candidates[j].id)) continue;
+        for (let j = i + 1; j < finalCandidates.length; j++) {
+          if (processedPhotos.has(finalCandidates[j].id)) continue;
           
-          const desc2 = descriptions.get(candidates[j].id);
+          const desc2 = descriptions.get(finalCandidates[j].id);
           if (!desc2) continue;
           
           // Fast local comparison of AI descriptions
           const visualSimilarity = calculateVisualContentSimilarity(desc1, desc2);
           
           // Debug first few comparisons
-          if (groups.length === 0 && currentGroup.length <= 3) {
-            console.log(`[VisualSimilarity] Comparing ${candidates[i].id} vs ${candidates[j].id}:`, {
+          if (finalGroups.length === 0 && currentGroup.length <= 3) {
+            console.log(`[VisualSimilarity] Comparing ${finalCandidates[i].id} vs ${finalCandidates[j].id}:`, {
               visualSimilarity: visualSimilarity.toFixed(3),
               threshold: similarityThreshold,
               passes: visualSimilarity >= similarityThreshold,
@@ -253,21 +449,21 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
           }
           
           if (visualSimilarity >= similarityThreshold) {
-            currentGroup.push(candidates[j]);
-            processedPhotos.add(candidates[j].id);
+            currentGroup.push(finalCandidates[j]);
+            processedPhotos.add(finalCandidates[j].id);
             
             // Store similarity
             const fullSimilarity: SimilarityAnalysis = {
               visualSimilarity,
-              contentSimilarity: candidates[i].project_id === candidates[j].project_id ? 1.0 : 0.0,
-              temporalProximity: calculateTemporalProximity(candidates[i], candidates[j]),
-              spatialProximity: calculateSpatialProximity(candidates[i], candidates[j]),
+              contentSimilarity: finalCandidates[i].project_id === finalCandidates[j].project_id ? 1.0 : 0.0,
+              temporalProximity: calculateTemporalProximity(finalCandidates[i], finalCandidates[j]),
+              spatialProximity: calculateSpatialProximity(finalCandidates[i], finalCandidates[j]),
               semanticSimilarity: visualSimilarity, // Using visual as proxy
               overallSimilarity: visualSimilarity
             };
             
-            similarityMatrix.get(candidates[i].id)?.set(candidates[j].id, fullSimilarity);
-            similarityMatrix.get(candidates[j].id)?.set(candidates[i].id, fullSimilarity);
+            similarityMatrix.get(finalCandidates[i].id)?.set(finalCandidates[j].id, fullSimilarity);
+            similarityMatrix.get(finalCandidates[j].id)?.set(finalCandidates[i].id, fullSimilarity);
           }
         }
         
@@ -285,30 +481,53 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
               semanticSimilarity: similarityThreshold,
               overallSimilarity: similarityThreshold
             },
-            groupType: 'retry_shots', // Most likely for closely timed/located photos
+            groupType: 'retry_shots' as const, // Most likely for closely timed/located photos
             confidence: Math.min(1.0, similarityThreshold * 1.2)
           };
           
           console.log(`[VisualSimilarity] Created group ${groupId} with ${currentGroup.length} photos:`, 
             currentGroup.map(p => p.id).join(', '));
-          groups.push(newGroup);
+          finalGroups.push(newGroup);
         }
       }
+        
+        // Log Layer 4 (AI Analysis)
+        logPipelineLayer('Layer 4: AI Analysis', 'Google Vision + GPT-4', finalCandidates.length, descriptions.size, aiDuration, {
+          descriptionsGenerated: descriptions.size,
+          similarityGroupsFound: finalGroups.length
+        });
+      } else {
+        console.log('[VisualSimilarity] Layer 4: AI analysis DISABLED');
+      }
 
+      // Combine exact duplicates with similarity groups
+      const allGroups = [...exactDuplicateGroups, ...finalGroups];
+      
       setState(prev => ({
         ...prev,
         isAnalyzing: false,
         progress: 100,
-        similarityGroups: groups,
+        similarityGroups: allGroups,
         similarityMatrix
       }));
 
-      const apiCalls = candidates.length; // Much fewer calls!
+      const apiCalls = finalCandidates.length; // Much fewer calls!
       const originalCalls = (photos.length * (photos.length - 1)) / 2;
-      console.log(`[VisualSimilarity] Smart analysis complete: ${groups.length} groups found`);
-      console.log(`[VisualSimilarity] Efficiency: ${apiCalls} API calls vs ${originalCalls} in brute force (${Math.round((1 - apiCalls/originalCalls) * 100)}% reduction)`);
       
-      return groups;
+      console.log(`[VisualSimilarity] Smart analysis complete: ${allGroups.length} groups found (${exactDuplicateGroups.length} exact duplicates, ${finalGroups.length} similarity groups)`);
+      console.log(`[VisualSimilarity] Efficiency analysis:`, {
+        apiCalls: apiCalls,
+        bruteForceApiCalls: originalCalls,
+        reductionPercentage: Math.round((1 - apiCalls/originalCalls) * 100) + '%',
+        photosAnalyzed: photos.length,
+        candidatesFiltered: finalCandidates.length,
+        exactDuplicates: exactDuplicateGroups.length,
+        visualGroups: finalGroups.length
+      });
+      
+      logPipelineSummary(allGroups.length, photos.length);
+      
+      return allGroups;
 
     } catch (error) {
       if (controller.signal.aborted) {
@@ -316,6 +535,7 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
       }
       
       console.error('[VisualSimilarity] Analysis failed:', error);
+      logPipelineError('Analysis Pipeline', error instanceof Error ? error.message : 'Unknown error', error);
       setState(prev => ({
         ...prev,
         isAnalyzing: false,
