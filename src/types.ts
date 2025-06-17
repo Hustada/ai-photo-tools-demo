@@ -51,6 +51,11 @@ export interface Photo {
   archive_state?: 'active' | 'archived' | 'pending_deletion';
   archived_at?: number;
   archive_reason?: string;
+  
+  // Scout AI analysis tracking
+  scout_ai_analyzed_at?: string; // ISO timestamp of when photo was analyzed
+  scout_ai_analysis_version?: string; // Version of analysis pipeline used
+  scout_ai_user_action?: 'kept' | 'archived' | 'pending' | null; // User's decision on the photo
 }
 
 // For the response from GET /photos which is an array of Photo objects

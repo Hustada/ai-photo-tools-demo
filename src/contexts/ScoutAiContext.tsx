@@ -20,12 +20,18 @@ import type {
 import { groupSimilarPhotos } from '../utils/photoSimilarity';
 import { generateCurationRecommendation, generateScoutAiMessage } from '../utils/curationLogic';
 import { useVisualSimilarity } from '../hooks/useVisualSimilarity';
+import { useAnalysisTracking } from '../hooks/useAnalysisTracking';
 import { 
   applyCurationActions, 
   createActionsFromRecommendation,
   archivePhoto as archivePhotoUtil,
   restorePhoto as restorePhotoUtil
 } from '../utils/photoActions';
+import { 
+  filterPhotosForAnalysis, 
+  type AnalysisMode, 
+  type FilterOptions 
+} from '../utils/photoFiltering';
 
 const ScoutAiContext = createContext<ScoutAiContextType | undefined>(undefined);
 
@@ -56,6 +62,11 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     confidenceThreshold: 0.85,    // 85% minimum confidence for rendering
     batchSize: 3,                 // Smaller batches for better progress tracking
     maxConcurrent: 2              // Limit concurrent API calls
+  });
+
+  // Initialize analysis tracking for smart photo filtering
+  const analysisTracking = useAnalysisTracking({
+    defaultNewPhotoDays: 30 // Default to 30 days for "new" photos
   });
   const [undoStack, setUndoStack] = useState<Array<{
     id: string;
@@ -125,7 +136,11 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
   }, []);
 
   // Analyze photos for similarity and generate suggestions using AI-powered visual analysis
-  const analyzeSimilarPhotos = useCallback(async (photos: Photo[], clearExisting = true): Promise<PhotoSimilarityGroup[]> => {
+  const analyzeSimilarPhotos = useCallback(async (
+    photos: Photo[], 
+    clearExisting = true,
+    filterOptions?: FilterOptions
+  ): Promise<PhotoSimilarityGroup[]> => {
     if (!userPreferences) {
       console.warn('[Scout AI] User preferences not loaded yet');
       return [];
@@ -141,10 +156,26 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     }
 
     try {
-      console.log('[Scout AI] Analyzing', photos.length, 'photos using enhanced visual similarity pipeline');
+      // Apply smart filtering if filter options are provided
+      let photosToAnalyze = photos;
+      if (filterOptions) {
+        photosToAnalyze = filterPhotosForAnalysis(photos, filterOptions);
+        console.log('[Scout AI] Smart filtering applied:', {
+          total: photos.length,
+          filtered: photosToAnalyze.length,
+          mode: filterOptions.mode
+        });
+      }
+
+      if (photosToAnalyze.length === 0) {
+        console.log('[Scout AI] No photos to analyze after filtering');
+        return [];
+      }
+
+      console.log('[Scout AI] Analyzing', photosToAnalyze.length, 'photos using enhanced visual similarity pipeline');
       
       // Use the enhanced visual similarity hook (same as test page)
-      const groups = await visualSimilarity.analyzeSimilarity(photos);
+      const groups = await visualSimilarity.analyzeSimilarity(photosToAnalyze);
       
       console.log('[Scout AI] Enhanced pipeline found', groups.length, 'similarity groups');
       
@@ -173,6 +204,18 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
       } else {
         console.log('[Scout AI] No similarity groups found above 85% confidence threshold');
         // This is normal - not all photo sets will have duplicates/similar photos
+      }
+
+      // Mark analyzed photos as analyzed in the database (fire and forget)
+      try {
+        const photoIds = photosToAnalyze.map(photo => photo.id);
+        console.log('[Scout AI] Marking', photoIds.length, 'photos as analyzed in database');
+        analysisTracking.markPhotosAnalyzed(photoIds).catch(err => {
+          console.warn('[Scout AI] Failed to mark photos as analyzed in database:', err);
+          // Don't fail the analysis if database update fails
+        });
+      } catch (err) {
+        console.warn('[Scout AI] Error initiating database update for analyzed photos:', err);
       }
 
       return groups;
@@ -440,6 +483,14 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
       getSimilarityScore: visualSimilarity.getSimilarityScore,
       getGroupForPhoto: visualSimilarity.getGroupForPhoto,
       cancelAnalysis: visualSimilarity.cancelAnalysis
+    },
+    // Expose analysis tracking functionality
+    analysisTracking: {
+      getAnalysisStats: analysisTracking.getAnalysisStats,
+      shouldSuggestAnalysis: analysisTracking.shouldSuggestAnalysis,
+      getAnalysisStatusMessage: analysisTracking.getAnalysisStatusMessage,
+      isMarkingAnalyzed: analysisTracking.isMarkingAnalyzed,
+      error: analysisTracking.error
     }
   };
 

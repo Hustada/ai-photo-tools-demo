@@ -1,8 +1,8 @@
-# CompanyCam AI Photo Inspirations Demo
+# Scout AI
 
 ## Elevating Photo Management with Artificial Intelligence
 
-This application is an ongoing exploration and demonstration of how Artificial Intelligence (AI) can potentially enhance the CompanyCam platform. The current focus is on providing intelligent suggestions for photo tags and descriptions, with the broader aim of showcasing practical approaches to AI-driven metadata improvements. The ultimate goals include boosting user efficiency, improving data quality, and unlocking new organizational capabilities for photos within CompanyCam.
+Scout AI is an intelligent photo management application that leverages Artificial Intelligence to enhance the CompanyCam platform. It provides intelligent suggestions for photo tags and descriptions, with smart photo curation and automated organization capabilities. The ultimate goals include boosting user efficiency, improving data quality, and unlocking new organizational capabilities for photos within CompanyCam.
 
 ## The Challenge: Rich Metadata is Key, But Manual Tagging is Time-Consuming
 

@@ -149,7 +149,7 @@ const HomePageContent: React.FC = () => {
       <div className="flex flex-col md:flex-row md:justify-between md:items-center p-4 bg-gray-900 text-white space-y-4 md:space-y-0">
         {/* Left side: App Title */}
         <div className="text-center md:text-left">
-          <h1 className="text-2xl sm:text-3xl font-bold text-sky-400">CompanyCam AI Photo Inspirations</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-sky-400">Scout AI</h1>
         </div>
 
         {/* Right side: User Info / Loading / Error */}

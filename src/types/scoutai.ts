@@ -1,6 +1,8 @@
 // © 2025 Mark Hustad — MIT License
 
 import type { Photo } from './index';
+import type { FilterOptions } from '../utils/photoFiltering';
+import type { AnalysisStats } from '../hooks/useAnalysisTracking';
 
 export interface SimilarityAnalysis {
   visualSimilarity: number;      // How visually similar (0-1)
@@ -103,7 +105,7 @@ export interface ScoutAiContextType {
   undoStack: UndoAction[];
   
   // Actions
-  analyzeSimilarPhotos: (photos: Photo[], clearExisting?: boolean) => Promise<PhotoSimilarityGroup[]>;
+  analyzeSimilarPhotos: (photos: Photo[], clearExisting?: boolean, filterOptions?: FilterOptions) => Promise<PhotoSimilarityGroup[]>;
   generateSuggestion: (groups: PhotoSimilarityGroup[]) => ScoutAiSuggestion;
   acceptSuggestion: (suggestionId: string, photos: Photo[], onPhotoUpdate: (photo: Photo) => void) => Promise<CurationActionResult>;
   rejectSuggestion: (suggestionId: string) => Promise<void>;
@@ -126,5 +128,14 @@ export interface ScoutAiContextType {
     getSimilarityScore: (photo1Id: string, photo2Id: string) => SimilarityAnalysis | null;
     getGroupForPhoto: (photoId: string) => PhotoSimilarityGroup | null;
     cancelAnalysis: () => void;
+  };
+  
+  // Analysis tracking functionality
+  analysisTracking: {
+    getAnalysisStats: (photos: Photo[]) => AnalysisStats;
+    shouldSuggestAnalysis: (photos: Photo[], daysSince?: number) => boolean;
+    getAnalysisStatusMessage: (photos: Photo[]) => string;
+    isMarkingAnalyzed: boolean;
+    error: string | null;
   };
 }

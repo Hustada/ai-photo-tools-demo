@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { useScoutAi } from '../contexts/ScoutAiContext';
 import { ScoutAiNotification } from './ScoutAiNotification';
+import { AnalysisModeSelector } from './AnalysisModeSelector';
 import type { Photo } from '../types';
 import type { ScoutAiSuggestion, CurationRecommendation } from '../types/scoutai';
+import type { FilterOptions } from '../utils/photoFiltering';
 
 interface ScoutAiDemoProps {
   photos: Photo[];
@@ -38,15 +40,15 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
     }
   }, [scoutAi.suggestions, showSuggestions]);
 
-  // Handle manual trigger for analysis
-  const handleManualAnalysis = async () => {
-    console.log('[ScoutAiDemo] Manual analysis triggered');
+  // Handle manual trigger for analysis with optional filter options
+  const handleManualAnalysis = async (filterOptions?: FilterOptions) => {
+    console.log('[ScoutAiDemo] Manual analysis triggered with options:', filterOptions);
     setHasAnalyzed(false);
     setShowSuggestions(true);
     setIsMinimized(false);
     
-    // Analyze photos and clear existing suggestions
-    await scoutAi.analyzeSimilarPhotos(photos, true);
+    // Analyze photos and clear existing suggestions, passing filter options
+    await scoutAi.analyzeSimilarPhotos(photos, true, filterOptions);
     setHasAnalyzed(true);
   };
 
@@ -241,15 +243,17 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
               <p className="text-xs text-blue-700">Ready to analyze photos</p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setIsMinimized(false);
-              setShowSuggestions(false);
-            }}
-            className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-          >
-            Analyze Photos
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => {
+                setIsMinimized(false);
+                setShowSuggestions(false);
+              }}
+              className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+            >
+              Analyze Photos
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -303,13 +307,11 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
                 ✓ {completedSuggestions.length} applied
               </div>
             )}
-            <button
-              onClick={handleManualAnalysis}
-              disabled={scoutAi.isAnalyzing || photos.length < 2}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {scoutAi.isAnalyzing ? 'Analyzing...' : 'Trigger Analysis'}
-            </button>
+            <AnalysisModeSelector
+              photos={photos}
+              isAnalyzing={scoutAi.isAnalyzing}
+              onAnalyze={handleManualAnalysis}
+            />
             {showSuggestions && activeSuggestions.length === 0 && completedSuggestions.length > 0 && (
               <button
                 onClick={() => setIsMinimized(true)}

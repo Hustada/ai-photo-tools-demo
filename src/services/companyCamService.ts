@@ -217,4 +217,96 @@ export const companyCamService = {
       throw error;
     }
   },
+
+  /**
+   * Mark a photo as analyzed by Scout AI
+   */
+  markPhotoAnalyzed: async (
+    photoId: string,
+    userAction?: 'kept' | 'archived' | 'pending' | null
+  ): Promise<{ success: boolean; photo?: any; error?: string }> => {
+    try {
+      const analysisData = {
+        analyzed_at: new Date().toISOString(),
+        analysis_version: 'v2.0-perceptual-hash',
+        user_action: userAction
+      };
+
+      console.log('[companyCamService] markPhotoAnalyzed - Marking photo as analyzed:', photoId, analysisData);
+
+      const response = await axios.patch(
+        `/api/photo-analysis/${photoId}`,
+        analysisData,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('[companyCamService] markPhotoAnalyzed - Error marking photo as analyzed (Axios):', error.toJSON());
+        return { 
+          success: false, 
+          error: error.response?.data?.error || error.message 
+        };
+      } else if (error instanceof Error) {
+        console.error('[companyCamService] markPhotoAnalyzed - Error marking photo as analyzed (Generic):', error.message);
+        return { 
+          success: false, 
+          error: error.message 
+        };
+      } else {
+        console.error('[companyCamService] markPhotoAnalyzed - Unknown error marking photo as analyzed:', error);
+        return { 
+          success: false, 
+          error: 'Unknown error occurred' 
+        };
+      }
+    }
+  },
+
+  /**
+   * Mark multiple photos as analyzed in batch
+   */
+  markPhotosAnalyzed: async (
+    photoIds: string[],
+    userActions?: Record<string, 'kept' | 'archived' | 'pending' | null>
+  ): Promise<{ success: boolean; results?: any[]; error?: string }> => {
+    try {
+      console.log('[companyCamService] markPhotosAnalyzed - Marking photos as analyzed:', photoIds.length, 'photos');
+
+      const promises = photoIds.map(photoId =>
+        companyCamService.markPhotoAnalyzed(photoId, userActions?.[photoId])
+      );
+
+      const results = await Promise.allSettled(promises);
+      
+      const successful = results.filter(r => r.status === 'fulfilled' && r.value.success);
+      const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success));
+
+      console.log('[companyCamService] markPhotosAnalyzed - Batch complete:', {
+        total: photoIds.length,
+        successful: successful.length,
+        failed: failed.length
+      });
+
+      if (failed.length > 0) {
+        console.warn('[companyCamService] markPhotosAnalyzed - Some photos failed to update:', failed);
+      }
+
+      return {
+        success: successful.length > 0,
+        results: results.map(r => r.status === 'fulfilled' ? r.value : { success: false, error: 'Failed' })
+      };
+    } catch (error: unknown) {
+      console.error('[companyCamService] markPhotosAnalyzed - Error in batch update:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      };
+    }
+  }
 };
