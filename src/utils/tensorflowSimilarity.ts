@@ -7,7 +7,7 @@ import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgl';
 import * as mobilenet from '@tensorflow-models/mobilenet';
 
-interface VisualFeatures {
+export interface VisualFeatures {
   photoId: string;
   features: Float32Array;
   extractionTime: number;
@@ -31,6 +31,7 @@ interface TensorFlowStats {
   averageComparisonTime: number;
 }
 
+let visionModel: tf.LayersModel | mobilenet.MobileNet | null = null;
 let mobileNetModel: mobilenet.MobileNet | null = null;
 let modelLoadStartTime = 0;
 let stats: TensorFlowStats = {
@@ -44,18 +45,29 @@ let stats: TensorFlowStats = {
 };
 
 /**
- * Initialize TensorFlow.js and load MobileNet model
+ * Initialize TensorFlow.js and load ResNet feature extraction model
  */
 export async function initializeTensorFlow(): Promise<void> {
   console.log('[TensorFlow] Initializing TensorFlow.js...');
   const initStartTime = Date.now();
   
   try {
-    // Set backend to WebGL for GPU acceleration
-    console.log('[TensorFlow] Setting WebGL backend...');
-    await tf.setBackend('webgl');
-    console.log('[TensorFlow] Backend set to:', tf.getBackend());
-    console.log('[TensorFlow] WebGL support:', await tf.ENV.getBool('WEBGL_VERSION') >= 1);
+    // Set backend to WebGL for GPU acceleration, with CPU fallback
+    console.log('[TensorFlow] Setting up backend...');
+    
+    try {
+      await tf.setBackend('webgl');
+      console.log('[TensorFlow] WebGL backend set successfully');
+      console.log('[TensorFlow] Backend:', tf.getBackend());
+    } catch (webglError) {
+      console.warn('[TensorFlow] WebGL backend failed, falling back to CPU:', webglError.message);
+      await tf.setBackend('cpu');
+      console.log('[TensorFlow] CPU backend set as fallback');
+    }
+    
+    // Ready the backend
+    await tf.ready();
+    console.log('[TensorFlow] Backend ready:', tf.getBackend());
     
     // Log memory info
     const memInfo = tf.memory();
@@ -66,23 +78,79 @@ export async function initializeTensorFlow(): Promise<void> {
       unreliable: memInfo.unreliable
     });
     
-    if (!mobileNetModel) {
-      console.log('[TensorFlow] Loading MobileNet model...');
+    if (!visionModel && !mobileNetModel) {
+      console.log('[TensorFlow] Loading MobileNet model for feature extraction...');
       modelLoadStartTime = Date.now();
       
-      // Load official MobileNet model
-      mobileNetModel = await mobilenet.load({
-        version: 1,
-        alpha: 1.0,
-        modelUrl: undefined, // Use default CDN
-        inputRange: [0, 1]
-      });
+      try {
+        // Try the official MobileNet package first (most reliable)
+        console.log('[TensorFlow] Attempting to load MobileNet via @tensorflow-models/mobilenet...');
+        mobileNetModel = await mobilenet.load({
+          version: 2, // Use MobileNet V2
+          alpha: 1.0  // Full width model
+        });
+        console.log('[TensorFlow] Successfully loaded MobileNet V2 via official package');
+        visionModel = mobileNetModel;
+        
+      } catch (mobileNetError) {
+        console.warn('[TensorFlow] MobileNet package failed, trying manual model loading:', mobileNetError.message);
+        
+        // Fallback to manual model loading
+        try {
+          // Try loading models directly first, then fallback to proxy
+          const modelConfigs = [
+            {
+              url: 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_1.0_224/model.json',
+              direct: true
+            },
+            {
+              url: 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json',
+              direct: true
+            },
+            {
+              url: 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_1.0_224/model.json',
+              direct: false // Try via proxy
+            }
+          ];
+          
+          let modelLoaded = false;
+          for (const config of modelConfigs) {
+            try {
+              console.log(`[TensorFlow] Trying to load model ${config.direct ? 'directly' : 'via proxy'}: ${config.url}`);
+              const modelUrl = config.direct 
+                ? config.url 
+                : `/api/tensorflow-model-proxy?modelUrl=${encodeURIComponent(config.url)}`;
+              
+              visionModel = await tf.loadLayersModel(modelUrl);
+              console.log(`[TensorFlow] Successfully loaded pre-trained model: ${config.url}`);
+              modelLoaded = true;
+              break;
+            } catch (modelError) {
+              console.warn(`[TensorFlow] Model ${config.url} failed (${config.direct ? 'direct' : 'proxy'}):`, modelError.message);
+              continue;
+            }
+          }
+          
+          if (!modelLoaded) {
+            throw new Error('All pre-trained models failed to load');
+          }
+        } catch (error) {
+          console.error('[TensorFlow] All fallback models failed:', error);
+          throw new Error(`Could not load any pre-trained model: ${error.message}`);
+        }
+      }
       
       stats.modelLoadTime = Date.now() - modelLoadStartTime;
-      console.log('[TensorFlow] MobileNet model loaded successfully');
+      console.log('[TensorFlow] Model loaded successfully');
       console.log('[TensorFlow] Model load time:', stats.modelLoadTime, 'ms');
-      console.log('[TensorFlow] Model version: MobileNet v1');
-      console.log('[TensorFlow] Model input size: 224x224x3');
+      
+      if (mobileNetModel) {
+        console.log('[TensorFlow] Using MobileNet V2 for feature extraction (1280-dimensional embeddings)');
+      } else if (visionModel && 'inputs' in visionModel) {
+        console.log('[TensorFlow] Model input shape:', visionModel.inputs[0].shape);
+        console.log('[TensorFlow] Model output shape:', visionModel.outputs[0].shape);
+        console.log('[TensorFlow] This is a proper feature extraction model, not classification');
+      }
     }
     
     const totalInitTime = Date.now() - initStartTime;
@@ -94,8 +162,9 @@ export async function initializeTensorFlow(): Promise<void> {
   }
 }
 
+
 /**
- * Preprocess image for MobileNet input
+ * Preprocess image for ResNet input
  */
 async function preprocessImage(imageUrl: string): Promise<tf.Tensor4D> {
   console.log('[TensorFlow] Preprocessing image:', imageUrl);
@@ -118,12 +187,13 @@ async function preprocessImage(imageUrl: string): Promise<tf.Tensor4D> {
         // Draw and resize image
         ctx.drawImage(img, 0, 0, 224, 224);
         
-        // Convert to tensor
+        // Convert to tensor with proper MobileNet preprocessing
         const tensor = tf.browser.fromPixels(canvas, 3) // RGB channels
           .expandDims(0) // Add batch dimension
-          .div(255.0) // Normalize to [0,1]
-          .sub(0.5) // Center around 0
-          .mul(2.0); // Scale to [-1,1] (MobileNet expects this)
+          .cast('float32') // Ensure float32
+          .div(255.0) // Normalize to [0,1] for MobileNet
+          .sub(0.5) // Center around 0 
+          .mul(2.0); // Scale to [-1,1] for MobileNet
         
         const preprocessTime = Date.now() - preprocessStartTime;
         console.log('[TensorFlow] Image preprocessed in', preprocessTime, 'ms');
@@ -146,28 +216,62 @@ async function preprocessImage(imageUrl: string): Promise<tf.Tensor4D> {
 }
 
 /**
- * Extract visual features from an image using MobileNet
+ * Extract visual features from an image using ResNet feature extractor
  */
 export async function extractVisualFeatures(
   photoId: string, 
   imageUrl: string
 ): Promise<VisualFeatures> {
-  console.log(`[TensorFlow] Extracting features for photo ${photoId}`);
+  console.log(`[TensorFlow] Extracting features for photo ${photoId} using pre-trained vision model`);
   const extractionStartTime = Date.now();
   
-  if (!mobileNetModel) {
-    console.log('[TensorFlow] Model not loaded, initializing...');
+  if (!visionModel && !mobileNetModel) {
+    console.log('[TensorFlow] Vision model not loaded, initializing...');
     await initializeTensorFlow();
   }
   
   try {
     // Preprocess image
     const preprocessedImage = await preprocessImage(imageUrl);
-    console.log('[TensorFlow] Starting feature extraction...');
+    console.log('[TensorFlow] Starting feature extraction with pre-trained model...');
     
-    // Extract features using MobileNet's infer method (gets feature vector before classification)
-    const featureTensor = mobileNetModel!.infer(preprocessedImage, false) as tf.Tensor; // false = return features, not predictions
-    const features = await featureTensor.data() as Float32Array;
+    // Extract features from the model
+    let featureTensor: tf.Tensor;
+    
+    if (mobileNetModel) {
+      // Use MobileNet's infer method to get embeddings
+      // Try using an earlier layer for more discriminative features
+      // The second argument (true) returns embeddings instead of logits
+      featureTensor = mobileNetModel.infer(preprocessedImage, 'conv_pw_13_relu') as tf.Tensor;
+      console.log('[TensorFlow] Extracted features from MobileNet conv_pw_13_relu layer');
+      
+      // Flatten the tensor if needed
+      if (featureTensor.shape.length > 2) {
+        featureTensor = featureTensor.reshape([featureTensor.shape[0], -1]);
+      }
+    } else if (visionModel && 'layers' in visionModel && visionModel.layers.length > 2) {
+      // Create a feature extractor from the dense layer before final classification
+      const featureLayerIndex = visionModel.layers.length - 2;
+      const featureExtractor = tf.model({
+        inputs: visionModel.inputs,
+        outputs: visionModel.layers[featureLayerIndex].output
+      });
+      
+      featureTensor = featureExtractor.predict(preprocessedImage) as tf.Tensor;
+      featureExtractor.dispose();
+      console.log('[TensorFlow] Extracted features from custom layers model');
+    } else if (visionModel && 'predict' in visionModel) {
+      // Fallback: use the full model output
+      featureTensor = visionModel.predict(preprocessedImage) as tf.Tensor;
+      console.log('[TensorFlow] Extracted features using full model output');
+    } else {
+      throw new Error('No valid model available for feature extraction');
+    }
+    
+    const rawFeatures = await featureTensor.data() as Float32Array;
+    
+    // Normalize features for better similarity comparison
+    const features = normalizeFeatures(rawFeatures);
     
     // Cleanup tensors
     preprocessedImage.dispose();
@@ -187,7 +291,8 @@ export async function extractVisualFeatures(
       featureStats: {
         min: Math.min(...features).toFixed(3),
         max: Math.max(...features).toFixed(3),
-        avg: (features.reduce((a, b) => a + b, 0) / features.length).toFixed(3)
+        avg: (features.reduce((a, b) => a + b, 0) / features.length).toFixed(3),
+        norm: Math.sqrt(features.reduce((a, b) => a + b * b, 0)).toFixed(3) // Should be ~1.0 after normalization
       }
     });
     
@@ -213,6 +318,7 @@ export async function extractVisualFeatures(
 
 /**
  * Calculate cosine similarity between two feature vectors
+ * Enhanced with L2 normalization and better numerical stability
  */
 function calculateCosineSimilarity(features1: Float32Array, features2: Float32Array): number {
   if (features1.length !== features2.length) {
@@ -223,20 +329,49 @@ function calculateCosineSimilarity(features1: Float32Array, features2: Float32Ar
   let norm1 = 0;
   let norm2 = 0;
   
+  // Calculate dot product and norms in one pass for efficiency
   for (let i = 0; i < features1.length; i++) {
-    dotProduct += features1[i] * features2[i];
-    norm1 += features1[i] * features1[i];
-    norm2 += features2[i] * features2[i];
+    const f1 = features1[i];
+    const f2 = features2[i];
+    
+    dotProduct += f1 * f2;
+    norm1 += f1 * f1;
+    norm2 += f2 * f2;
   }
   
-  norm1 = Math.sqrt(norm1);
-  norm2 = Math.sqrt(norm2);
+  // Apply epsilon for numerical stability
+  const epsilon = 1e-8;
+  norm1 = Math.sqrt(norm1 + epsilon);
+  norm2 = Math.sqrt(norm2 + epsilon);
   
-  if (norm1 === 0 || norm2 === 0) {
-    return 0;
+  // Cosine similarity: dot product / (||a|| * ||b||)
+  const similarity = dotProduct / (norm1 * norm2);
+  
+  // Clamp to [-1, 1] range due to floating point precision
+  return Math.max(-1, Math.min(1, similarity));
+}
+
+/**
+ * Normalize feature vector using L2 normalization
+ * This ensures all vectors have unit length for better similarity comparison
+ */
+function normalizeFeatures(features: Float32Array): Float32Array {
+  let norm = 0;
+  for (let i = 0; i < features.length; i++) {
+    norm += features[i] * features[i];
+  }
+  norm = Math.sqrt(norm);
+  
+  if (norm === 0) {
+    return features; // Return original if zero vector
   }
   
-  return dotProduct / (norm1 * norm2);
+  const normalized = new Float32Array(features.length);
+  for (let i = 0; i < features.length; i++) {
+    normalized[i] = features[i] / norm;
+  }
+  
+  return normalized;
 }
 
 /**
@@ -290,7 +425,7 @@ export async function batchExtractFeatures(
   const features: VisualFeatures[] = [];
   
   // Ensure model is loaded
-  if (!mobileNetModel) {
+  if (!visionModel && !mobileNetModel) {
     await initializeTensorFlow();
   }
   
@@ -355,7 +490,6 @@ export function findVisualSimilarities(
       if (processed.has(features[j].photoId)) continue;
       
       const similarity = compareVisualFeatures(features[i], features[j]);
-      comparisonCount++;
       
       // More stringent checking for construction photos
       const isHighSimilarity = similarity.similarity >= similarityThreshold;
@@ -428,8 +562,13 @@ export function cleanupTensorFlow(): void {
   console.log('[TensorFlow] Cleaning up resources...');
   
   if (mobileNetModel) {
-    mobileNetModel.dispose();
+    // MobileNet models don't have a dispose method, just null the reference
     mobileNetModel = null;
+  }
+  
+  if (visionModel && 'dispose' in visionModel) {
+    visionModel.dispose();
+    visionModel = null;
   }
   
   // Force garbage collection

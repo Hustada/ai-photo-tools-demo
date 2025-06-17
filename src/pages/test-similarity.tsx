@@ -37,10 +37,11 @@ export default function TestSimilarity() {
   // Test 3: Production mode (all layers)
   const { analyzeSimilarity: testProduction, state: productionState } = useVisualSimilarity({
     enabledLayers: {
-      fileHash: true,      // ENABLED
-      tensorFlow: true,    // ENABLED
-      metadata: true,      // ENABLED
-      aiAnalysis: true     // ENABLED
+      fileHash: true,        // ENABLED
+      perceptualHash: true,  // ENABLED - Layer 1.5
+      tensorFlow: true,      // ENABLED
+      metadata: true,        // ENABLED
+      aiAnalysis: true       // ENABLED
     },
     similarityThreshold: 0.6
   });
@@ -48,10 +49,11 @@ export default function TestSimilarity() {
   // Test 4: Custom selected photos with Layer 1 + Layer 2 enabled
   const { analyzeSimilarity: testCustom, state: customState, getAllGroups, getFilteredGroups } = useVisualSimilarity({
     enabledLayers: {
-      fileHash: true,      // ENABLED - Layer 1: Exact duplicate detection
-      tensorFlow: true,    // ENABLED - Layer 2: Visual feature analysis
-      metadata: false,     // DISABLED - focus on testing Layers 1+2
-      aiAnalysis: true     // ENABLED - AI comparison for final candidates
+      fileHash: true,        // ENABLED - Layer 1: Exact duplicate detection
+      perceptualHash: true,  // ENABLED - Layer 1.5: Near-duplicate detection
+      tensorFlow: true,      // ENABLED - Layer 2: Visual feature analysis
+      metadata: false,       // DISABLED - focus on testing Layers 1+1.5+2
+      aiAnalysis: true       // ENABLED - AI comparison for final candidates
     },
     similarityThreshold: 0.5,
     confidenceThreshold: 0.70 // 70% confidence for testing iPhone photos

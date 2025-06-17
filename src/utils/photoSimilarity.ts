@@ -120,9 +120,13 @@ export function calculateQualityMetrics(photo: Photo): PhotoQualityMetrics {
  * 5. Jaccard similarity + construction terms → similarity score
  * 6. groupSimilarPhotos() → curation recommendations
  */
-export async function generateVisualDescription(photoUrl: string, photoId?: string): Promise<string | null> {
+/**
+ * Generate visual tags and labels for a photo (for UI and metadata)
+ * This is separate from similarity analysis - used for tagging/labeling only
+ */
+export async function generatePhotoTags(photoUrl: string, photoId?: string): Promise<string[] | null> {
   try {
-    console.log(`[VisualSimilarity] Generating description for photo ${photoId} with URL: ${photoUrl.substring(0, 100)}...`);
+    console.log(`[PhotoTagging] Generating tags for photo ${photoId}`);
     
     const response = await fetch('/api/suggest-ai-tags', {
       method: 'POST',
@@ -130,24 +134,53 @@ export async function generateVisualDescription(photoUrl: string, photoId?: stri
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        photoId: photoId || `similarity-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`, // Provide a photoId (required by API)
+        photoId: photoId || `tagging-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
         photoUrl
-        // Note: We rely on the default AI analysis to generate descriptions
-        // The similarity detection works well with standard AI-generated descriptions
       }),
     });
 
     if (!response.ok) {
-      console.error(`[VisualSimilarity] Failed to generate visual description for ${photoId}: ${response.status} ${response.statusText}`);
-      const errorText = await response.text();
-      console.error(`[VisualSimilarity] Error response body:`, errorText);
+      console.error(`[PhotoTagging] Failed to generate tags for ${photoId}: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    // Extract tags from the response (adjust based on actual API response structure)
+    return data.suggestedTags || data.tags || [];
+  } catch (error) {
+    console.error('[PhotoTagging] Error generating tags:', error);
+    return null;
+  }
+}
+
+/**
+ * DEPRECATED: Use TensorFlow features for similarity instead
+ * Keeping for backwards compatibility but will be removed
+ */
+export async function generateVisualDescription(photoUrl: string, photoId?: string): Promise<string | null> {
+  console.warn('[PhotoSimilarity] generateVisualDescription is deprecated. Use TensorFlow features for similarity analysis.');
+  
+  try {
+    const response = await fetch('/api/suggest-ai-tags', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        photoId: photoId || `similarity-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        photoUrl
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(`[PhotoSimilarity] Failed to generate description for ${photoId}: ${response.status}`);
       return null;
     }
 
     const data = await response.json();
     return data.suggestedDescription || null;
   } catch (error) {
-    console.error('[VisualSimilarity] Error generating visual description:', error);
+    console.error('[PhotoSimilarity] Error generating description:', error);
     return null;
   }
 }
