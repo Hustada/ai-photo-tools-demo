@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Perceptual Hashing</title>
+    <style>
+        body { font-family: monospace; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 5px; }
+        .high { background: #d4edda; }
+        .medium { background: #fff3cd; }
+        .low { background: #f8d7da; }
+        img { width: 100px; height: 75px; object-fit: cover; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Perceptual Hash Testing</h1>
+    <div id="status">Loading...</div>
+    <div id="results"></div>
+    
+    <script type="module">
+        // Simple dHash implementation for browser testing
+        function calculateDHash(imageUrl, size = 8) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                
+                img.onload = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = size + 1;
+                        canvas.height = size;
+                        const ctx = canvas.getContext('2d');
+                        
+                        ctx.drawImage(img, 0, 0, size + 1, size);
+                        const imageData = ctx.getImageData(0, 0, size + 1, size);
+                        
+                        // Convert to grayscale
+                        const pixels = [];
+                        for (let y = 0; y < size; y++) {
+                            for (let x = 0; x < size + 1; x++) {
+                                const i = (y * (size + 1) + x) * 4;
+                                const gray = Math.round(
+                                    imageData.data[i] * 0.299 +
+                                    imageData.data[i + 1] * 0.587 +
+                                    imageData.data[i + 2] * 0.114
+                                );
+                                pixels.push(gray);
+                            }
+                        }
+                        
+                        // Calculate differences
+                        let hash = '';
+                        for (let y = 0; y < size; y++) {
+                            for (let x = 0; x < size; x++) {
+                                const left = pixels[y * (size + 1) + x];
+                                const right = pixels[y * (size + 1) + x + 1];
+                                hash += left < right ? '1' : '0';
+                            }
+                        }
+                        
+                        resolve(hash);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                img.onerror = () => reject(new Error(`Failed to load: ${imageUrl}`));
+                img.src = imageUrl;
+            });
+        }
+        
+        function hammingDistance(hash1, hash2) {
+            let distance = 0;
+            for (let i = 0; i < hash1.length; i++) {
+                if (hash1[i] !== hash2[i]) distance++;
+            }
+            return distance;
+        }
+        
+        function hashSimilarity(hash1, hash2) {
+            const distance = hammingDistance(hash1, hash2);
+            return 1 - (distance / hash1.length);
+        }
+        
+        async function testPerceptualHashing() {
+            const statusEl = document.getElementById('status');
+            const resultsEl = document.getElementById('results');
+            
+            try {
+                const testImages = [
+                    { id: 'cybermorph_6531', url: '/source-images/cybermorph_IMG_6531.jpg' },
+                    { id: 'cybermorph_6532', url: '/source-images/cybermorph_IMG_6532.jpg' },
+                    { id: 'cybermorph_6533', url: '/source-images/cybermorph_IMG_6533.jpg' },
+                    { id: 'newworksite28', url: '/source-images/newworksite28.jpg' },
+                    { id: 'newworksite6', url: '/source-images/newworksite6.jpg' }
+                ];
+                
+                statusEl.textContent = 'Calculating perceptual hashes...';
+                
+                // Calculate hashes
+                const hashes = [];
+                for (const img of testImages) {
+                    try {
+                        statusEl.textContent = `Processing ${img.id}...`;
+                        const hash = await calculateDHash(img.url);
+                        hashes.push({ ...img, hash });
+                        console.log(`${img.id}: ${hash}`);
+                    } catch (error) {
+                        console.error(`Failed to process ${img.id}:`, error);
+                    }
+                }
+                
+                statusEl.textContent = 'Comparing similarities...';
+                
+                let html = `<h2>Results (${hashes.length} images processed)</h2>`;
+                
+                // Show images
+                html += '<div><h3>Test Images:</h3>';
+                hashes.forEach(h => {
+                    html += `<img src="${h.url}" title="${h.id}" />`;
+                });
+                html += '</div>';
+                
+                // Calculate similarities
+                html += '<h3>Pairwise Similarities:</h3>';
+                
+                for (let i = 0; i < hashes.length; i++) {
+                    for (let j = i + 1; j < hashes.length; j++) {
+                        const similarity = hashSimilarity(hashes[i].hash, hashes[j].hash);
+                        const distance = hammingDistance(hashes[i].hash, hashes[j].hash);
+                        
+                        const className = similarity > 0.88 ? 'high' : similarity > 0.75 ? 'medium' : 'low';
+                        const emoji = similarity > 0.88 ? '🟢' : similarity > 0.75 ? '🟡' : '🔴';
+                        
+                        html += `<div class="result ${className}">
+                            ${emoji} <strong>${hashes[i].id}</strong> vs <strong>${hashes[j].id}</strong><br>
+                            Similarity: ${(similarity * 100).toFixed(1)}% (Hamming distance: ${distance})
+                        </div>`;
+                    }
+                }
+                
+                html += `
+                    <h3>📊 Analysis:</h3>
+                    <div class="result">
+                        <strong>Expected:</strong><br>
+                        • cybermorph_6531, 6532, 6533 should be highly similar (retry shots)<br>
+                        • newworksite images should be different from cybermorph<br>
+                        • Should be more discriminative than MobileNet's 99%+ similarities
+                    </div>
+                `;
+                
+                resultsEl.innerHTML = html;
+                statusEl.textContent = 'Test completed!';
+                
+            } catch (error) {
+                statusEl.textContent = 'Error: ' + error.message;
+                console.error('Test failed:', error);
+            }
+        }
+        
+        // Run test
+        testPerceptualHashing();
+    </script>
+</body>
+</html>

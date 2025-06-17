@@ -69,6 +69,9 @@ export function generateCurationRecommendation(group: PhotoSimilarityGroup): Cur
   // Determine how many photos to keep based on group type and size
   let keepCount: number;
   switch (group.groupType) {
+    case 'exact_duplicates':
+      keepCount = 1; // Keep only 1 exact duplicate
+      break;
     case 'retry_shots':
       keepCount = Math.max(1, Math.ceil(photoCount * 0.3)); // Keep ~30% for retries
       break;
@@ -82,7 +85,8 @@ export function generateCurationRecommendation(group: PhotoSimilarityGroup): Cur
       keepCount = Math.max(1, Math.ceil(photoCount * 0.5)); // Keep ~50% for redundant
       break;
     default:
-      keepCount = Math.max(1, Math.ceil(photoCount * 0.5));
+      // For perceptual groups and other enhanced pipeline types
+      keepCount = Math.max(1, Math.ceil(photoCount * 0.4)); // Keep ~40% by default
   }
   
   // Select best photos to keep
@@ -118,6 +122,7 @@ function generateRationale(
   archive: Photo[]
 ): string {
   const groupTypeDescriptions = {
+    exact_duplicates: 'identical photos (exact duplicates)',
     retry_shots: 'multiple attempts at the same shot',
     angle_variations: 'different angles of the same subject',
     incremental_progress: 'incremental progress documentation',

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test TensorFlow Similarity</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+</head>
+<body>
+    <h1>Testing TensorFlow.js Visual Similarity</h1>
+    <div id="status">Loading...</div>
+    <div id="results"></div>
+    
+    <script>
+        async function testSimilarity() {
+            const statusEl = document.getElementById('status');
+            const resultsEl = document.getElementById('results');
+            
+            try {
+                // Load MobileNet
+                statusEl.textContent = 'Loading MobileNet model...';
+                const model = await mobilenet.load({
+                    version: 2,
+                    alpha: 1.0
+                });
+                statusEl.textContent = 'Model loaded successfully!';
+                
+                // Test with two images
+                const testImages = [
+                    '/source-images/cybermorph_IMG_6531.jpg',
+                    '/source-images/cybermorph_IMG_6532.jpg'
+                ];
+                
+                // Load and process images
+                const embeddings = [];
+                for (const imagePath of testImages) {
+                    statusEl.textContent = `Processing ${imagePath}...`;
+                    
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                        img.src = imagePath;
+                    });
+                    
+                    // Get embeddings
+                    const embedding = await model.infer(img, true);
+                    const embeddingData = await embedding.data();
+                    embeddings.push({
+                        path: imagePath,
+                        data: embeddingData
+                    });
+                    embedding.dispose();
+                }
+                
+                // Calculate cosine similarity
+                const similarity = cosineSimilarity(embeddings[0].data, embeddings[1].data);
+                
+                resultsEl.innerHTML = `
+                    <h2>Results:</h2>
+                    <p>Image 1: ${embeddings[0].path}</p>
+                    <p>Image 2: ${embeddings[1].path}</p>
+                    <p>Embedding size: ${embeddings[0].data.length} dimensions</p>
+                    <p><strong>Cosine Similarity: ${similarity.toFixed(4)}</strong></p>
+                    <p>Similarity interpretation: ${similarity > 0.9 ? 'Very similar' : similarity > 0.7 ? 'Somewhat similar' : 'Different'}</p>
+                `;
+                
+                statusEl.textContent = 'Test completed!';
+                
+            } catch (error) {
+                statusEl.textContent = 'Error: ' + error.message;
+                console.error('Test failed:', error);
+            }
+        }
+        
+        function cosineSimilarity(a, b) {
+            let dotProduct = 0;
+            let normA = 0;
+            let normB = 0;
+            
+            for (let i = 0; i < a.length; i++) {
+                dotProduct += a[i] * b[i];
+                normA += a[i] * a[i];
+                normB += b[i] * b[i];
+            }
+            
+            normA = Math.sqrt(normA);
+            normB = Math.sqrt(normB);
+            
+            return dotProduct / (normA * normB);
+        }
+        
+        // Run test when page loads
+        testSimilarity();
+    </script>
+</body>
+</html>

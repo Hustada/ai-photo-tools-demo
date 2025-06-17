@@ -43,11 +43,19 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Initialize visual similarity analysis hook
+  // Initialize visual similarity analysis hook with enhanced pipeline settings
   const visualSimilarity = useVisualSimilarity({
-    similarityThreshold: userPreferences?.qualityThreshold || 0.6,
-    batchSize: 3, // Smaller batches for better progress tracking
-    maxConcurrent: 2 // Limit concurrent API calls
+    enabledLayers: {
+      fileHash: true,        // Layer 1: Exact duplicate detection
+      perceptualHash: true,  // Layer 1.5: Near-duplicate detection (85% threshold)
+      tensorFlow: true,      // Layer 2: Visual feature analysis (99.9% threshold)
+      metadata: true,        // Layer 3: Smart filtering
+      aiAnalysis: true       // Layer 4: AI analysis
+    },
+    similarityThreshold: 0.999,   // 99.9% for TensorFlow (prevents false positives)
+    confidenceThreshold: 0.85,    // 85% minimum confidence for rendering
+    batchSize: 3,                 // Smaller batches for better progress tracking
+    maxConcurrent: 2              // Limit concurrent API calls
   });
   const [undoStack, setUndoStack] = useState<Array<{
     id: string;
@@ -133,19 +141,19 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     }
 
     try {
-      console.log('[Scout AI] Analyzing', photos.length, 'photos for AI-powered visual similarity');
+      console.log('[Scout AI] Analyzing', photos.length, 'photos using enhanced visual similarity pipeline');
       
-      // Use the visual similarity hook for AI-powered analysis
-      await visualSimilarity.analyzeSimilarity(photos);
+      // Use the enhanced visual similarity hook (same as test page)
+      const groups = await visualSimilarity.analyzeSimilarity(photos);
       
-      // Get the similarity groups from the analysis
-      const groups = visualSimilarity.state.similarityGroups;
-      
-      console.log('[Scout AI] Found', groups.length, 'similar photo groups via AI analysis');
+      console.log('[Scout AI] Enhanced pipeline found', groups.length, 'similarity groups');
       
       if (groups.length > 0) {
         // Generate recommendations for each group
         const recommendations = groups.map(group => generateCurationRecommendation(group));
+        
+        // Calculate average confidence from similarity groups
+        const avgConfidence = groups.reduce((sum, group) => sum + group.confidence, 0) / groups.length;
         
         // Create Scout AI suggestion
         const suggestion: ScoutAiSuggestion = {
@@ -153,38 +161,18 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
           type: 'photo_curation',
           message: generateScoutAiMessage(recommendations),
           recommendations,
-          confidence: recommendations.length > 0 ? 
-            recommendations.reduce((sum, rec) => sum + rec.confidence, 0) / recommendations.length > 0.7 ? 'high' : 'medium' 
-            : 'low',
+          confidence: avgConfidence > 0.85 ? 'high' : avgConfidence > 0.7 ? 'medium' : 'low',
           actionable: true,
           createdAt: new Date(),
           status: 'pending'
         };
 
-        setSuggestions([suggestion]); // Replace existing suggestions
-        console.log('[Scout AI] Generated AI-powered suggestion:', suggestion.message);
+        setSuggestions([suggestion]);
+        console.log('[Scout AI] Generated enhanced similarity suggestion:', suggestion.message);
+        console.log('[Scout AI] Groups:', groups.map(g => `${g.groupType} (${(g.confidence * 100).toFixed(1)}% confidence, ${g.photos.length} photos)`));
       } else {
-        // Fallback to basic similarity if AI analysis doesn't find groups
-        console.log('[Scout AI] No AI groups found, falling back to basic similarity analysis');
-        const fallbackGroups = groupSimilarPhotos(photos, userPreferences.qualityThreshold);
-        
-        if (fallbackGroups.length > 0) {
-          const recommendations = fallbackGroups.map(group => generateCurationRecommendation(group));
-          
-          const suggestion: ScoutAiSuggestion = {
-            id: `suggestion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: 'photo_curation',
-            message: generateScoutAiMessage(recommendations),
-            recommendations,
-            confidence: 'medium', // Lower confidence for fallback analysis
-            actionable: true,
-            createdAt: new Date(),
-            status: 'pending'
-          };
-
-          setSuggestions([suggestion]);
-          return fallbackGroups;
-        }
+        console.log('[Scout AI] No similarity groups found above 85% confidence threshold');
+        // This is normal - not all photo sets will have duplicates/similar photos
       }
 
       return groups;
