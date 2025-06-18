@@ -5,16 +5,52 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useVisualSimilarity } from '../useVisualSimilarity';
 import type { Photo } from '../../types';
 import * as photoSimilarityUtils from '../../utils/photoSimilarity';
+import * as fileHashUtils from '../../utils/fileHash';
+import * as perceptualHashUtils from '../../utils/perceptualHash';
+import * as tensorflowUtils from '../../utils/tensorflowSimilarity';
+import * as pipelineLoggerUtils from '../../utils/pipelineLogger';
 
 // Mock the photo similarity utilities
 vi.mock('../../utils/photoSimilarity', () => ({
   calculatePhotoSimilarityAsync: vi.fn(),
+  calculateVisualSimilarity: vi.fn(),
   groupSimilarPhotos: vi.fn(),
   findLikelyDuplicateCandidates: vi.fn(),
   batchGenerateDescriptions: vi.fn(),
   calculateVisualContentSimilarity: vi.fn(),
+  calculateSemanticSimilarity: vi.fn(),
   calculateTemporalProximity: vi.fn(),
   calculateSpatialProximity: vi.fn(),
+}));
+
+// Mock file hash utilities
+vi.mock('../../utils/fileHash', () => ({
+  batchGenerateHashes: vi.fn(),
+  findExactDuplicates: vi.fn(),
+}));
+
+// Mock perceptual hash utilities
+vi.mock('../../utils/perceptualHash', () => ({
+  batchCalculateHashes: vi.fn(),
+  findPerceptualSimilarities: vi.fn(),
+}));
+
+// Mock TensorFlow utilities
+vi.mock('../../utils/tensorflowSimilarity', () => ({
+  initializeTensorFlow: vi.fn(),
+  batchExtractFeatures: vi.fn(),
+  findVisualSimilarities: vi.fn(),
+  compareVisualFeatures: vi.fn(),
+  getTensorFlowStats: vi.fn(),
+  resetTensorFlowStats: vi.fn(),
+}));
+
+// Mock pipeline logger
+vi.mock('../../utils/pipelineLogger', () => ({
+  logPipelineStart: vi.fn(),
+  logPipelineLayer: vi.fn(),
+  logPipelineSummary: vi.fn(),
+  logPipelineError: vi.fn(),
 }));
 
 const mockPhotos: Photo[] = [
@@ -68,21 +104,77 @@ describe('useVisualSimilarity', () => {
   const mockCalculateVisualContentSimilarity = vi.mocked(photoSimilarityUtils.calculateVisualContentSimilarity);
   const mockCalculateTemporalProximity = vi.mocked(photoSimilarityUtils.calculateTemporalProximity);
   const mockCalculateSpatialProximity = vi.mocked(photoSimilarityUtils.calculateSpatialProximity);
+  
+  // File hash mocks
+  const mockBatchGenerateHashes = vi.mocked(fileHashUtils.batchGenerateHashes);
+  const mockFindExactDuplicates = vi.mocked(fileHashUtils.findExactDuplicates);
+  
+  // Perceptual hash mocks
+  const mockBatchCalculateHashes = vi.mocked(perceptualHashUtils.batchCalculateHashes);
+  const mockFindPerceptualSimilarities = vi.mocked(perceptualHashUtils.findPerceptualSimilarities);
+  
+  // TensorFlow mocks
+  const mockInitializeTensorFlow = vi.mocked(tensorflowUtils.initializeTensorFlow);
+  const mockBatchExtractFeatures = vi.mocked(tensorflowUtils.batchExtractFeatures);
+  const mockCompareVisualFeatures = vi.mocked(tensorflowUtils.compareVisualFeatures);
+  const mockFindVisualSimilarities = vi.mocked(tensorflowUtils.findVisualSimilarities);
+  const mockGetTensorFlowStats = vi.mocked(tensorflowUtils.getTensorFlowStats);
 
   beforeEach(() => {
     vi.clearAllMocks();
     
-    // Mock the smart analysis workflow
-    mockFindLikelyDuplicateCandidates.mockReturnValue(mockPhotos); // Return both photos as candidates
+    // Mock file hash layer (Layer 1)
+    mockBatchGenerateHashes.mockResolvedValue(new Map([
+      ['https://example.com/photo1.jpg', 'hash1'],
+      ['https://example.com/photo2.jpg', 'hash2']
+    ]));
+    mockFindExactDuplicates.mockReturnValue([]);
+    
+    // Mock perceptual hash layer (Layer 1.5)
+    mockBatchCalculateHashes.mockResolvedValue([
+      { photoId: 'photo1', hash: 'hash1', url: 'url1' },
+      { photoId: 'photo2', hash: 'hash2', url: 'url2' }
+    ]);
+    mockFindPerceptualSimilarities.mockReturnValue([]);
+    
+    // Mock TensorFlow layer (Layer 2)
+    mockInitializeTensorFlow.mockResolvedValue();
+    mockBatchExtractFeatures.mockResolvedValue([
+      { photoId: 'photo1', features: new Float32Array([0.1, 0.2, 0.3]) },
+      { photoId: 'photo2', features: new Float32Array([0.4, 0.5, 0.6]) }
+    ]);
+    mockCompareVisualFeatures.mockReturnValue({ similarity: 0.8, confidence: 0.9 });
+    mockFindVisualSimilarities.mockReturnValue([
+      {
+        id: 'tf-group-1',
+        group: [
+          { photoId: 'photo1', features: new Float32Array([0.1, 0.2, 0.3]) },
+          { photoId: 'photo2', features: new Float32Array([0.4, 0.5, 0.6]) }
+        ],
+        similarity: 0.8,
+        confidence: 0.9
+      }
+    ]);
+    mockGetTensorFlowStats.mockReturnValue({
+      modelLoadTime: 100,
+      averageExtractionTime: 50,
+      featuresExtracted: 2,
+      comparisonsPerformed: 1
+    });
+    
+    // Mock metadata layer (Layer 3)
+    mockFindLikelyDuplicateCandidates.mockReturnValue(mockPhotos);
+    mockCalculateTemporalProximity.mockReturnValue(0.9);
+    mockCalculateSpatialProximity.mockReturnValue(0.95);
+    
+    // Mock AI layer (Layer 4)
     mockBatchGenerateDescriptions.mockResolvedValue(new Map([
       ['photo1', 'Construction site with electrical work'],
       ['photo2', 'Construction site with electrical installation']
     ]));
     mockCalculateVisualContentSimilarity.mockReturnValue(0.8);
-    mockCalculateTemporalProximity.mockReturnValue(0.9);
-    mockCalculateSpatialProximity.mockReturnValue(0.95);
     
-    // Mock successful similarity calculation (fallback)
+    // Mock legacy methods for fallback
     mockCalculatePhotoSimilarityAsync.mockResolvedValue({
       visualSimilarity: 0.8,
       contentSimilarity: 0.7,
@@ -92,7 +184,6 @@ describe('useVisualSimilarity', () => {
       overallSimilarity: 0.75
     });
 
-    // Mock group creation (fallback)
     mockGroupSimilarPhotos.mockReturnValue([
       {
         id: 'group1',
@@ -123,6 +214,8 @@ describe('useVisualSimilarity', () => {
       progress: 0,
       error: null,
       similarityGroups: [],
+      filteredGroups: [],
+      allGroups: [],
       similarityMatrix: new Map()
     });
   });
@@ -136,6 +229,8 @@ describe('useVisualSimilarity', () => {
 
     expect(result.current.state.error).toBe('Need at least 2 photos for similarity analysis');
     expect(result.current.state.similarityGroups).toEqual([]);
+    expect(result.current.state.filteredGroups).toEqual([]);
+    expect(result.current.state.allGroups).toEqual([]);
   });
 
   it('should analyze photos and create similarity groups', async () => {

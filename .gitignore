@@ -37,3 +37,4 @@ vite.config.js
 # Test coverage reports
 coverage/
 .aider*
+source-images/*.jpeg
