@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import type { ScoutAiSuggestion } from '../types/scoutai';
+import scoutAiAvatar from '../assets/scout-ai-avatar3.png';
 
 interface ScoutAiNotificationProps {
   suggestion: ScoutAiSuggestion;
@@ -128,27 +129,13 @@ export const ScoutAiNotification: React.FC<ScoutAiNotificationProps> = ({
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-2">
-          {/* Scout AI Logo/Icon */}
+          {/* Scout AI Avatar */}
           <div className="flex-shrink-0">
-            <svg className="w-6 h-6" viewBox="0 0 512 512">
-              <defs>
-                <radialGradient id="lensGradD" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#2f4b7c"/>
-                  <stop offset="100%" stopColor="#00CFB4"/>
-                </radialGradient>
-              </defs>
-              <circle cx="256" cy="256" r="200" fill="url(#lensGradD)" />
-              <g stroke="#ffffff" strokeOpacity="0.6" strokeWidth="6" fill="none">
-                <path d="M256,256 C300,240 350,200 350,150" />
-                <path d="M256,256 C300,272 350,312 350,362" />
-                <path d="M256,256 C212,272 162,312 162,362" />
-                <path d="M256,256 C212,240 162,200 162,150" />
-              </g>
-              <circle cx="350" cy="150" r="12" fill="#009E73" />
-              <circle cx="350" cy="362" r="12" fill="#009E73" />
-              <circle cx="162" cy="362" r="12" fill="#009E73" />
-              <circle cx="162" cy="150" r="12" fill="#009E73" />
-            </svg>
+            <img 
+              src={scoutAiAvatar} 
+              alt="Scout AI" 
+              className="w-8 h-8 rounded-full object-cover"
+            />
           </div>
           
           {/* Brand Name */}

@@ -1,6 +1,7 @@
 // © 2024 Mark Hustad — MIT License
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import scoutAiAvatar from '../assets/scout-ai-avatar3.png';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -23,10 +24,17 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-gray-200 p-4">
       <div className="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md">
-        <h1 className="text-3xl font-bold text-sky-400 mb-6 text-center">Login</h1>
-        <p className="text-gray-400 mb-6 text-center text-sm">
-          Enter your CompanyCam API Key to access Scout AI.
-        </p>
+        <div className="flex flex-col items-center mb-6">
+          <img 
+            src={scoutAiAvatar} 
+            alt="Scout AI" 
+            className="w-16 h-16 rounded-full object-cover shadow-lg mb-4"
+          />
+          <h1 className="text-3xl font-bold text-sky-400 mb-2">Scout AI</h1>
+          <p className="text-gray-400 text-center text-sm">
+            Enter your CompanyCam API Key to access Scout AI.
+          </p>
+        </div>
         <div className="mb-4">
           <label htmlFor="apiKey" className="block text-sm font-medium text-gray-300 mb-1">
             CompanyCam API Key

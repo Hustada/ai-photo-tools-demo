@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../contexts/UserContext';
 import type { Photo, Tag } from '../types';
+import scoutAiAvatar from '../assets/scout-ai-avatar3.png';
 
 // Import our extracted hooks
 import { usePhotosQuery } from '../hooks/usePhotosQuery';
@@ -147,8 +148,13 @@ const HomePageContent: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center p-4 bg-gray-900 text-white space-y-4 md:space-y-0">
-        {/* Left side: App Title */}
-        <div className="text-center md:text-left">
+        {/* Left side: App Title with Avatar */}
+        <div className="flex items-center justify-center md:justify-start space-x-3">
+          <img 
+            src={scoutAiAvatar} 
+            alt="Scout AI" 
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-lg"
+          />
           <h1 className="text-2xl sm:text-3xl font-bold text-sky-400">Scout AI</h1>
         </div>
 

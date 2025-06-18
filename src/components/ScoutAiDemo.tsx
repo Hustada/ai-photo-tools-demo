@@ -7,6 +7,7 @@ import { AnalysisModeSelector } from './AnalysisModeSelector';
 import type { Photo } from '../types';
 import type { ScoutAiSuggestion, CurationRecommendation } from '../types/scoutai';
 import type { FilterOptions } from '../utils/photoFiltering';
+import scoutAiAvatar from '../assets/scout-ai-avatar3.png';
 
 interface ScoutAiDemoProps {
   photos: Photo[];
@@ -233,11 +234,11 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" viewBox="0 0 512 512">
-                <circle cx="256" cy="256" r="200" fill="currentColor" />
-              </svg>
-            </div>
+            <img 
+              src={scoutAiAvatar} 
+              alt="Scout AI" 
+              className="w-8 h-8 rounded-full object-cover"
+            />
             <div>
               <h3 className="text-sm font-medium text-blue-900">Scout AI</h3>
               <p className="text-xs text-blue-700">Ready to analyze photos</p>
@@ -269,23 +270,11 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" viewBox="0 0 512 512">
-                <defs>
-                  <radialGradient id="lensGrad" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#ffffff"/>
-                    <stop offset="100%" stopColor="#e0e7ff"/>
-                  </radialGradient>
-                </defs>
-                <circle cx="256" cy="256" r="200" fill="url(#lensGrad)" />
-                <g stroke="#2563eb" strokeWidth="6" fill="none">
-                  <path d="M256,256 C300,240 350,200 350,150" />
-                  <path d="M256,256 C300,272 350,312 350,362" />
-                  <path d="M256,256 C212,272 162,312 162,362" />
-                  <path d="M256,256 C212,240 162,200 162,150" />
-                </g>
-              </svg>
-            </div>
+            <img 
+              src={scoutAiAvatar} 
+              alt="Scout AI" 
+              className="w-10 h-10 rounded-full object-cover shadow-sm"
+            />
             <div>
               <h3 className="text-lg font-semibold text-blue-900">Scout AI</h3>
               <p className="text-sm text-blue-700">
