@@ -10,58 +10,189 @@ const getAuthHeaders = (apiKey: string) => ({
   'Content-Type': 'application/json',
 });
 
+// Rate limiting and caching
+class RateLimiter {
+  private requests: number[] = [];
+  private readonly maxRequests: number = 30; // Max 30 requests per minute
+  private readonly timeWindow: number = 60000; // 1 minute in milliseconds
+
+  canMakeRequest(): boolean {
+    const now = Date.now();
+    // Remove requests older than time window
+    this.requests = this.requests.filter(time => now - time < this.timeWindow);
+    return this.requests.length < this.maxRequests;
+  }
+
+  recordRequest(): void {
+    this.requests.push(Date.now());
+  }
+
+  getWaitTime(): number {
+    if (this.requests.length === 0) return 0;
+    const oldestRequest = Math.min(...this.requests);
+    return Math.max(0, this.timeWindow - (Date.now() - oldestRequest));
+  }
+}
+
+class RequestCache {
+  private cache = new Map<string, { data: any; timestamp: number }>();
+  private readonly ttl = 30000; // 30 seconds cache
+
+  get(key: string): any | null {
+    const cached = this.cache.get(key);
+    if (!cached) return null;
+    
+    if (Date.now() - cached.timestamp > this.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return cached.data;
+  }
+
+  set(key: string, data: any): void {
+    this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+const rateLimiter = new RateLimiter();
+const requestCache = new RequestCache();
+
+// Sleep utility
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Enhanced request function with rate limiting and exponential backoff
+const makeRateLimitedRequest = async <T>(
+  requestFn: () => Promise<T>,
+  cacheKey?: string,
+  maxRetries: number = 3
+): Promise<T> => {
+  // Check cache first
+  if (cacheKey) {
+    const cached = requestCache.get(cacheKey);
+    if (cached) {
+      console.log('[companyCamService] Cache hit for:', cacheKey);
+      return cached;
+    }
+  }
+
+  let retries = 0;
+  while (retries <= maxRetries) {
+    // Check rate limit
+    if (!rateLimiter.canMakeRequest()) {
+      const waitTime = rateLimiter.getWaitTime();
+      console.log(`[companyCamService] Rate limit reached, waiting ${waitTime}ms`);
+      await sleep(waitTime);
+      continue;
+    }
+
+    try {
+      rateLimiter.recordRequest();
+      const result = await requestFn();
+      
+      // Cache successful result
+      if (cacheKey) {
+        requestCache.set(cacheKey, result);
+      }
+      
+      return result;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 429) {
+        retries++;
+        if (retries <= maxRetries) {
+          const backoffTime = Math.min(1000 * Math.pow(2, retries), 10000); // Max 10s backoff
+          console.log(`[companyCamService] 429 error, retrying in ${backoffTime}ms (attempt ${retries}/${maxRetries})`);
+          await sleep(backoffTime);
+          continue;
+        }
+      }
+      throw error;
+    }
+  }
+
+  throw new Error(`Max retries (${maxRetries}) exceeded`);
+};
+
 console.log('[companyCamService] Initializing...');
 export const companyCamService = {
   getPhotos: async (
-    // Adding console.log for parameters
     apiKey: string,
     page: number = 1,
     perPage: number = 20,
     tagIds?: string[],
   ): Promise<Photo[]> => {
-    console.log('[companyCamService] getPhotos called with:', { apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY', page, perPage, tagIds });
-    try {
-      const params: Record<string, string | number | string[] | undefined> = {
-        page,
-        per_page: perPage,
-        sort: '-created_at', // Sort by newest first (descending created_at)
-      };
-      if (tagIds && tagIds.length > 0) {
-        params.tag_ids = tagIds; // API expects 'tag_ids' as array
-      }
-      console.log('[companyCamService] getPhotos - Making GET request to:', `${API_BASE_URL}/photos`, 'with params:', params);
-      const response = await axios.get<PhotosResponse>(`${API_BASE_URL}/photos`, {
-        headers: getAuthHeaders(apiKey),
-        params,
-      });
-      return response.data;
-    } catch (error: unknown) {
+    console.log('[companyCamService] getPhotos called with:', { 
+      apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY', 
+      page, 
+      perPage, 
+      tagIds 
+    });
+
+    const params: Record<string, string | number | string[] | undefined> = {
+      page,
+      per_page: perPage,
+      sort: '-created_at',
+    };
+    if (tagIds && tagIds.length > 0) {
+      params.tag_ids = tagIds;
+    }
+
+    // Create cache key
+    const cacheKey = `photos-${JSON.stringify(params)}`;
+
+    return makeRateLimitedRequest(
+      async () => {
+        console.log('[companyCamService] getPhotos - Making GET request to:', `${API_BASE_URL}/photos`, 'with params:', params);
+        const response = await axios.get<PhotosResponse>(`${API_BASE_URL}/photos`, {
+          headers: getAuthHeaders(apiKey),
+          params,
+        });
+        return response.data;
+      },
+      cacheKey
+    ).catch((error: unknown) => {
       if (axios.isAxiosError(error)) {
-        console.error('[companyCamService] getPhotos - Error fetching photos (Axios):', error.toJSON());
+        console.error('[companyCamService] getPhotos - Error fetching photos (Axios):', {
+          status: error.response?.status,
+          message: error.message,
+          url: error.config?.url
+        });
       } else if (error instanceof Error) {
         console.error('[companyCamService] getPhotos - Error fetching photos (Generic):', error.message);
       } else {
         console.error('[companyCamService] getPhotos - Unknown error fetching photos:', error);
       }
-      // Consider more sophisticated error handling
       throw error;
-    }
+    });
   },
 
   getPhotoTags: async (apiKey: string, photoId: string): Promise<Tag[]> => {
     console.log('[companyCamService] getPhotoTags called with:', { apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY', photoId });
-    try {
-      console.log('[companyCamService] getPhotoTags - Making GET request to:', `${API_BASE_URL}/photos/${photoId}/tags`);
-      const response = await axios.get<PhotoTagsResponse>(
-        `${API_BASE_URL}/photos/${photoId}/tags`,
-        {
-          headers: getAuthHeaders(apiKey),
-        },
-      );
-      return response.data; // PhotoTagsResponse is Tag[]
-    } catch (error: unknown) {
+    
+    const cacheKey = `photo-tags-${photoId}`;
+
+    return makeRateLimitedRequest(
+      async () => {
+        console.log('[companyCamService] getPhotoTags - Making GET request to:', `${API_BASE_URL}/photos/${photoId}/tags`);
+        const response = await axios.get<PhotoTagsResponse>(
+          `${API_BASE_URL}/photos/${photoId}/tags`,
+          {
+            headers: getAuthHeaders(apiKey),
+          },
+        );
+        return response.data;
+      },
+      cacheKey
+    ).catch((error: unknown) => {
       if (axios.isAxiosError(error)) {
-        console.error(`[companyCamService] getPhotoTags - Error fetching tags for photo ${photoId} (Axios):`, error.toJSON());
+        console.error(`[companyCamService] getPhotoTags - Error fetching tags for photo ${photoId} (Axios):`, {
+          status: error.response?.status,
+          message: error.message
+        });
         // Handle 404 specifically: if a photo has no tags, the API might 404.
         if (error.response && error.response.status === 404) {
           console.log(`[companyCamService] getPhotoTags - Photo ${photoId} has no tags (404). Returning empty array.`);
@@ -72,30 +203,37 @@ export const companyCamService = {
       } else {
         console.error(`[companyCamService] getPhotoTags - Unknown error fetching tags for photo ${photoId}:`, error);
       }
-      throw error; // Re-throw other errors
-    }
+      throw error;
+    });
   },
 
   listCompanyCamTags: async (apiKey: string): Promise<Tag[]> => {
     console.log('[companyCamService] listCompanyCamTags called with:', { apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY' });
-    try {
-      console.log('[companyCamService] listCompanyCamTags - Making GET request to:', `${API_BASE_URL}/tags`);
-      // The API for listing all tags might be paginated. For simplicity, we'll assume it returns all tags
-      // or we'd need to implement pagination handling here if it's a large number of tags.
-      const response = await axios.get<Tag[]>(`${API_BASE_URL}/tags`, {
-        headers: getAuthHeaders(apiKey),
-      });
-      return response.data;
-    } catch (error: unknown) {
+    
+    const cacheKey = 'all-tags';
+
+    return makeRateLimitedRequest(
+      async () => {
+        console.log('[companyCamService] listCompanyCamTags - Making GET request to:', `${API_BASE_URL}/tags`);
+        const response = await axios.get<Tag[]>(`${API_BASE_URL}/tags`, {
+          headers: getAuthHeaders(apiKey),
+        });
+        return response.data;
+      },
+      cacheKey
+    ).catch((error: unknown) => {
       if (axios.isAxiosError(error)) {
-        console.error('[companyCamService] listCompanyCamTags - Error fetching all tags (Axios):', error.toJSON());
+        console.error('[companyCamService] listCompanyCamTags - Error fetching all tags (Axios):', {
+          status: error.response?.status,
+          message: error.message
+        });
       } else if (error instanceof Error) {
         console.error('[companyCamService] listCompanyCamTags - Error fetching all tags (Generic):', error.message);
       } else {
         console.error('[companyCamService] listCompanyCamTags - Unknown error fetching all tags:', error);
       }
       throw error;
-    }
+    });
   },
 
   createCompanyCamTagDefinition: async (apiKey: string, displayValue: string): Promise<Tag> => {

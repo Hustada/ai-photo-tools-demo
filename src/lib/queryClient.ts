@@ -5,15 +5,19 @@ import { QueryClient } from '@tanstack/react-query';
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Data is fresh for 5 minutes
-      staleTime: 5 * 60 * 1000,
-      // Keep in cache for 10 minutes
-      gcTime: 10 * 60 * 1000,
-      // Retry failed requests 3 times with exponential backoff
+      // Data is fresh for 10 minutes (increased to reduce API calls)
+      staleTime: 10 * 60 * 1000,
+      // Keep in cache for 20 minutes
+      gcTime: 20 * 60 * 1000,
+      // Retry failed requests with smart logic for rate limiting
       retry: (failureCount, error) => {
-        // Don't retry on 4xx errors (client errors)
+        // Don't retry on 4xx errors except 429 (rate limit)
         if (error instanceof Error && 'status' in error) {
           const status = (error as any).status;
+          if (status === 429) {
+            // Retry rate limit errors up to 5 times
+            return failureCount < 5;
+          }
           if (status >= 400 && status < 500) {
             return false;
           }
