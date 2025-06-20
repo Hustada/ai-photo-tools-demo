@@ -98,7 +98,12 @@ describe('UserContext', () => {
     vi.mocked(companyCamService.getCurrentUser).mockResolvedValue(mockUser)
     vi.mocked(companyCamService.getCompanyDetails).mockResolvedValue(mockCompany)
     vi.mocked(companyCamService.getProjects).mockResolvedValue(mockProjects)
-    mockLocalStorage.getItem.mockReturnValue('valid-api-key')
+    mockLocalStorage.getItem.mockImplementation((key) => {
+      if (key === 'userSettings') {
+        return null; // No saved settings
+      }
+      return 'valid-api-key'; // For other keys like auth tokens
+    })
   })
 
   afterEach(() => {

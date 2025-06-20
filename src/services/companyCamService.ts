@@ -446,5 +446,10 @@ export const companyCamService = {
         error: error instanceof Error ? error.message : 'Unknown error occurred' 
       };
     }
+  },
+
+  // Test utility to clear cache between tests
+  clearCache: () => {
+    requestCache.clear();
   }
 };

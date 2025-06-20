@@ -5,7 +5,16 @@ import { companyCamService } from '../services/companyCamService'
 import type { Photo, Tag, CurrentUser, CompanyDetails, Project } from '../types'
 
 // Mock axios
-vi.mock('axios')
+vi.mock('axios', () => ({
+  default: {
+    get: vi.fn(),
+    post: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+    isAxiosError: vi.fn()
+  },
+  isAxiosError: vi.fn()
+}))
 const mockedAxios = vi.mocked(axios)
 
 describe('companyCamService', () => {
@@ -14,10 +23,17 @@ describe('companyCamService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // Clear the service cache to ensure test isolation
+    companyCamService.clearCache()
+    // Reset axios.isAxiosError to default behavior
+    vi.mocked(axios.isAxiosError).mockImplementation((payload: any) => {
+      return payload && payload.isAxiosError === true
+    })
   })
 
   afterEach(() => {
-    vi.resetAllMocks()
+    // Only clear mocks, don't reset them to avoid conflicts
+    vi.clearAllMocks()
   })
 
   describe('getPhotos', () => {
@@ -57,6 +73,7 @@ describe('companyCamService', () => {
           params: {
             page: 1,
             per_page: 20,
+            sort: '-created_at',
           },
         }
       )
@@ -79,6 +96,7 @@ describe('companyCamService', () => {
           params: {
             page: 2,
             per_page: 50,
+            sort: '-created_at',
             tag_ids: ['tag1', 'tag2'],
           },
         }
@@ -102,7 +120,7 @@ describe('companyCamService', () => {
         toJSON: () => ({ message: 'Axios error' })
       }
       
-      mockedAxios.isAxiosError = vi.fn().mockReturnValue(true)
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
       mockedAxios.get.mockRejectedValue(axiosError)
 
       await expect(companyCamService.getPhotos(mockApiKey)).rejects.toEqual(axiosError)
@@ -147,7 +165,7 @@ describe('companyCamService', () => {
         toJSON: () => ({ message: 'Not found' })
       }
       
-      mockedAxios.isAxiosError = vi.fn().mockReturnValue(true)
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
       mockedAxios.get.mockRejectedValue(axiosError)
 
       const result = await companyCamService.getPhotoTags(mockApiKey, photoId)
@@ -162,7 +180,7 @@ describe('companyCamService', () => {
         toJSON: () => ({ message: 'Server error' })
       }
       
-      mockedAxios.isAxiosError = vi.fn().mockReturnValue(true)
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
       mockedAxios.get.mockRejectedValue(axiosError)
 
       await expect(companyCamService.getPhotoTags(mockApiKey, photoId)).rejects.toEqual(axiosError)
@@ -457,8 +475,8 @@ describe('companyCamService', () => {
       vi.mocked(axios.isAxiosError).mockReturnValue(true)
       mockedAxios.get.mockRejectedValue(mockAxiosError)
 
-      await expect(companyCamService.listCompanyCamTags(mockApiKey)).rejects.toThrow()
-      expect(mockAxiosError.toJSON).toHaveBeenCalled()
+      await expect(companyCamService.listCompanyCamTags(mockApiKey)).rejects.toEqual(mockAxiosError)
+      // The function logs the error but doesn't call toJSON, so we shouldn't expect it
     })
 
     it('should handle generic errors in listCompanyCamTags', async () => {

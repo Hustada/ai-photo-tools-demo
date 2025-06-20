@@ -124,7 +124,7 @@ describe('PhotoCard', () => {
       expect(image).toHaveAttribute('src', 'https://example.com/thumb.jpg')
     })
 
-    it('should fallback to photo_url when no thumbnail URI available', () => {
+    it('should fallback to web URI when no thumbnail URI available', () => {
       const photoWithoutThumbnail = {
         ...mockPhoto,
         uris: [{ type: 'web', uri: 'https://example.com/web.jpg', url: 'https://example.com/web.jpg' }]
@@ -133,7 +133,7 @@ describe('PhotoCard', () => {
       render(<PhotoCard {...defaultProps} photo={photoWithoutThumbnail} />)
 
       const image = screen.getByAltText('Roofing work in progress on residential home')
-      expect(image).toHaveAttribute('src', 'https://example.com/photo.jpg')
+      expect(image).toHaveAttribute('src', 'https://example.com/web.jpg')
     })
 
     it('should show "No Image Available" when no image URI exists', () => {

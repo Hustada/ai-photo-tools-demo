@@ -123,7 +123,11 @@ describe('ScoutAiDemo - Basic Functionality', () => {
         fireEvent.click(triggerButton);
       });
 
-      expect(mockScoutAiContext.analyzeSimilarPhotos).toHaveBeenCalledWith(mockPhotos, true);
+      expect(mockScoutAiContext.analyzeSimilarPhotos).toHaveBeenCalledWith(
+        mockPhotos, 
+        true, 
+        { mode: 'smart', newPhotoDays: 30, forceReanalysis: false }
+      );
     });
 
     it('should disable trigger button when analyzing', () => {
@@ -182,7 +186,7 @@ describe('ScoutAiDemo - Basic Functionality', () => {
         />
       );
 
-      const triggerButton = screen.getByText('Trigger Analysis');
+      const triggerButton = screen.getByText('Need 2+ Photos');
       expect(triggerButton).toBeDisabled();
     });
 

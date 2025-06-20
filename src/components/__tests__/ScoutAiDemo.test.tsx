@@ -267,7 +267,7 @@ describe('ScoutAiDemo', () => {
         />
       );
 
-      const triggerButton = screen.getByText('Trigger Analysis');
+      const triggerButton = screen.getByText('Need 2+ Photos');
       expect(triggerButton).toBeDisabled();
     });
 
@@ -328,7 +328,11 @@ describe('ScoutAiDemo', () => {
         fireEvent.click(triggerButton);
       });
 
-      expect(mockScoutAiContext.analyzeSimilarPhotos).toHaveBeenCalledWith(mockPhotos, true);
+      expect(mockScoutAiContext.analyzeSimilarPhotos).toHaveBeenCalledWith(
+        mockPhotos, 
+        true, 
+        { mode: 'smart', newPhotoDays: 30, forceReanalysis: false }
+      );
     });
 
     it('should handle multiple trigger clicks', async () => {
@@ -652,7 +656,7 @@ describe('ScoutAiDemo', () => {
         fireEvent.click(triggerButton);
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith('[ScoutAiDemo] Manual analysis triggered');
+      expect(consoleSpy).toHaveBeenCalledWith('[ScoutAiDemo] Manual analysis triggered with options:', { mode: 'smart', newPhotoDays: 30, forceReanalysis: false });
     });
 
     it('should log suggestion acceptance', async () => {

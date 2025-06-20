@@ -52,7 +52,7 @@ describe('LoginPage', () => {
     it('should render login form with all elements', () => {
       renderLoginPage()
 
-      expect(screen.getByRole('heading', { name: /login/i })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: /scout ai/i })).toBeInTheDocument()
       expect(screen.getByText(/enter your companycam api key/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/companycam api key/i)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument()

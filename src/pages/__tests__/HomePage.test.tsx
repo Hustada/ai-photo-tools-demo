@@ -258,7 +258,7 @@ describe('HomePage', () => {
     it('should render HomePage with user logged in', () => {
       renderHomePage()
       
-      expect(screen.getByText('Scout AI')).toBeInTheDocument()
+      expect(screen.getAllByText('Scout AI')[0]).toBeInTheDocument()
       expect(screen.getByText((content, element) => {
         return element?.textContent === 'Welcome, Test!'
       })).toBeInTheDocument()

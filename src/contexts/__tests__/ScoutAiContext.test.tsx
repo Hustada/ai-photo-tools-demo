@@ -25,6 +25,15 @@ vi.mock('../../utils/photoActions', () => ({
   restorePhoto: vi.fn(),
 }));
 
+vi.mock('../../hooks/useAnalysisTracking', () => ({
+  useAnalysisTracking: () => ({
+    markPhotoAnalyzed: vi.fn().mockResolvedValue({ success: true }),
+    markPhotosAnalyzed: vi.fn().mockResolvedValue({ success: true, results: [] }),
+    getAnalysisHistory: vi.fn().mockReturnValue([]),
+    clearAnalysisHistory: vi.fn(),
+  })
+}));
+
 // Create a reusable mock implementation
 const createMockVisualSimilarity = (similarityGroups: any[] = []) => ({
   state: {
@@ -32,11 +41,15 @@ const createMockVisualSimilarity = (similarityGroups: any[] = []) => ({
     progress: 0,
     error: null,
     similarityGroups,
+    filteredGroups: similarityGroups,
+    allGroups: similarityGroups,
     similarityMatrix: new Map()
   },
-  analyzeSimilarity: vi.fn().mockResolvedValue(undefined),
+  analyzeSimilarity: vi.fn().mockResolvedValue(similarityGroups),
   getSimilarityScore: vi.fn(),
   getGroupForPhoto: vi.fn(),
+  getAllGroups: vi.fn().mockReturnValue(similarityGroups),
+  getFilteredGroups: vi.fn().mockReturnValue(similarityGroups),
   clearAnalysis: vi.fn(),
   cancelAnalysis: vi.fn()
 });
@@ -138,8 +151,11 @@ const renderWithContext = (userId: string = 'test-user') => {
 };
 
 describe('ScoutAiContext', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    // Reset the useVisualSimilarity mock to default behavior
+    const { useVisualSimilarity } = await import('../../hooks/useVisualSimilarity');
+    vi.mocked(useVisualSimilarity).mockReturnValue(createMockVisualSimilarity());
     // Mock localStorage
     Object.defineProperty(window, 'localStorage', {
       value: {
@@ -241,7 +257,9 @@ describe('ScoutAiContext', () => {
       };
 
       // Mock visual similarity hook to return similarity groups
-      vi.mocked(useVisualSimilarity).mockReturnValue(createMockVisualSimilarity([mockGroup]));
+      const mockVisualSimilarity = createMockVisualSimilarity([mockGroup]);
+      mockVisualSimilarity.analyzeSimilarity.mockResolvedValue([mockGroup]);
+      vi.mocked(useVisualSimilarity).mockReturnValue(mockVisualSimilarity);
       vi.mocked(generateCurationRecommendation).mockReturnValue(mockRecommendation);
       vi.mocked(generateScoutAiMessage).mockReturnValue('Test message');
 
@@ -262,8 +280,10 @@ describe('ScoutAiContext', () => {
     });
 
     it('should handle errors during analysis gracefully', async () => {
-      const { groupSimilarPhotos } = await import('../../utils/photoSimilarity');
-      vi.mocked(groupSimilarPhotos).mockRejectedValue(new Error('Analysis failed'));
+      const { useVisualSimilarity } = await import('../../hooks/useVisualSimilarity');
+      const mockVisualSimilarity = createMockVisualSimilarity();
+      mockVisualSimilarity.analyzeSimilarity.mockRejectedValue(new Error('Analysis failed'));
+      vi.mocked(useVisualSimilarity).mockReturnValue(mockVisualSimilarity);
 
       renderWithContext();
       
@@ -396,6 +416,28 @@ describe('ScoutAiContext', () => {
     let contextValue: any;
 
     beforeEach(async () => {
+      // Reset all mocks before each test
+      vi.clearAllMocks();
+      
+      // Mock localStorage to return valid user preferences
+      vi.mocked(window.localStorage.getItem).mockImplementation((key) => {
+        if (key === 'scoutai-preferences-test-user') {
+          return JSON.stringify({
+            userId: 'test-user',
+            preferredGroupTypes: { retry_shots: true },
+            qualityThreshold: 0.7,
+            detailLevel: 'detailed',
+            acceptanceRate: { photo_curation: 0.8 },
+            learningData: {
+              acceptedRecommendations: [],
+              rejectedRecommendations: [],
+              preferredKeepCriteria: []
+            }
+          });
+        }
+        return null;
+      });
+      
       render(
         <ScoutAiProvider userId="test-user">
           <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
@@ -404,6 +446,7 @@ describe('ScoutAiContext', () => {
 
       await waitFor(() => {
         expect(contextValue).toBeDefined();
+        expect(contextValue.userPreferences).toBeDefined();
       });
     });
 
@@ -441,43 +484,43 @@ describe('ScoutAiContext', () => {
         updatedPhotos: [mockPhotos[0], mockPhotos[1]]
       };
 
-      // Mock visual similarity hook to return similarity groups
-      vi.mocked(useVisualSimilarity).mockReturnValue({
-        state: {
-          isAnalyzing: false,
-          progress: 0,
-          error: null,
-          similarityGroups: [mockGroup],
-          similarityMatrix: new Map()
-        },
-        analyzeSimilarity: vi.fn().mockResolvedValue(undefined),
-        getSimilarityScore: vi.fn(),
-        getGroupForPhoto: vi.fn(),
-        clearAnalysis: vi.fn(),
-        cancelAnalysis: vi.fn()
-      });
-
-      // Set up mocks to generate a suggestion
+      // Set up all mocks BEFORE creating a new component
+      const freshMockVisualSimilarity = createMockVisualSimilarity([mockGroup]);
+      freshMockVisualSimilarity.analyzeSimilarity.mockResolvedValue([mockGroup]);
+      vi.mocked(useVisualSimilarity).mockReturnValue(freshMockVisualSimilarity);
       vi.mocked(generateCurationRecommendation).mockReturnValue(mockRecommendation);
       vi.mocked(generateScoutAiMessage).mockReturnValue('Test message');
       vi.mocked(createActionsFromRecommendation).mockReturnValue(mockActions);
       vi.mocked(applyCurationActions).mockResolvedValue(mockResult);
 
+      // Create a fresh component with the new mocks
+      let freshContextValue: any;
+      render(
+        <ScoutAiProvider userId="test-user">
+          <TestComponent onContextReady={(ctx) => { freshContextValue = ctx; }} />
+        </ScoutAiProvider>
+      );
+
+      await waitFor(() => {
+        expect(freshContextValue).toBeDefined();
+        expect(freshContextValue.userPreferences).toBeDefined();
+      });
+
       // Generate the suggestion first
       await act(async () => {
-        await contextValue.analyzeSimilarPhotos(mockPhotos);
+        await freshContextValue.analyzeSimilarPhotos(mockPhotos);
       });
 
       // Wait for suggestion to be added
       await waitFor(() => {
-        expect(contextValue.suggestions).toHaveLength(1);
+        expect(freshContextValue.suggestions).toHaveLength(1);
       });
 
-      const suggestionId = contextValue.suggestions[0].id;
+      const suggestionId = freshContextValue.suggestions[0].id;
       const mockOnPhotoUpdate = vi.fn();
 
       await act(async () => {
-        const result = await contextValue.acceptSuggestion(suggestionId, mockPhotos, mockOnPhotoUpdate);
+        const result = await freshContextValue.acceptSuggestion(suggestionId, mockPhotos, mockOnPhotoUpdate);
         expect(result).toEqual(mockResult);
       });
 
@@ -542,6 +585,9 @@ describe('ScoutAiContext', () => {
     let contextValue: any;
 
     beforeEach(async () => {
+      // Reset all mocks before each test
+      vi.clearAllMocks();
+      
       render(
         <ScoutAiProvider userId="test-user">
           <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
@@ -621,6 +667,28 @@ describe('ScoutAiContext', () => {
     let contextValue: any;
 
     beforeEach(async () => {
+      // Reset all mocks before each test
+      vi.clearAllMocks();
+      
+      // Mock localStorage to return valid user preferences
+      vi.mocked(window.localStorage.getItem).mockImplementation((key) => {
+        if (key === 'scoutai-preferences-test-user') {
+          return JSON.stringify({
+            userId: 'test-user',
+            preferredGroupTypes: { retry_shots: true },
+            qualityThreshold: 0.7,
+            detailLevel: 'detailed',
+            acceptanceRate: { photo_curation: 0.8 },
+            learningData: {
+              acceptedRecommendations: [],
+              rejectedRecommendations: [],
+              preferredKeepCriteria: []
+            }
+          });
+        }
+        return null;
+      });
+      
       render(
         <ScoutAiProvider userId="test-user">
           <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
@@ -629,6 +697,7 @@ describe('ScoutAiContext', () => {
 
       await waitFor(() => {
         expect(contextValue).toBeDefined();
+        expect(contextValue.userPreferences).toBeDefined();
       });
     });
 
@@ -667,48 +736,48 @@ describe('ScoutAiContext', () => {
         error: 'Some actions failed'
       };
 
-      // Mock visual similarity hook to return similarity groups
-      vi.mocked(useVisualSimilarity).mockReturnValue({
-        state: {
-          isAnalyzing: false,
-          progress: 0,
-          error: null,
-          similarityGroups: [mockGroup],
-          similarityMatrix: new Map()
-        },
-        analyzeSimilarity: vi.fn().mockResolvedValue(undefined),
-        getSimilarityScore: vi.fn(),
-        getGroupForPhoto: vi.fn(),
-        clearAnalysis: vi.fn(),
-        cancelAnalysis: vi.fn()
-      });
-
-      // Set up mocks to generate a suggestion
+      // Set up all mocks BEFORE creating a new component
+      const freshMockVisualSimilarity = createMockVisualSimilarity([mockGroup]);
+      freshMockVisualSimilarity.analyzeSimilarity.mockResolvedValue([mockGroup]);
+      vi.mocked(useVisualSimilarity).mockReturnValue(freshMockVisualSimilarity);
       vi.mocked(generateCurationRecommendation).mockReturnValue(mockRecommendation);
       vi.mocked(generateScoutAiMessage).mockReturnValue('Test message');
       vi.mocked(createActionsFromRecommendation).mockReturnValue(mockActions);
       vi.mocked(applyCurationActions).mockResolvedValue(mockResult);
 
+      // Create a fresh component with the new mocks
+      let freshContextValue: any;
+      render(
+        <ScoutAiProvider userId="test-user">
+          <TestComponent onContextReady={(ctx) => { freshContextValue = ctx; }} />
+        </ScoutAiProvider>
+      );
+
+      await waitFor(() => {
+        expect(freshContextValue).toBeDefined();
+        expect(freshContextValue.userPreferences).toBeDefined();
+      });
+
       // Generate the suggestion first
       await act(async () => {
-        await contextValue.analyzeSimilarPhotos(mockPhotos);
+        await freshContextValue.analyzeSimilarPhotos(mockPhotos);
       });
 
       // Wait for suggestion to be added
       await waitFor(() => {
-        expect(contextValue.suggestions).toHaveLength(1);
+        expect(freshContextValue.suggestions).toHaveLength(1);
       });
 
-      const suggestionId = contextValue.suggestions[0].id;
+      const suggestionId = freshContextValue.suggestions[0].id;
       const mockOnPhotoUpdate = vi.fn();
 
       await act(async () => {
-        const result = await contextValue.acceptSuggestion(suggestionId, mockPhotos, mockOnPhotoUpdate);
+        const result = await freshContextValue.acceptSuggestion(suggestionId, mockPhotos, mockOnPhotoUpdate);
         expect(result).toEqual(mockResult);
       });
 
       await waitFor(() => {
-        expect(contextValue.error).toBe('Some actions failed');
+        expect(freshContextValue.error).toBe('Some actions failed');
       });
     });
 
