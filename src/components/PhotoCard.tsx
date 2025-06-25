@@ -3,7 +3,6 @@
 import React from 'react';
 import type { Photo, Tag as CompanyCamTag } from '../types';
 import { useUserContext } from '../contexts/UserContext';
-import { getRetentionStatus } from '../utils/retentionCleanup';
 
 // Interface for mock/local tag definitions (e.g., from mockTagsData)
 interface MockTag {
@@ -53,7 +52,6 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                     || photo.uris.find((uri) => uri.type === 'web')?.uri
                     || photo.uris.find((uri) => uri.type === 'original')?.uri;
   
-  const retentionStatus = getRetentionStatus(photo, userSettings.retentionPolicy);
 
   const handleSuggestAiTags = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -95,35 +93,6 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
           By: {photo.creator_name || 'Unknown Creator'}
         </p>
 
-        {/* Retention Status Indicator */}
-        {retentionStatus.status !== 'active' && (
-          <div className="mb-2">
-            {retentionStatus.status === 'archived' && retentionStatus.daysUntilDeletion && (
-              <div className="flex items-center text-xs">
-                <span className="inline-block w-2 h-2 bg-yellow-400 rounded-full mr-2"></span>
-                <span className="text-yellow-400">
-                  Archived • Deletion in {retentionStatus.daysUntilDeletion} day{retentionStatus.daysUntilDeletion !== 1 ? 's' : ''}
-                </span>
-              </div>
-            )}
-            {retentionStatus.status === 'pending_deletion' && retentionStatus.daysUntilDeletion && (
-              <div className="flex items-center text-xs">
-                <span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-2 animate-pulse"></span>
-                <span className="text-red-400">
-                  Scheduled for deletion in {retentionStatus.daysUntilDeletion} day{retentionStatus.daysUntilDeletion !== 1 ? 's' : ''}
-                </span>
-              </div>
-            )}
-            {retentionStatus.status === 'expired' && (
-              <div className="flex items-center text-xs">
-                <span className="inline-block w-2 h-2 bg-red-600 rounded-full mr-2 animate-pulse"></span>
-                <span className="text-red-600 font-medium">
-                  Expired • Will be removed
-                </span>
-              </div>
-            )}
-          </div>
-        )}
 
         {photo.description && (
           <p className="text-sm text-gray-300 mt-1 mb-2 line-clamp-2" title={photo.description}>

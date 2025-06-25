@@ -12,7 +12,6 @@ import { useAiEnhancements } from '../hooks/useAiEnhancements';
 import { useTagManagement } from '../hooks/useTagManagement';
 import { usePhotoModal } from '../hooks/usePhotoModal';
 import { useTagFiltering } from '../hooks/useTagFiltering';
-import { useRetentionCleanup } from '../hooks/useRetentionCleanup';
 import { useNotificationManager } from '../hooks/useNotificationManager';
 import { FilterBar } from '../components/FilterBar';
 
@@ -24,7 +23,6 @@ import PhotoModal from '../components/PhotoModal';
 import PhotoCard from '../components/PhotoCard';
 import { ScoutAiDemo } from '../components/ScoutAiDemo';
 import { NotificationsPanel } from '../components/NotificationsPanel';
-import { RetentionPolicySettings } from '../components/RetentionPolicySettings';
 
 const HomePageContent: React.FC = () => {
   const navigate = useNavigate();
@@ -64,17 +62,6 @@ const HomePageContent: React.FC = () => {
   
   const photoModal = usePhotoModal(tagFiltering.filteredPhotos);
 
-  // Initialize retention cleanup and notifications
-  useRetentionCleanup({
-    photos: photosQuery.photos,
-    onPhotosUpdate: (updatedPhotos: Photo[]) => {
-      // Update each photo in cache
-      updatedPhotos.forEach(photo => {
-        photosQuery.updatePhotoInCache(photo);
-      });
-    },
-    enabled: userSettings.retentionPolicy.enabled,
-  });
 
   const notificationManager = useNotificationManager();
 
@@ -241,10 +228,6 @@ const HomePageContent: React.FC = () => {
           </div>
         )}
 
-        {/* Retention Policy Settings */}
-        <div className="mb-6">
-          <RetentionPolicySettings />
-        </div>
 
         {/* Loading State */}
         {photosQuery.isLoading && photosQuery.photos.length === 0 && (

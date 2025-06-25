@@ -15,7 +15,6 @@ import type {
   Project,
   UserContextType,
   UserSettings,
-  RetentionPolicy,
 } from '../types'; // Path adjusted from ./types
 import { companyCamService } from '../services/companyCamService'; // Path adjusted from ./services/companyCamService
 
@@ -25,17 +24,7 @@ interface UserContextProviderProps {
   children: ReactNode;
 }
 
-const defaultRetentionPolicy: RetentionPolicy = {
-  archiveRetentionDays: 30, // Archive photos are deleted after 30 days
-  deletionGraceDays: 7, // 7 day grace period after marking for deletion
-  notificationDaysBefore: 3, // Notify user 3 days before deletion
-  enabled: true, // Time-based deletion enabled by default
-};
-
-const defaultUserSettings: UserSettings = {
-  retentionPolicy: defaultRetentionPolicy,
-  deletionNotifications: [],
-};
+const defaultUserSettings: UserSettings = {};
 
 export const UserContextProvider: React.FC<UserContextProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);

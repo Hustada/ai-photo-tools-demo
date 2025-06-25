@@ -1,0 +1,36 @@
+
+> scout-ai@0.0.0 test
+> vitest --coverage --reporter=text
+
+
+⎯⎯⎯⎯⎯⎯⎯ Startup Error ⎯⎯⎯⎯⎯⎯⎯⎯
+Error: Failed to load custom Reporter from text
+    at loadCustomReporterModule (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vitest/dist/chunks/cli-api.DYcKW0ri.js:7693:9)
+    at async file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vitest/dist/chunks/cli-api.DYcKW0ri.js:7711:28
+    ... 3 lines matching cause stack trace ...
+    at async _createServer (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:38657:20)
+    at async createViteServer (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vitest/dist/chunks/cli-api.DYcKW0ri.js:6899:17)
+    at async createVitest (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vitest/dist/chunks/cli-api.DYcKW0ri.js:10172:17)
+    at async prepareVitest (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vitest/dist/chunks/cli-api.DYcKW0ri.js:10511:14)
+    at async startVitest (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vitest/dist/chunks/cli-api.DYcKW0ri.js:10458:14) {
+  [cause]: Error: Cannot find package 'text'
+      at ViteNodeRunner._fetchModule (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vite-node/dist/client.mjs:247:19)
+      at async ViteNodeRunner.directRequest (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vite-node/dist/client.mjs:268:44)
+      at async ViteNodeRunner.cachedRequest (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vite-node/dist/client.mjs:189:11)
+      at async ViteNodeRunner.executeId (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vite-node/dist/client.mjs:166:10)
+      at async loadCustomReporterModule (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vitest/dist/chunks/cli-api.DYcKW0ri.js:7691:26)
+      at async file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vitest/dist/chunks/cli-api.DYcKW0ri.js:7711:28
+      at async Promise.all (index 0)
+      at async Vitest._setServer (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vitest/dist/chunks/cli-api.DYcKW0ri.js:9313:138)
+      at async handler (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vitest/dist/chunks/cli-api.DYcKW0ri.js:10138:6)
+      at async _createServer (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:38657:20) {
+    code: 'ERR_MODULE_NOT_FOUND',
+    [cause]: Error: Failed to load url text (resolved id: text). Does the file exist?
+        at loadAndTransform (file:///Users/markhustad/Projects/companycam/cc-ai-photo-inspirations/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:35725:17) {
+      code: 'ERR_LOAD_URL'
+    }
+  }
+}
+
+
+
