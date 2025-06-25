@@ -14,6 +14,7 @@ import { usePhotoModal } from '../hooks/usePhotoModal';
 import { useTagFiltering } from '../hooks/useTagFiltering';
 import { useRetentionCleanup } from '../hooks/useRetentionCleanup';
 import { useNotificationManager } from '../hooks/useNotificationManager';
+import { FilterBar } from '../components/FilterBar';
 
 // Import Scout AI
 import { ScoutAiProvider } from '../contexts/ScoutAiContext';
@@ -197,57 +198,18 @@ const HomePageContent: React.FC = () => {
       <div className="p-5 font-sans">
         {/* Filter Section */}
         {tagFiltering.availableFilterTags.length > 0 && (
-          <div className="mb-6 p-4 border border-gray-700 rounded-lg bg-gray-800 shadow-md">
-            <h2 className="text-xl font-semibold mb-3 text-sky-300">Filter by Tags:</h2>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {tagFiltering.availableFilterTags.map(tag => (
-                <button
-                  key={tag.id}
-                  onClick={() => tagFiltering.toggleTag(tag.id)}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-all duration-150 ease-in-out transform hover:scale-105
-                    ${
-                      tagFiltering.activeTagIds.includes(tag.id)
-                        ? 'bg-sky-500 text-white shadow-lg'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
-                    }`}
-                >
-                  {tag.display_value} ({photosQuery.allPhotos.filter(p => p.tags?.some(t => t.id === tag.id)).length})
-                </button>
-              ))}
-            </div>
-            {tagFiltering.activeTagIds.length > 0 && (
-              <div className="mt-3 flex items-center">
-                <span className="text-sm font-medium text-gray-400">Active filters: </span>
-                <div className="flex flex-wrap gap-1 ml-2">
-                  {tagFiltering.activeTagIds.map(tagId => {
-                    const tag = tagFiltering.availableFilterTags.find(t => t.id === tagId);
-                    return (
-                      <span key={tagId} className="inline-block bg-sky-600 text-white px-2.5 py-1 rounded-full text-xs">
-                        {tag ? tag.display_value : tagId}
-                      </span>
-                    );
-                  })}
-                </div>
-                <button
-                  onClick={tagFiltering.clearAllFilters}
-                  className="ml-3 text-xs text-red-400 hover:text-red-300 underline transition-colors duration-150"
-                >
-                  Clear All
-                </button>
-              </div>
-            )}
-          </div>
+          <FilterBar
+            availableTags={tagFiltering.availableFilterTags}
+            activeTags={tagFiltering.activeTagIds}
+            onToggleTag={tagFiltering.toggleTag}
+            onClearAll={tagFiltering.clearAllFilters}
+            totalPhotos={photosQuery.allPhotos.length}
+            filteredCount={tagFiltering.filteredPhotos.length}
+            onRefresh={handleRefreshPhotos}
+            isRefreshing={photosQuery.isLoading}
+          />
         )}
 
-        <div className="mb-6 text-center">
-          <button
-            onClick={handleRefreshPhotos}
-            disabled={photosQuery.isLoading || !localStorage.getItem('companyCamApiKey')}
-            className="px-6 py-2.5 bg-sky-600 text-white rounded-lg hover:bg-sky-500 disabled:bg-gray-600 disabled:opacity-70 transition-all duration-150 ease-in-out shadow-md hover:shadow-lg transform hover:scale-105"
-          >
-            {photosQuery.isLoading && photosQuery.photos.length === 0 ? 'Fetching Photos...' : 'Refresh Photos'}
-          </button>
-        </div>
 
         {photosQuery.error && <p className="text-red-400 text-center mb-4 p-3 bg-red-900 border border-red-700 rounded-md">Error: {photosQuery.error.message}</p>}
 
