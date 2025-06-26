@@ -153,7 +153,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             key={tag.id}
             onClick={() => onToggleTag(tag.id)}
             className={`px-3 py-2 text-sm font-medium border transition-all duration-200 ${
-              activeTags.includes(tag.id)
+              activeTags.includes(tag.display_value.toLowerCase())
                 ? 'bg-gray-800 text-white border-gray-700 shadow-md'
                 : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 hover:border-orange-500'
             }`}
@@ -169,18 +169,21 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-400">Active:</span>
             <div className="flex flex-wrap gap-1">
-              {activeTags.map(tagId => {
-                const tag = availableTags.find(t => t.id === tagId);
+              {activeTags.map(activeDisplayValue => {
+                const tag = availableTags.find(t => t.display_value.toLowerCase() === activeDisplayValue.toLowerCase());
                 return (
                   <span
-                    key={tagId}
+                    key={activeDisplayValue}
                     className="inline-flex items-center gap-1 bg-orange-700 text-white px-2 py-1 text-xs border border-orange-600 group"
                   >
-                    <span>{tag ? tag.display_value : tagId}</span>
+                    <span>{tag ? tag.display_value : activeDisplayValue}</span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onToggleTag(tagId);
+                        // Find the tag by display value and pass its ID to onToggleTag
+                        if (tag) {
+                          onToggleTag(tag.id);
+                        }
                       }}
                       className="ml-1 text-orange-200 hover:text-white transition-colors"
                       title="Remove tag"
