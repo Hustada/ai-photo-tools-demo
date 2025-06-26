@@ -1,7 +1,7 @@
 // © 2024 Mark Hustad — MIT License
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import scoutAiAvatar from '../assets/scout-ai-avatar3.png';
+import scoutAiAvatar from '../assets/scout-ai-avatar-orange2.png';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -30,7 +30,7 @@ const LoginPage: React.FC = () => {
             alt="Scout AI" 
             className="w-16 h-16 rounded-full object-cover shadow-lg mb-4"
           />
-          <h1 className="text-3xl font-bold text-sky-400 mb-2">Scout AI</h1>
+          <h1 className="text-3xl font-bold text-orange-400 mb-2">Scout AI</h1>
           <p className="text-gray-400 text-center text-sm">
             Enter your CompanyCam API Key to access Scout AI.
           </p>
@@ -44,13 +44,13 @@ const LoginPage: React.FC = () => {
             id="apiKey"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-gray-500"
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
             placeholder="Paste your API key here"
           />
         </div>
         <button
           onClick={handleLogin}
-          className="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+          className="w-full bg-orange-600 hover:bg-orange-500 text-white font-semibold py-2 px-4 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-800"
         >
           Login
         </button>

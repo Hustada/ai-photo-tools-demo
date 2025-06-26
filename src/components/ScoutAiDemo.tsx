@@ -7,7 +7,7 @@ import { AnalysisModeSelector } from './AnalysisModeSelector';
 import type { Photo } from '../types';
 import type { ScoutAiSuggestion, CurationRecommendation } from '../types/scoutai';
 import type { FilterOptions } from '../utils/photoFiltering';
-import scoutAiAvatar from '../assets/scout-ai-avatar3.png';
+import scoutAiAvatar from '../assets/scout-ai-avatar-orange2.png';
 
 interface ScoutAiDemoProps {
   photos: Photo[];
@@ -231,17 +231,17 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
   // Show minimized state when Scout AI is not actively being used
   if (isMinimized && !showSuggestions) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
+      <div className="bg-gray-800 border border-gray-600 p-3 shadow-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <img 
               src={scoutAiAvatar} 
               alt="Scout AI" 
-              className="w-8 h-8 rounded-full object-cover"
+              className="w-8 h-8 object-cover"
             />
             <div>
-              <h3 className="text-sm font-medium text-blue-900">Scout AI</h3>
-              <p className="text-xs text-blue-700">Ready to analyze photos</p>
+              <h3 className="text-sm font-medium text-white">Scout AI</h3>
+              <p className="text-xs text-gray-300">Ready to analyze photos</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -250,7 +250,7 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
                 setIsMinimized(false);
                 setShowSuggestions(false);
               }}
-              className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+              className="px-3 py-1 bg-orange-600 text-white text-xs border border-orange-500 hover:bg-orange-500 transition-colors"
             >
               Analyze Photos
             </button>
@@ -267,17 +267,17 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
   return (
     <div className="space-y-4">
       {/* Scout AI Control Panel */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+      <div className="bg-gray-800 border border-gray-600 p-4 shadow-lg">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-3">
             <img 
               src={scoutAiAvatar} 
               alt="Scout AI" 
-              className="w-10 h-10 rounded-full object-cover shadow-sm"
+              className="w-10 h-10 object-cover shadow-sm"
             />
             <div>
-              <h3 className="text-lg font-semibold text-blue-900">Scout AI</h3>
-              <p className="text-sm text-blue-700">
+              <h3 className="text-lg font-medium text-white">Scout AI</h3>
+              <p className="text-sm text-gray-300">
                 {scoutAi.isAnalyzing ? (
                   scoutAi.visualSimilarity && scoutAi.visualSimilarity.state.isAnalyzing ? (
                     `AI visual analysis: ${scoutAi.visualSimilarity.state.progress}% complete`
@@ -292,7 +292,7 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
           </div>
           <div className="flex items-center space-x-3">
             {completedSuggestions.length > 0 && (
-              <div className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">
+              <div className="text-xs text-green-300 bg-green-800 border border-green-600 px-2 py-1">
                 ✓ {completedSuggestions.length} applied
               </div>
             )}
@@ -304,7 +304,7 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
             {showSuggestions && activeSuggestions.length === 0 && completedSuggestions.length > 0 && (
               <button
                 onClick={() => setIsMinimized(true)}
-                className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                className="p-2 text-orange-400 hover:bg-gray-700 transition-colors"
                 title="Minimize Scout AI"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -316,7 +316,7 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
         </div>
         
         {photos.length < 2 && (
-          <p className="text-blue-700 text-sm">
+          <p className="text-gray-300 text-sm">
             💡 Load at least 2 photos to use Scout AI analysis
           </p>
         )}
@@ -325,17 +325,17 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
         {scoutAi.visualSimilarity && scoutAi.visualSimilarity.state.isAnalyzing && (
           <div className="mt-3">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-blue-700">AI Visual Analysis Progress</span>
-              <span className="text-xs text-blue-700">{scoutAi.visualSimilarity.state.progress}%</span>
+              <span className="text-xs text-gray-300">AI Visual Analysis Progress</span>
+              <span className="text-xs text-orange-400 font-medium">{scoutAi.visualSimilarity.state.progress}%</span>
             </div>
-            <div className="w-full bg-blue-200 rounded-full h-2">
+            <div className="w-full bg-gray-700 h-2">
               <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                className="bg-orange-600 h-2 transition-all duration-300 ease-out"
                 style={{ width: `${scoutAi.visualSimilarity.state.progress}%` }}
               ></div>
             </div>
             <div className="flex items-center justify-between mt-1">
-              <span className="text-xs text-blue-600">
+              <span className="text-xs text-gray-400">
                 {scoutAi.visualSimilarity.state.progress < 20 
                   ? 'Smart filtering for potential duplicates...'
                   : scoutAi.visualSimilarity.state.progress < 70
@@ -346,7 +346,7 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
               {scoutAi.visualSimilarity.cancelAnalysis && (
                 <button
                   onClick={scoutAi.visualSimilarity.cancelAnalysis}
-                  className="text-xs text-red-600 hover:text-red-800 underline"
+                  className="text-xs text-red-400 hover:text-red-300 border border-red-500 px-2 py-1 hover:bg-red-500 hover:text-white transition-all"
                 >
                   Cancel
                 </button>
@@ -356,7 +356,7 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
         )}
 
         {scoutAi.error && (
-          <p className="text-red-600 text-sm bg-red-50 p-2 rounded mt-2">
+          <p className="text-red-300 text-sm bg-red-900 border border-red-700 p-2 mt-2">
             ❌ Error: {scoutAi.error}
           </p>
         )}
@@ -377,19 +377,19 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
       
       {/* Completed Suggestions Summary (if not minimized) */}
       {!isMinimized && completedSuggestions.length > 0 && activeSuggestions.length === 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
+        <div className="bg-green-800 border border-green-600 p-3 mt-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-green-300" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
               </svg>
-              <span className="text-sm font-medium text-green-800">
+              <span className="text-sm font-medium text-green-200">
                 {completedSuggestions.length} Scout AI suggestion{completedSuggestions.length > 1 ? 's' : ''} applied successfully
               </span>
             </div>
             <button
               onClick={() => setIsMinimized(true)}
-              className="text-xs text-green-600 hover:text-green-800 underline"
+              className="text-xs text-green-300 hover:text-green-100 border border-green-500 px-2 py-1 hover:bg-green-500 hover:text-white transition-all"
             >
               Minimize
             </button>
@@ -400,7 +400,7 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
       {/* Enhanced Preview Modal with Photo Selection */}
       {showDetails && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-4xl w-full mx-4 max-h-[85vh] overflow-y-auto">
+          <div className="bg-light-gray p-6 rounded-lg max-w-4xl w-full mx-4 max-h-[85vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Preview Changes</h3>

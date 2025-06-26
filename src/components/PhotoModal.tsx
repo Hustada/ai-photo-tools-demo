@@ -146,7 +146,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       onClick={onClose} // Click on backdrop to close
     >
       <div 
-        className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-xl sm:rounded-lg sm:max-h-[90vh] max-sm:h-screen max-sm:max-w-full max-sm:rounded-none"
+        className="bg-light-gray rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-xl sm:rounded-lg sm:max-h-[90vh] max-sm:h-screen max-sm:max-w-full max-sm:rounded-none"
         onClick={(e) => e.stopPropagation()} // Prevent backdrop click from triggering when clicking on modal content
       >
         {/* Header / Counter / Close Button */}
@@ -263,7 +263,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               ) && (
               <button 
                 onClick={handleFetchAiSuggestionsFromProp} 
-                className="w-full sm:w-auto mt-1 px-5 py-2.5 bg-blue-600 text-white rounded-md cursor-pointer hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                className="w-full sm:w-auto mt-1 px-5 py-2.5 bg-orange-600 text-white rounded-md cursor-pointer hover:bg-orange-500 transition-colors flex items-center justify-center space-x-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v6h6a1 1 0 110 2h-6v6a1 1 0 11-2 0v-6H3a1 1 0 110-2h6V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
                 <span>Get AI Suggestions</span>
@@ -287,7 +287,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 <textarea
                   value={editableDescription}
                   onChange={(e) => setEditableDescription(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md text-sm text-gray-700 focus:ring-blue-500 focus:border-blue-500 min-h-[80px] bg-white"
+                  className="w-full p-2 border border-gray-300 rounded-md text-sm text-gray-700 focus:ring-orange-500 focus:border-orange-500 min-h-[80px] bg-light-gray"
                   placeholder="Enter or edit description..."
                   rows={3}
                 />

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import type { ScoutAiSuggestion } from '../types/scoutai';
-import scoutAiAvatar from '../assets/scout-ai-avatar3.png';
+import scoutAiAvatar from '../assets/scout-ai-avatar-orange2.png';
 
 interface ScoutAiNotificationProps {
   suggestion: ScoutAiSuggestion;
@@ -173,7 +173,7 @@ export const ScoutAiNotification: React.FC<ScoutAiNotificationProps> = ({
       </div>
 
       {/* Photo Summary */}
-      <div className="mb-4 p-3 bg-white rounded-md border border-gray-100">
+      <div className="mb-4 p-3 bg-light-gray rounded-md border border-gray-100">
         <div className="flex items-center justify-between text-sm">
           <div className="text-gray-600">
             <span className="font-medium text-gray-800">{totalPhotos}</span> photos

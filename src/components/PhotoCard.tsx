@@ -121,7 +121,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                         ? 'bg-teal-500 text-white hover:bg-teal-600' // AI tag + Active filter
                         : 'bg-teal-600 text-teal-100 hover:bg-teal-500' // AI tag (not active filter)
                       : isActive
-                        ? 'bg-blue-500 text-white hover:bg-blue-600' // Normal tag + Active filter
+                        ? 'bg-orange-500 text-white hover:bg-orange-600' // Normal tag + Active filter
                         : onTagClick
                           ? 'bg-gray-600 text-gray-200 hover:bg-gray-500' // Normal tag (not active filter, clickable)
                           : 'bg-gray-700 text-gray-400' // Normal tag (not active filter, not clickable)
@@ -156,7 +156,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             <div className="flex justify-center">
               <button
               onClick={handleSuggestAiTags}
-              className="mt-2 px-6 py-2.5 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 flex items-center justify-center space-x-1.5 transition-colors duration-150 ease-in-out group"
+              className="mt-2 px-6 py-2.5 bg-orange-600 text-white text-sm rounded hover:bg-orange-500 flex items-center justify-center space-x-1.5 transition-colors duration-150 ease-in-out group"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10 3.5a1.5 1.5 0 011.5 1.5v1a1.5 1.5 0 01-3 0v-1A1.5 1.5 0 0110 3.5zM3.188 8.044A5.5 5.5 0 0110 4.5h.008a5.5 5.5 0 016.804 3.544l.002.005.003.005a4.502 4.502 0 01-.82 4.44l-2.67 3.523a1.5 1.5 0 01-2.331.12l-2.67-3.523a4.502 4.502 0 01-.82-4.44l.002-.005.003-.005zM10 13a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />

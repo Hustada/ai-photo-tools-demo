@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../contexts/UserContext';
 import type { Photo, Tag } from '../types';
-import scoutAiAvatar from '../assets/scout-ai-avatar3.png';
+import scoutAiAvatar from '../assets/scout-ai-avatar-orange2.png';
 
 // Import our extracted hooks
 import { usePhotosQuery } from '../hooks/usePhotosQuery';
@@ -14,6 +14,7 @@ import { usePhotoModal } from '../hooks/usePhotoModal';
 import { useTagFiltering } from '../hooks/useTagFiltering';
 import { useNotificationManager } from '../hooks/useNotificationManager';
 import { FilterBar } from '../components/FilterBar';
+import { useScoutAi } from '../contexts/ScoutAiContext';
 
 // Import Scout AI
 import { ScoutAiProvider } from '../contexts/ScoutAiContext';
@@ -64,6 +65,7 @@ const HomePageContent: React.FC = () => {
 
 
   const notificationManager = useNotificationManager();
+  const scoutAi = useScoutAi();
 
   // Check for API key and redirect if missing
   useEffect(() => {
@@ -106,6 +108,16 @@ const HomePageContent: React.FC = () => {
     photosQuery.refresh();
   };
 
+  const handleAnalyzePhotos = (mode: 'new' | 'all') => {
+    if (!currentUser) return; // Don't analyze if no user
+    
+    const filterOptions = mode === 'new' 
+      ? { mode: 'smart' as const, newPhotoDays: 30, forceReanalysis: false }
+      : { mode: 'all' as const, forceReanalysis: false };
+    
+    scoutAi.analyzeSimilarPhotos(photosQuery.photos, true, filterOptions);
+  };
+
   // Handle user context loading and errors
   if (userLoading) {
     return (
@@ -134,8 +146,8 @@ const HomePageContent: React.FC = () => {
   const selectedPhoto = photoModal.selectedPhoto;
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center p-4 bg-gray-900 text-white space-y-4 md:space-y-0">
+    <div className="flex flex-col min-h-screen bg-light-gray">
+      <div className="sticky top-0 flex flex-col md:flex-row md:justify-between md:items-center p-4 bg-gray-900/95 backdrop-blur-md text-white space-y-4 md:space-y-0 border-b border-gray-700/50 shadow-lg z-50">
         {/* Left side: App Title with Avatar */}
         <div className="flex items-center justify-center md:justify-start space-x-3">
           <img 
@@ -143,7 +155,7 @@ const HomePageContent: React.FC = () => {
             alt="Scout AI" 
             className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-lg"
           />
-          <h1 className="text-2xl sm:text-3xl font-bold text-sky-400">Scout AI</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-orange-400">Scout AI</h1>
         </div>
 
         {/* Right side: User Info / Loading / Error */}
@@ -173,7 +185,7 @@ const HomePageContent: React.FC = () => {
               )}
               <button
                 onClick={handleLogout}
-                className="mt-2 text-xs text-sky-400 hover:text-sky-300 underline"
+                className="mt-2 text-xs text-orange-400 hover:text-orange-300 underline"
               >
                 Logout
               </button>
@@ -194,6 +206,8 @@ const HomePageContent: React.FC = () => {
             filteredCount={tagFiltering.filteredPhotos.length}
             onRefresh={handleRefreshPhotos}
             isRefreshing={photosQuery.isLoading}
+            onAnalyze={currentUser ? handleAnalyzePhotos : undefined}
+            isAnalyzing={currentUser ? scoutAi.isAnalyzing : false}
           />
         )}
 
@@ -206,12 +220,6 @@ const HomePageContent: React.FC = () => {
           </div>
         )}
 
-        {/* Scout AI Demo Section */}
-        <ScoutAiDemo 
-          photos={photosQuery.photos} 
-          visible={photosQuery.photos.length > 0}
-          onPhotoUpdate={photosQuery.updatePhotoInCache}
-        />
 
         {/* Notifications Panel */}
         {notificationManager.hasActiveNotifications && (
@@ -292,12 +300,9 @@ const HomePageContent: React.FC = () => {
 const HomePage: React.FC = () => {
   const { currentUser } = useUserContext();
   
-  if (!currentUser) {
-    return <HomePageContent />;
-  }
-
+  // Always wrap with ScoutAiProvider, but pass null userId when no user
   return (
-    <ScoutAiProvider userId={currentUser.id}>
+    <ScoutAiProvider userId={currentUser?.id || null}>
       <HomePageContent />
     </ScoutAiProvider>
   );

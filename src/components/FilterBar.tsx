@@ -10,6 +10,8 @@ interface FilterBarProps {
   filteredCount: number;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  onAnalyze?: (mode: 'new' | 'all') => void;
+  isAnalyzing?: boolean;
 }
 
 type FilterMode = 'AND' | 'OR';
@@ -22,10 +24,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   totalPhotos,
   filteredCount,
   onRefresh,
-  isRefreshing
+  isRefreshing,
+  onAnalyze,
+  isAnalyzing
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMode, setFilterMode] = useState<FilterMode>('OR');
+  const [analysisMode, setAnalysisMode] = useState<'new' | 'all'>('new');
+  const [showAnalysisDropdown, setShowAnalysisDropdown] = useState(false);
 
   const filteredTags = availableTags.filter(tag =>
     tag.display_value.toLowerCase().includes(searchTerm.toLowerCase())
@@ -45,10 +51,60 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="px-4 py-1.5 bg-sky-600 text-white border border-sky-500 hover:bg-sky-500 disabled:bg-gray-600 disabled:opacity-70 transition-colors text-sm"
+              className="px-4 py-1.5 bg-orange-600 text-white border border-orange-500 hover:bg-orange-500 disabled:bg-gray-600 disabled:opacity-70 transition-colors text-sm"
             >
               {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </button>
+          )}
+          {onAnalyze && totalPhotos >= 2 && (
+            <div className="relative">
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => onAnalyze(analysisMode)}
+                  disabled={isAnalyzing}
+                  className="px-4 py-1.5 bg-orange-600 text-white border border-orange-500 hover:bg-orange-500 disabled:bg-gray-600 disabled:opacity-70 transition-colors text-sm"
+                >
+                  {isAnalyzing ? 'Analyzing...' : 'AI Analysis'}
+                </button>
+                <button
+                  onClick={() => setShowAnalysisDropdown(!showAnalysisDropdown)}
+                  disabled={isAnalyzing}
+                  className="p-1.5 bg-orange-600 text-white border border-orange-500 hover:bg-orange-500 disabled:bg-gray-600 disabled:opacity-70 transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M7 10l5 5 5-5z"/>
+                  </svg>
+                </button>
+              </div>
+              {showAnalysisDropdown && (
+                <div className="absolute top-full mt-1 right-0 w-48 bg-gray-800 border border-gray-600 shadow-lg z-10">
+                  <div className="p-2">
+                    <label className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-gray-700">
+                      <input
+                        type="radio"
+                        name="analysisMode"
+                        value="new"
+                        checked={analysisMode === 'new'}
+                        onChange={() => setAnalysisMode('new')}
+                        className="text-orange-600"
+                      />
+                      <span className="text-sm text-gray-300">New Photos (30 days)</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-gray-700">
+                      <input
+                        type="radio"
+                        name="analysisMode"
+                        value="all"
+                        checked={analysisMode === 'all'}
+                        onChange={() => setAnalysisMode('all')}
+                        className="text-orange-600"
+                      />
+                      <span className="text-sm text-gray-300">All Photos</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>

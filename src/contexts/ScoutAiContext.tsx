@@ -37,7 +37,7 @@ const ScoutAiContext = createContext<ScoutAiContextType | undefined>(undefined);
 
 interface ScoutAiProviderProps {
   children: ReactNode;
-  userId: string;
+  userId: string | null;
 }
 
 export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({ 
