@@ -34,6 +34,7 @@ export interface UseAiEnhancementsReturn {
   fetchAiSuggestions: (photoId: string, photoUrl: string, projectId?: string) => Promise<void>
   saveAiDescription: (photoId: string, description: string, photo?: Photo) => Promise<void>
   addAiTag: (photoId: string, tagDisplayValue: string, photo?: Photo) => Promise<void>
+  removeAiTag: (photoId: string, tagDisplayValue: string, photo?: Photo) => Promise<void>
   loadPersistedEnhancements: (photoId: string) => Promise<void>
   
   // Utility functions
@@ -318,6 +319,77 @@ export const useAiEnhancements = (
     }
   }, [currentUser, updatePhotoCache, options?.onPhotoUpdate])
 
+  const removeAiTag = useCallback(async (photoId: string, tagDisplayValue: string, photo?: Photo) => {
+    if (!currentUser) {
+      throw new Error('User not available for removing AI tag')
+    }
+
+    console.log(`[useAiEnhancements] Removing AI tag "${tagDisplayValue}" from photo ${photoId} (backend only)`)
+
+    try {
+      // First, fetch current persisted AI tags from backend
+      let existingAcceptedTags: string[] = []
+      try {
+        const existingResponse = await fetch(`/api/ai-enhancements?photoId=${photoId}`)
+        if (existingResponse.ok) {
+          const existingData: PersistedEnhancement = await existingResponse.json()
+          existingAcceptedTags = existingData.accepted_ai_tags || []
+          console.log(`[useAiEnhancements] Found existing AI tags for ${photoId}:`, existingAcceptedTags)
+        } else if (existingResponse.status !== 404) {
+          console.warn(`[useAiEnhancements] Error fetching existing AI tags: ${existingResponse.status}`)
+        }
+      } catch (fetchError) {
+        console.warn(`[useAiEnhancements] Could not fetch existing AI tags:`, fetchError)
+        return // Can't remove if we can't fetch existing tags
+      }
+
+      // Remove the tag from the array
+      const newAcceptedTags = existingAcceptedTags.filter(tag => tag !== tagDisplayValue)
+      console.log(`[useAiEnhancements] AI tags after removal for ${photoId}:`, newAcceptedTags)
+
+      // Update backend with the new array
+      const response = await fetch('/api/ai-enhancements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          photoId,
+          userId: currentUser.id,
+          acceptedAiTags: newAcceptedTags,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to remove AI tag from enhancements: ${response.status} ${errorText}`)
+      }
+
+      console.log(`[useAiEnhancements] AI tag "${tagDisplayValue}" removed from backend, remaining tags:`, newAcceptedTags)
+
+      // Update AI cache
+      updatePhotoCache(photoId, {
+        persistedAcceptedTags: newAcceptedTags,
+      })
+
+      // Update photo data if provided and callback available
+      if (photo && options?.onPhotoUpdate) {
+        // Remove the AI tag from the photo's tags array
+        const tagIdToRemove = `ai_${photoId}_${tagDisplayValue.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}`
+        const updatedTags = (photo.tags || []).filter(tag => tag.id !== tagIdToRemove)
+        
+        const updatedPhoto = {
+          ...photo,
+          tags: updatedTags,
+        }
+        options.onPhotoUpdate(updatedPhoto)
+        console.log(`[useAiEnhancements] Removed synthetic AI tag from photo for ${photoId}`)
+      }
+
+    } catch (error: any) {
+      console.error(`[useAiEnhancements] Error removing AI tag "${tagDisplayValue}" from ${photoId}:`, error)
+      throw error
+    }
+  }, [currentUser, updatePhotoCache, options?.onPhotoUpdate])
+
   const getAiDataForPhoto = useCallback((photoId: string) => {
     return aiSuggestionsCache[photoId]
   }, [aiSuggestionsCache])
@@ -397,6 +469,7 @@ export const useAiEnhancements = (
     fetchAiSuggestions,
     saveAiDescription,
     addAiTag,
+    removeAiTag,
     loadPersistedEnhancements,
     getAiDataForPhoto,
     clearCache,

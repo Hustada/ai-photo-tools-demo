@@ -144,27 +144,33 @@ export const usePhotosQuery = (options: UsePhotosQueryOptions = {}): UsePhotosQu
 
   // Optimistic update for photo modifications
   const updatePhotoInCache = useCallback((updatedPhoto: Photo) => {
-    // Update the query cache
+    // Update the query cache for current page
     queryClient.setQueryData(
       photoQueryKeys.list(currentPage, { tagIds }),
       (oldData: Photo[] | undefined) => {
         if (!oldData) return oldData;
         return oldData.map(photo => 
-          photo.id === updatedPhoto.id ? updatedPhoto : photo
+          photo.id === updatedPhoto.id ? { ...updatedPhoto } : photo
         );
       }
     );
 
-    // Update local state
+    // Update local state with new object reference to force re-render
     setAllFetchedPhotos(prevPhotos => 
       prevPhotos.map(photo => 
-        photo.id === updatedPhoto.id ? updatedPhoto : photo
+        photo.id === updatedPhoto.id ? { ...updatedPhoto } : photo
       )
     );
 
-    // Invalidate related queries to ensure consistency
+    // Force invalidation and refetch to ensure UI updates
     queryClient.invalidateQueries({
       queryKey: photoQueryKeys.lists(),
+      exact: false
+    });
+    
+    // Also invalidate individual photo queries
+    queryClient.invalidateQueries({
+      queryKey: photoQueryKeys.detail(updatedPhoto.id),
       exact: false
     });
   }, [queryClient, currentPage, tagIds]);

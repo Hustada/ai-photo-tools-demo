@@ -59,6 +59,28 @@ const HomePageContent: React.FC = () => {
         photosQuery.updatePhotoInCache(updatedPhoto);
       }
     },
+    onPhotoTagRemoved: (photoId: string, removedTag: Tag) => {
+      // Remove the tag from the photo in cache
+      const photoToUpdate = photosQuery.allPhotos.find(p => p.id === photoId);
+      console.log(`[HomePage] Photo to update:`, photoToUpdate);
+      console.log(`[HomePage] Removing tag:`, removedTag);
+      if (photoToUpdate) {
+        const originalTags = photoToUpdate.tags || [];
+        const updatedTags = originalTags.filter(tag => tag.id !== removedTag.id);
+        console.log(`[HomePage] Original tags:`, originalTags.map(t => t.id));
+        console.log(`[HomePage] Updated tags:`, updatedTags.map(t => t.id));
+        console.log(`[HomePage] Tag removed?`, originalTags.length !== updatedTags.length);
+        
+        const updatedPhoto = {
+          ...photoToUpdate,
+          tags: updatedTags,
+        };
+        photosQuery.updatePhotoInCache(updatedPhoto);
+      } else {
+        console.log(`[HomePage] Photo ${photoId} not found in allPhotos`);
+      }
+    },
+    removeAiTag: aiEnhancements.removeAiTag,
   });
   
   const photoModal = usePhotoModal(tagFiltering.filteredPhotos);
@@ -254,6 +276,7 @@ const HomePageContent: React.FC = () => {
                 photo={photo}
                 onAddTagToCompanyCam={tagManagement.handleAddTagRequest}
                 onAddAiTag={aiEnhancements.addAiTag}
+                onRemoveTag={tagManagement.handleRemoveTagRequest}
                 onTagClick={tagFiltering.toggleTag}
                 onPhotoClick={() => photoModal.openModal(photo)}
                 mockTagsData={[]} // For manually adding known tags, not AI ones
@@ -281,6 +304,7 @@ const HomePageContent: React.FC = () => {
           apiKey={localStorage.getItem('companyCamApiKey') || ''}
           onAddTagToCompanyCam={tagManagement.handleAddTagRequest}
           onAddAiTag={aiEnhancements.addAiTag}
+          onRemoveTag={tagManagement.handleRemoveTagRequest}
           aiSuggestionData={aiEnhancements.getAiDataForPhoto(selectedPhoto.id)}
           onFetchAiSuggestions={aiEnhancements.fetchAiSuggestions}
           onSaveAiDescription={aiEnhancements.saveAiDescription}

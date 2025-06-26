@@ -51,7 +51,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="px-4 py-1.5 bg-orange-600 text-white border border-orange-500 hover:bg-orange-500 disabled:bg-gray-600 disabled:opacity-70 transition-colors text-sm"
+              className="px-4 py-1.5 bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 hover:border-orange-500 disabled:bg-gray-300 disabled:opacity-70 transition-colors text-sm"
             >
               {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </button>
@@ -62,14 +62,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 <button
                   onClick={() => onAnalyze(analysisMode)}
                   disabled={isAnalyzing}
-                  className="px-4 py-1.5 bg-orange-600 text-white border border-orange-500 hover:bg-orange-500 disabled:bg-gray-600 disabled:opacity-70 transition-colors text-sm"
+                  className="px-4 py-1.5 bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 hover:border-orange-500 disabled:bg-gray-300 disabled:opacity-70 transition-colors text-sm"
                 >
                   {isAnalyzing ? 'Analyzing...' : 'AI Analysis'}
                 </button>
                 <button
                   onClick={() => setShowAnalysisDropdown(!showAnalysisDropdown)}
                   disabled={isAnalyzing}
-                  className="p-1.5 bg-orange-600 text-white border border-orange-500 hover:bg-orange-500 disabled:bg-gray-600 disabled:opacity-70 transition-colors"
+                  className="p-1.5 bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 hover:border-orange-500 disabled:bg-gray-300 disabled:opacity-70 transition-colors"
                 >
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M7 10l5 5 5-5z"/>
@@ -127,8 +127,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             onClick={() => setFilterMode('OR')}
             className={`px-6 py-2 text-sm font-medium border transition-colors ${
               filterMode === 'OR'
-                ? 'bg-orange-600 text-white border-orange-500'
-                : 'bg-gray-800 text-gray-300 border-gray-600 hover:text-white hover:border-orange-500'
+                ? 'bg-gray-800 text-white border-gray-700'
+                : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 hover:border-orange-500'
             }`}
           >
             OR
@@ -137,8 +137,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             onClick={() => setFilterMode('AND')}
             className={`px-6 py-2 text-sm font-medium border transition-colors ${
               filterMode === 'AND'
-                ? 'bg-orange-600 text-white border-orange-500'
-                : 'bg-gray-800 text-gray-300 border-gray-600 hover:text-white hover:border-orange-500'
+                ? 'bg-gray-800 text-white border-gray-700'
+                : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 hover:border-orange-500'
             }`}
           >
             AND
@@ -154,8 +154,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             onClick={() => onToggleTag(tag.id)}
             className={`px-3 py-2 text-sm font-medium border transition-all duration-200 ${
               activeTags.includes(tag.id)
-                ? 'bg-orange-600 border-orange-500 text-white shadow-md'
-                : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-orange-500 hover:bg-gray-700'
+                ? 'bg-gray-800 text-white border-gray-700 shadow-md'
+                : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 hover:border-orange-500'
             }`}
           >
             {tag.display_value}
@@ -174,9 +174,21 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 return (
                   <span
                     key={tagId}
-                    className="inline-block bg-orange-700 text-white px-2 py-1 text-xs border border-orange-600"
+                    className="inline-flex items-center gap-1 bg-orange-700 text-white px-2 py-1 text-xs border border-orange-600 group"
                   >
-                    {tag ? tag.display_value : tagId}
+                    <span>{tag ? tag.display_value : tagId}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleTag(tagId);
+                      }}
+                      className="ml-1 text-orange-200 hover:text-white transition-colors"
+                      title="Remove tag"
+                    >
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                      </svg>
+                    </button>
                   </span>
                 );
               })}

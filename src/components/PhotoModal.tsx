@@ -11,6 +11,7 @@ interface PhotoModalProps {
   apiKey: string;
   onAddTagToCompanyCam: (photoId: string, tagDisplayValue: string) => void | Promise<void>;
   onAddAiTag: (photoId: string, tagDisplayValue: string, photo?: Photo) => Promise<void>;
+  onRemoveTag?: (photoId: string, tagId: string) => Promise<void>;
   aiSuggestionData?: PhotoCardAiSuggestionState;
   onFetchAiSuggestions: (photoId: string, photoUrl: string, projectId?: string) => Promise<void>;
   onSaveAiDescription: (photoId: string, description: string, photo?: Photo) => Promise<void>;
@@ -49,6 +50,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   apiKey,
   onAddTagToCompanyCam,
   onAddAiTag,
+  onRemoveTag,
   aiSuggestionData,
   onFetchAiSuggestions,
   onSaveAiDescription,
@@ -229,11 +231,29 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 {photo.tags.map((tag) => {
                   const isAiTag = tag.isAiEnhanced;
                   const tagStyle = isAiTag
-                    ? 'bg-teal-100 text-teal-700 border border-teal-300'
-                    : 'bg-gray-200 text-gray-700';
+                    ? 'bg-gray-200 text-gray-800 border border-gray-300'
+                    : 'bg-gray-100 text-gray-700 border border-gray-300';
                   return (
-                    <span key={tag.id} className={`px-3 py-1 rounded-full text-sm ${tagStyle}`}>
-                      {tag.display_value}{isAiTag ? ' (AI)' : ''}
+                    <span key={tag.id} className="relative inline-block group">
+                      <span className={`px-3 py-1 rounded-full text-sm ${tagStyle} cursor-default inline-block`}>
+                        {tag.display_value}{isAiTag ? ' (AI)' : ''}
+                      </span>
+                      {onRemoveTag && (
+                        <button
+                          onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
+                            e.stopPropagation();
+                            try {
+                              await onRemoveTag(photo.id, tag.id);
+                            } catch (err) {
+                              console.error(`[PhotoModal] Error removing tag '${tag.display_value}':`, err);
+                            }
+                          }}
+                          className="absolute -top-1 -right-1 w-4 h-4 bg-gray-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-xs hover:bg-red-500"
+                          title="Remove tag"
+                        >
+                          ×
+                        </button>
+                      )}
                     </span>
                   );
                 })}
@@ -263,7 +283,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               ) && (
               <button 
                 onClick={handleFetchAiSuggestionsFromProp} 
-                className="w-full sm:w-auto mt-1 px-5 py-2.5 bg-orange-600 text-white rounded-md cursor-pointer hover:bg-orange-500 transition-colors flex items-center justify-center space-x-2"
+                className="w-full sm:w-auto mt-1 px-5 py-2.5 bg-gray-100 text-gray-700 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-200 hover:border-orange-500 transition-colors flex items-center justify-center space-x-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v6h6a1 1 0 110 2h-6v6a1 1 0 11-2 0v-6H3a1 1 0 110-2h6V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
                 <span>Get AI Suggestions</span>
@@ -303,7 +323,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     setIsSavingDescription(false);
                   }}
                   disabled={isSavingDescription || editableDescription === (photo.description || '')}
-                  className="mt-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 transition-colors text-sm"
+                  className="mt-2 px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-200 hover:border-orange-500 disabled:bg-gray-300 disabled:text-gray-500 transition-colors text-sm"
                 >
                   {isSavingDescription ? 'Saving...' : 'Save Description'}
                 </button>
@@ -320,7 +340,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                       key={`ai-modal-tag-${index}`}
                       onClick={() => handleAddAiTag(tag)}
                       disabled={addingTag === tag}
-                      className="px-3 py-1 bg-teal-500 text-white rounded-full text-sm hover:bg-teal-600 disabled:bg-gray-400 transition-colors"
+                      className="px-3 py-1 bg-gray-100 text-gray-700 border border-gray-300 rounded-full text-sm hover:bg-gray-200 hover:border-orange-500 disabled:bg-gray-300 disabled:text-gray-500 transition-colors"
                     >
                       {addingTag === tag ? 'Adding...' : tag}
                     </button>

@@ -5,6 +5,8 @@ import type { Photo, CurrentUser, Tag } from '../types'
 
 export interface UseTagManagementOptions {
   onPhotoUpdate?: (photoId: string, newTag: Tag, isFromAiSuggestion: boolean) => void
+  onPhotoTagRemoved?: (photoId: string, removedTag: Tag) => void
+  removeAiTag?: (photoId: string, tagDisplayValue: string, photo?: Photo) => Promise<void>
 }
 
 export interface UseTagManagementReturn {
@@ -14,10 +16,12 @@ export interface UseTagManagementReturn {
   filteredPhotos: Photo[]
   tagError: string | null
   isAddingTag: boolean
+  isRemovingTag: boolean
   
   // Actions
   handleTagClick: (tagId: string) => void
   handleAddTagRequest: (photoId: string, tagDisplayValue: string, isAiEnhanced?: boolean) => Promise<void>
+  handleRemoveTagRequest: (photoId: string, tagId: string) => Promise<void>
   clearAllFilters: () => void
 }
 
@@ -29,6 +33,7 @@ export const useTagManagement = (
   const [activeTagIds, setActiveTagIds] = useState<string[]>([])
   const [tagError, setTagError] = useState<string | null>(null)
   const [isAddingTag, setIsAddingTag] = useState<boolean>(false)
+  const [isRemovingTag, setIsRemovingTag] = useState<boolean>(false)
 
   // Compute unique filterable tags from all photos
   const uniqueFilterableTags = useMemo(() => {
@@ -172,14 +177,104 @@ export const useTagManagement = (
     }
   }, [currentUser, options?.onPhotoUpdate])
 
+  // Main function to remove tags from photos
+  const handleRemoveTagRequest = useCallback(async (
+    photoId: string, 
+    tagId: string
+  ) => {
+    setIsRemovingTag(true)
+    setTagError(null)
+
+    try {
+      console.log(`[useTagManagement] Removing tag ${tagId} from photo ${photoId}`)
+
+      // Find the tag object first to determine if it's a custom AI tag
+      const photoToUpdate = photos.find(p => p.id === photoId)
+      const tagToRemove = photoToUpdate?.tags?.find(tag => tag.id === tagId)
+
+      if (!tagToRemove) {
+        throw new Error(`Tag ${tagId} not found on photo ${photoId}`)
+      }
+
+      // Check if this is a custom AI tag
+      const isCustomAiTag = tagId.startsWith('ai_') || tagToRemove.company_id === 'AI_TAG'
+      
+      if (isCustomAiTag) {
+        // Handle custom AI tag removal
+        console.log(`[useTagManagement] Detected custom AI tag "${tagToRemove.display_value}" - using AI removal`)
+        
+        if (!options?.removeAiTag) {
+          throw new Error('AI tag removal function not available')
+        }
+
+        await options.removeAiTag(photoId, tagToRemove.display_value, photoToUpdate)
+        console.log(`[useTagManagement] Successfully removed AI tag "${tagToRemove.display_value}" from photo ${photoId}`)
+        
+      } else {
+        // Handle CompanyCam API tag removal
+        console.log(`[useTagManagement] Detected CompanyCam API tag "${tagToRemove.display_value}" - using API removal`)
+        
+        const apiKey = localStorage.getItem('companyCamApiKey')
+        if (!apiKey) {
+          throw new Error('API key not found. Please check your API key settings.')
+        }
+
+        // 1. Remove tag from photo via CompanyCam API
+        await companyCamService.removeTagsFromPhoto(apiKey, photoId, [tagId])
+        console.log(`[useTagManagement] Removed CompanyCam tag from photo ${photoId}`)
+
+        // 2. Remove from AI enhancements if it was an AI tag
+        if (currentUser) {
+          try {
+            const response = await fetch('/api/ai-enhancements', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                photoId,
+                userId: currentUser.id,
+                tagToRemove: tagToRemove.display_value,
+              }),
+            })
+
+            if (!response.ok) {
+              const errorText = await response.text()
+              console.warn(`[useTagManagement] Failed to remove AI tag persistence: ${response.status} ${errorText}`)
+              // Don't throw here - the tag was already removed from CompanyCam successfully
+            } else {
+              console.log(`[useTagManagement] Removed AI tag persistence for "${tagToRemove.display_value}"`)
+            }
+          } catch (persistError: any) {
+            console.warn(`[useTagManagement] Error removing AI tag persistence:`, persistError)
+            // Don't throw here - the tag was already removed from CompanyCam successfully
+          }
+        }
+
+        // 3. Notify parent component of the removal
+        if (options?.onPhotoTagRemoved) {
+          options.onPhotoTagRemoved(photoId, tagToRemove)
+        }
+
+        console.log(`[useTagManagement] Successfully removed CompanyCam tag ${tagId} from photo ${photoId}`)
+      }
+
+    } catch (error: any) {
+      console.error(`[useTagManagement] Error removing tag ${tagId} from photo ${photoId}:`, error)
+      setTagError(`Failed to remove tag. ${error.message || 'Unknown error'}`)
+    } finally {
+      setIsRemovingTag(false)
+    }
+  }, [photos, currentUser, options?.onPhotoTagRemoved, options?.removeAiTag])
+
   return {
     activeTagIds,
     uniqueFilterableTags,
     filteredPhotos,
     tagError,
     isAddingTag,
+    isRemovingTag,
     handleTagClick,
     handleAddTagRequest,
+    handleRemoveTagRequest,
     clearAllFilters,
   }
 }

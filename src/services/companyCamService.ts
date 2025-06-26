@@ -289,6 +289,34 @@ export const companyCamService = {
     }
   },
 
+  removeTagsFromPhoto: async (apiKey: string, photoId: string, tagIds: string[]): Promise<void> => {
+    console.log('[companyCamService] removeTagsFromPhoto called with:', { apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY', photoId, tagIds });
+    if (tagIds.length === 0) {
+      console.log('[companyCamService] removeTagsFromPhoto - No tag IDs provided, skipping API call.');
+      return Promise.resolve();
+    }
+    try {
+      console.log('[companyCamService] removeTagsFromPhoto - Making DELETE request to:', `${API_BASE_URL}/photos/${photoId}/tags`);
+      await axios.delete(
+        `${API_BASE_URL}/photos/${photoId}/tags`,
+        {
+          headers: getAuthHeaders(apiKey),
+          data: { tag_ids: tagIds }, // DELETE requests with body
+        }
+      );
+      return;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error(`[companyCamService] removeTagsFromPhoto - Error removing tags from photo ${photoId} (Axios):`, error.toJSON());
+      } else if (error instanceof Error) {
+        console.error(`[companyCamService] removeTagsFromPhoto - Error removing tags from photo ${photoId} (Generic):`, error.message);
+      } else {
+        console.error(`[companyCamService] removeTagsFromPhoto - Unknown error removing tags from photo ${photoId}:`, error);
+      }
+      throw error;
+    }
+  },
+
   getCurrentUser: async (apiKey: string): Promise<CurrentUser> => {
     console.log('[companyCamService] getCurrentUser called with:', { apiKey: apiKey ? 'Exists' : 'MISSING/EMPTY' });
     try {
