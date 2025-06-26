@@ -2,10 +2,8 @@
 import { useState, useCallback, useMemo } from 'react'
 import type { Photo, Tag } from '../types'
 
-export type FilterLogic = 'AND' | 'OR'
-
 export interface UseTagFilteringOptions {
-  filterLogic?: FilterLogic
+  // Future options can be added here if needed
 }
 
 export interface UseTagFilteringReturn {
@@ -14,22 +12,17 @@ export interface UseTagFilteringReturn {
   filteredPhotos: Photo[]
   isFiltering: boolean
   availableFilterTags: Tag[]
-  filterLogic: FilterLogic
   
   // Actions
   toggleTag: (tagId: string) => void
   clearAllFilters: () => void
-  setFilterLogic: (logic: FilterLogic) => void
 }
 
 export const useTagFiltering = (
   photos: Photo[],
   options: UseTagFilteringOptions = {}
 ): UseTagFilteringReturn => {
-  const { filterLogic: initialFilterLogic = 'AND' } = options
-  
   const [activeTagIds, setActiveTagIds] = useState<string[]>([])
-  const [filterLogic, setFilterLogic] = useState<FilterLogic>(initialFilterLogic)
 
   // Compute available filter tags from all photos (deduplicated by display_value)
   const availableFilterTags = useMemo(() => {
@@ -68,19 +61,12 @@ export const useTagFiltering = (
         .filter(tag => tag && tag.display_value)
         .map(tag => tag.display_value.toLowerCase())
 
-      if (filterLogic === 'AND') {
-        // AND logic: photo must have ALL selected tags (by display value)
-        return activeTagIds.every(activeTagId => 
-          photoTagDisplayValues.includes(activeTagId.toLowerCase())
-        )
-      } else {
-        // OR logic: photo must have AT LEAST ONE selected tag (by display value)
-        return activeTagIds.some(activeTagId => 
-          photoTagDisplayValues.includes(activeTagId.toLowerCase())
-        )
-      }
+      // OR logic: photo must have AT LEAST ONE selected tag (by display value)
+      return activeTagIds.some(activeTagId => 
+        photoTagDisplayValues.includes(activeTagId.toLowerCase())
+      )
     })
-  }, [photos, activeTagIds, filterLogic])
+  }, [photos, activeTagIds])
 
   // Derived state
   const isFiltering = useMemo(() => {
@@ -120,19 +106,12 @@ export const useTagFiltering = (
     setActiveTagIds([])
   }, [])
 
-  const setFilterLogicCallback = useCallback((logic: FilterLogic) => {
-    console.log(`[useTagFiltering] Changing filter logic to ${logic}`)
-    setFilterLogic(logic)
-  }, [])
-
   return {
     activeTagIds,
     filteredPhotos,
     isFiltering,
     availableFilterTags,
-    filterLogic,
     toggleTag,
     clearAllFilters,
-    setFilterLogic: setFilterLogicCallback,
   }
 }
