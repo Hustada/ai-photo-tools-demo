@@ -2,82 +2,84 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-interface BlogPost {
-  id: string;
-  title: string;
-  filename: string;
-  date: string;
-  content?: string;
-}
+import { loadBlogPost, getAllBlogPosts, BlogPostContent, BlogPostMetadata } from '../utils/markdownLoader';
+import { generateBlogHeroImage } from '../utils/imageGeneration';
+import BlogArticle from '../components/BlogArticle';
 
 const BlogPage: React.FC = () => {
   const navigate = useNavigate();
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  const [posts, setPosts] = useState<BlogPostMetadata[]>([]);
+  const [selectedPost, setSelectedPost] = useState<BlogPostContent | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Mock blog posts data - in a real app this would come from an API
-  const blogPosts: BlogPost[] = [
-    {
-      id: '001',
-      title: 'Introducing CodeCraft: Your Technical Documentation Agent',
-      filename: '001-introducing-codecraft.md',
-      date: 'December 30, 2024'
-    },
-    {
-      id: '002', 
-      title: 'Building High-Performance Image Loading with Test-Driven Development',
-      filename: '002-image-loading-optimization.md',
-      date: 'December 30, 2024'
-    }
-  ];
+  const [loadingPost, setLoadingPost] = useState(false);
+  const [generatingImages, setGeneratingImages] = useState(false);
 
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setPosts(blogPosts);
-      setLoading(false);
-    }, 500);
+    const loadBlogPosts = async () => {
+      try {
+        console.log('[BlogPage] Loading blog posts...');
+        const blogPosts = await getAllBlogPosts();
+        setPosts(blogPosts);
+        
+        // Generate hero images for all posts in the background
+        setGeneratingImages(true);
+        await generateHeroImages(blogPosts);
+        setGeneratingImages(false);
+        
+      } catch (error) {
+        console.error('[BlogPage] Error loading blog posts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBlogPosts();
   }, []);
 
-  const loadPostContent = async (post: BlogPost) => {
+  const generateHeroImages = async (blogPosts: BlogPostMetadata[]) => {
+    // Generate images in the background - the API will handle caching automatically
+    // This ensures images are available but doesn't block the UI
+    console.log(`[BlogPage] Ensuring hero images are available for ${blogPosts.length} posts`);
+    
+    const imagePromises = blogPosts.map(async (post) => {
+      try {
+        const result = await generateBlogHeroImage(
+          post.id,
+          post.title,
+          post.description,
+          { style: 'technical' }
+        );
+        
+        if (result.cached) {
+          console.log(`[BlogPage] Using cached image for: ${post.id}`);
+        } else {
+          console.log(`[BlogPage] Generated new image for: ${post.id}`);
+        }
+      } catch (error) {
+        console.warn(`[BlogPage] Failed to ensure image for ${post.id}:`, error);
+      }
+    });
+
+    // Don't wait for all images to complete - let them load in background
+    Promise.allSettled(imagePromises);
+  };
+
+  const loadPostContent = async (post: BlogPostMetadata) => {
     try {
-      // In a real app, you'd fetch from an API or import dynamically
-      // For now, we'll show a placeholder since we can't directly import markdown
-      const placeholderContent = `
-# ${post.title}
-
-*Published: ${post.date} by CodeCraft*
-
-This blog post contains detailed technical documentation about Scout AI development.
-
-**Note:** This is a preview. The full blog post is available in the \`docs/code-blog/${post.filename}\` file.
-
-## Quick Access
-
-To read the full blog post with proper formatting:
-
-1. Navigate to \`docs/code-blog/${post.filename}\` in your file system
-2. Open the file in a markdown viewer or your preferred editor
-3. The post includes code examples, technical details, and implementation insights
-
-## Blog Features
-
-- **Technical Depth**: Real code examples from our implementation
-- **TDD Methodology**: Test-driven development approach
-- **Performance Analysis**: Detailed metrics and improvements
-- **Lessons Learned**: Practical insights from development
-
-The blog posts follow our established template and provide comprehensive documentation of Scout AI's development journey.
-      `;
-
-      setSelectedPost({
-        ...post,
-        content: placeholderContent
-      });
+      setLoadingPost(true);
+      console.log(`[BlogPage] Loading post content: ${post.filename}`);
+      
+      const postContent = await loadBlogPost(post.filename);
+      if (postContent) {
+        setSelectedPost(postContent);
+        console.log(`[BlogPage] Successfully loaded: ${postContent.metadata.title}`);
+      } else {
+        console.error(`[BlogPage] Failed to load post: ${post.filename}`);
+      }
     } catch (error) {
-      console.error('Error loading post:', error);
+      console.error('[BlogPage] Error loading post content:', error);
+    } finally {
+      setLoadingPost(false);
     }
   };
 
@@ -111,86 +113,99 @@ The blog posts follow our established template and provide comprehensive documen
       </div>
 
       <div className="max-w-4xl mx-auto p-6">
-        {!selectedPost ? (
+        {loadingPost ? (
+          /* Loading Post Content */
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400 mb-4"></div>
+              <p className="text-gray-600">Loading blog post...</p>
+            </div>
+          </div>
+        ) : !selectedPost ? (
           /* Blog Post List */
           <div>
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
                 Scout AI Development Blog
               </h2>
-              <p className="text-gray-600 text-lg">
+              <p className="text-gray-600 text-lg mb-4">
                 Follow our journey building AI-powered photo management tools with comprehensive technical documentation.
               </p>
+              {generatingImages && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center space-x-2 text-orange-700">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-400"></div>
+                    <span className="text-sm">Generating hero images with AI...</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-6">
               {posts.map((post) => (
                 <div
                   key={post.id}
-                  className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                  className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
                   onClick={() => loadPostContent(post)}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2 hover:text-orange-600 transition-colors">
-                        {post.title}
-                      </h3>
-                      <p className="text-gray-600 text-sm mb-3">
-                        Published on {post.date} by CodeCraft
-                      </p>
-                      <p className="text-gray-700">
-                        {post.id === '001' 
-                          ? 'Introduction to our technical documentation system and the CodeCraft agent responsible for creating comprehensive development blogs.'
-                          : 'Deep dive into implementing lazy image loading with Test-Driven Development, featuring performance optimizations and visual loading states.'
-                        }
-                      </p>
+                  {/* Hero Image Preview */}
+                  {post.heroImage && (
+                    <div className="h-48 bg-gray-100 relative overflow-hidden">
+                      <img
+                        src={post.heroImage}
+                        alt={`Hero image for ${post.title}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
                     </div>
-                    <div className="ml-4 text-orange-400">
-                      →
+                  )}
+                  
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">
+                          {post.title}
+                        </h3>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+                          <span>By {post.author}</span>
+                          <span>•</span>
+                          <span>{post.date}</span>
+                          <span>•</span>
+                          <span>{post.readingTime} min read</span>
+                        </div>
+                        <p className="text-gray-700 leading-relaxed">
+                          {post.description}
+                        </p>
+                      </div>
+                      <div className="ml-4 text-orange-400 group-hover:text-orange-600 transition-colors">
+                        →
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-4 flex items-center space-x-4 text-sm text-gray-500">
-                    <span>📄 {post.filename}</span>
-                    <span>🏷️ Technical Documentation</span>
+                    
+                    {/* Tags */}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {post.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         ) : (
-          /* Selected Post View */
-          <div>
-            <button
-              onClick={() => setSelectedPost(null)}
-              className="mb-6 text-orange-600 hover:text-orange-700 transition-colors flex items-center space-x-2"
-            >
-              <span>←</span>
-              <span>Back to blog posts</span>
-            </button>
-
-            <article className="bg-white rounded-lg shadow-md border border-gray-200 p-8">
-              <div className="prose prose-lg max-w-none">
-                <pre className="whitespace-pre-wrap font-sans text-gray-800 leading-relaxed">
-                  {selectedPost.content}
-                </pre>
-              </div>
-            </article>
-
-            <div className="mt-8 bg-orange-50 border border-orange-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-orange-800 mb-3">
-                💡 Want to read the full formatted version?
-              </h3>
-              <p className="text-orange-700 mb-4">
-                For the complete blog post with proper markdown formatting, syntax highlighting, and enhanced readability:
-              </p>
-              <div className="bg-white rounded border border-orange-200 p-4 font-mono text-sm text-gray-700">
-                docs/code-blog/{selectedPost.filename}
-              </div>
-              <p className="text-orange-600 text-sm mt-3">
-                Open this file in your preferred markdown viewer or code editor for the best reading experience.
-              </p>
-            </div>
-          </div>
+          /* Selected Post View with BlogArticle Component */
+          <BlogArticle 
+            post={selectedPost} 
+            onBack={() => setSelectedPost(null)} 
+          />
         )}
       </div>
     </div>

@@ -178,13 +178,6 @@ const HomePageContent: React.FC = () => {
             className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-lg"
           />
           <h1 className="text-2xl sm:text-3xl font-bold text-orange-400">Scout AI</h1>
-          <a 
-            href="/blog"
-            className="hidden sm:block text-sm text-gray-300 hover:text-orange-400 transition-colors px-3 py-1 rounded-md hover:bg-gray-800"
-            title="View development blog"
-          >
-            📝 Blog
-          </a>
         </div>
 
         {/* Right side: User Info / Loading / Error */}
@@ -212,12 +205,24 @@ const HomePageContent: React.FC = () => {
                   {userProjects.length} project{userProjects.length === 1 ? '' : 's'}
                 </p>
               )}
-              <button
-                onClick={handleLogout}
-                className="mt-2 text-xs text-orange-400 hover:text-orange-300 underline"
-              >
-                Logout
-              </button>
+              <div className="mt-2 flex flex-col sm:flex-row items-center justify-center md:justify-end space-y-1 sm:space-y-0 sm:space-x-3">
+                <a 
+                  href="/blog"
+                  className="text-sm text-gray-300 hover:text-orange-400 transition-colors px-3 py-1 rounded-md hover:bg-gray-800 flex items-center space-x-1"
+                  title="View CodeCraft development blog"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  </svg>
+                  <span>CodeCraft Dev Blog</span>
+                </a>
+                <button
+                  onClick={handleLogout}
+                  className="text-xs text-orange-400 hover:text-orange-300 underline"
+                >
+                  Logout
+                </button>
+              </div>
             </div>
           )}
         </div>
