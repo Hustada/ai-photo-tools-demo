@@ -2,7 +2,7 @@
 
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
-import { loadActiveSession, completeSession } from '../src/utils/blogSession';
+import { getActiveSession, completeSession } from '../src/utils/blogSession';
 import type { BlogPost } from '../api/blog-posts';
 
 const DRAFTS_DIR = join(process.cwd(), '.blog-drafts');
@@ -12,7 +12,7 @@ async function publishBlog() {
     console.log('🚀 Publishing blog post...\n');
 
     // Load active session
-    const session = loadActiveSession();
+    const session = getActiveSession();
     if (!session) {
       console.error('❌ No active blog session found. Start one with: npm run blog:start');
       process.exit(1);

@@ -2,7 +2,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { loadActiveSession } from '../src/utils/blogSession';
+import { getActiveSession } from '../src/utils/blogSession';
 import { analyzeGitChanges } from '../src/utils/gitAnalysis';
 import { generateBlogPost } from '../src/utils/blogGenerator';
 import type { BlogPost } from '../api/blog-posts';
@@ -14,7 +14,7 @@ async function previewBlog() {
     console.log('📝 Generating blog preview...\n');
 
     // Load active session
-    const session = loadActiveSession();
+    const session = getActiveSession();
     if (!session) {
       console.error('❌ No active blog session found. Start one with: npm run blog:start');
       process.exit(1);
