@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 
+import 'dotenv/config';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { getActiveSession, completeSession } from '../src/utils/blogSession';
@@ -128,7 +129,7 @@ async function publishBlog() {
 }
 
 // Run if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   publishBlog();
 }
 

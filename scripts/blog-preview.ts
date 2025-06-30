@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 
+import 'dotenv/config';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { getActiveSession } from '../src/utils/blogSession';
@@ -108,7 +109,7 @@ ${draft.rawContent}`;
 }
 
 // Run if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   previewBlog();
 }
 
