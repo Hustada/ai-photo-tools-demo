@@ -69,7 +69,38 @@ async function completeBlogSession() {
     });
     
     console.log('\n🤖 Generating blog post with AI...');
-    console.log('(Note: AI generation will be implemented in Phase 3C)');
+    
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn('⚠️  OpenAI API key not found. Skipping AI generation.');
+      console.log('Set OPENAI_API_KEY environment variable to enable AI blog generation.');
+    } else {
+      try {
+        const { generateBlogPost } = await import('../src/utils/blogGenerator.js');
+        
+        const generatedBlog = await generateBlogPost(activeSession, analysis, {
+          style: 'technical',
+          tone: 'professional',
+          includeCodeExamples: true,
+          targetLength: 'medium'
+        });
+        
+        console.log('\n✨ Blog Post Generated Successfully!');
+        console.log(`  Title: ${generatedBlog.metadata.title}`);
+        console.log(`  Author: ${generatedBlog.metadata.author}`);
+        console.log(`  Reading Time: ${generatedBlog.metadata.readingTime} min`);
+        console.log(`  Tags: ${generatedBlog.metadata.tags.join(', ')}`);
+        console.log(`  Content Length: ${generatedBlog.content.length} characters`);
+        
+        // TODO: In Phase 3D, we'll add the review and publishing workflow
+        console.log('\n📤 Publishing to blog system...');
+        console.log('(Note: Review and publishing workflow will be implemented in Phase 3D)');
+        
+      } catch (error) {
+        console.error('❌ AI generation failed:', (error as Error).message);
+        console.log('Blog analysis completed successfully, but AI generation encountered an error.');
+      }
+    }
     
     // Complete the session
     const completedSession = completeSession();
