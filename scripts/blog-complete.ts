@@ -2,6 +2,7 @@
 // © 2025 Mark Hustad — MIT License
 // CLI script to complete a blog documentation session and generate blog post
 
+import 'dotenv/config';
 import { completeSession, getActiveSession } from '../src/utils/blogSession.js';
 
 async function completeBlogSession() {
