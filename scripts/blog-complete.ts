@@ -44,10 +44,32 @@ async function completeBlogSession() {
       console.log('Consider making some commits before completing the session.');
     }
     
-    // TODO: In Phase 3B, this is where we'll analyze git changes
-    console.log('\n🔄 Analyzing changes...');
-    console.log('📊 Generating blog post with AI...');
-    console.log('(Note: Full change analysis and AI generation will be implemented in Phase 3B-3C)');
+    // Analyze git changes
+    console.log('\n🔄 Analyzing git changes...');
+    
+    const { analyzeGitChanges } = await import('../src/utils/gitAnalysis.js');
+    const analysis = analyzeGitChanges(activeSession.startCommit, currentCommit);
+    
+    console.log('\n📊 Change Analysis Summary:');
+    console.log(`  Commits: ${analysis.commitCount}`);
+    console.log(`  Files Changed: ${analysis.summary.totalFiles}`);
+    console.log(`  New Files: ${analysis.summary.newFiles}`);
+    console.log(`  Lines Added: ${analysis.summary.totalInsertions}`);
+    console.log(`  Lines Removed: ${analysis.summary.totalDeletions}`);
+    console.log(`  Primary Languages: ${analysis.summary.primaryLanguages.join(', ')}`);
+    console.log(`  Categories: ${analysis.summary.categories.join(', ')}`);
+    
+    if (analysis.summary.architecturalChanges.length > 0) {
+      console.log(`  Architectural Changes: ${analysis.summary.architecturalChanges.join(', ')}`);
+    }
+    
+    console.log(`\n📝 Code Snippets Extracted: ${analysis.codeSnippets.length}`);
+    analysis.codeSnippets.forEach((snippet, i) => {
+      console.log(`  ${i + 1}. ${snippet.description} (${snippet.file})`);
+    });
+    
+    console.log('\n🤖 Generating blog post with AI...');
+    console.log('(Note: AI generation will be implemented in Phase 3C)');
     
     // Complete the session
     const completedSession = completeSession();
