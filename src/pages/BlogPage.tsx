@@ -18,7 +18,45 @@ const BlogPage: React.FC = () => {
     const loadBlogPosts = async () => {
       try {
         console.log('[BlogPage] Loading blog posts...');
-        const blogPosts = await getAllBlogPosts();
+        
+        // Try to load from API first (new system)
+        let blogPosts: BlogPostMetadata[] = [];
+        try {
+          const response = await fetch('/api/blog-posts');
+          if (response.ok) {
+            const apiResponse = await response.json();
+            if (apiResponse.success && apiResponse.posts) {
+              console.log('[BlogPage] Loaded posts from API:', apiResponse.posts.length);
+              
+              // Convert API posts to BlogPostMetadata format
+              blogPosts = apiResponse.posts.map((post: any) => ({
+                id: post.metadata.id,
+                title: post.metadata.title,
+                author: post.metadata.author,
+                date: new Date(post.createdAt).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                }),
+                description: post.metadata.excerpt || post.metadata.description || 'Technical development insights',
+                filename: post.metadata.slug || post.metadata.id,
+                readingTime: post.metadata.readingTime,
+                tags: post.metadata.tags || [],
+                heroImage: `/api/generate-blog-image?blogId=${post.metadata.id}&style=technical`
+              }));
+              
+              // API already sorts by date (newest first), so no need to sort again
+            }
+          }
+        } catch (apiError) {
+          console.warn('[BlogPage] API not available, falling back to markdown:', apiError);
+        }
+        
+        // Fallback to markdown system if API fails or no posts found
+        if (blogPosts.length === 0) {
+          blogPosts = await getAllBlogPosts();
+        }
+        
         setPosts(blogPosts);
         
         // Generate hero images for all posts in the background
@@ -67,14 +105,42 @@ const BlogPage: React.FC = () => {
   const loadPostContent = async (post: BlogPostMetadata) => {
     try {
       setLoadingPost(true);
-      console.log(`[BlogPage] Loading post content: ${post.filename}`);
+      console.log(`[BlogPage] Loading post content: ${post.id}`);
       
-      const postContent = await loadBlogPost(post.filename);
+      // Try to load from API first
+      let postContent: BlogPostContent | null = null;
+      
+      try {
+        const response = await fetch(`/api/blog-posts?id=${post.id}`);
+        if (response.ok) {
+          const apiResponse = await response.json();
+          if (apiResponse.success && apiResponse.post) {
+            console.log(`[BlogPage] Loaded from API: ${apiResponse.post.metadata.title}`);
+            
+            postContent = {
+              metadata: {
+                ...post,
+                heroImage: `/api/generate-blog-image?blogId=${post.id}&style=technical`
+              },
+              content: apiResponse.post.content,
+              rawContent: apiResponse.post.rawContent
+            };
+          }
+        }
+      } catch (apiError) {
+        console.warn(`[BlogPage] API failed for ${post.id}, falling back to markdown:`, apiError);
+      }
+      
+      // Fallback to markdown system
+      if (!postContent) {
+        postContent = await loadBlogPost(post.filename);
+      }
+      
       if (postContent) {
         setSelectedPost(postContent);
         console.log(`[BlogPage] Successfully loaded: ${postContent.metadata.title}`);
       } else {
-        console.error(`[BlogPage] Failed to load post: ${post.filename}`);
+        console.error(`[BlogPage] Failed to load post: ${post.id}`);
       }
     } catch (error) {
       console.error('[BlogPage] Error loading post content:', error);
