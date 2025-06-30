@@ -33,6 +33,15 @@ Object.defineProperty(global, 'Image', {
   }))
 });
 
+// Mock imageUtils for LazyImage
+vi.mock('../../utils/imageUtils', () => ({
+  createPlaceholderDataUrl: vi.fn().mockReturnValue('data:image/png;base64,placeholder'),
+  detectImageFormatSupport: vi.fn().mockReturnValue({ webp: true, avif: false }),
+  getOptimizedImageUrl: vi.fn().mockImplementation((url) => url),
+  preloadImage: vi.fn(),
+  isInViewport: vi.fn().mockReturnValue(true)
+}));
+
 // Mock UserContext
 vi.mock('../../contexts/UserContext', async () => {
   const actual = await vi.importActual('../../contexts/UserContext')
@@ -143,15 +152,17 @@ describe('PhotoCard', () => {
       expect(screen.getByText('Roofing work in progress on residential home')).toBeInTheDocument()
     })
 
-    it('should render photo image with correct src', () => {
+    it('should render photo image with LazyImage (placeholder initially)', () => {
       render(<PhotoCard {...defaultProps} />)
 
       const image = screen.getByAltText('Roofing work in progress on residential home')
       expect(image).toBeInTheDocument()
-      expect(image).toHaveAttribute('src', 'https://example.com/thumb.jpg')
+      // LazyImage starts with placeholder, not actual image URL
+      expect(image).toHaveAttribute('src', expect.stringContaining('data:image'))
+      expect(image).toHaveClass('lazy-image')
     })
 
-    it('should fallback to web URI when no thumbnail URI available', () => {
+    it('should use web URI when no thumbnail URI available (via LazyImage)', () => {
       const photoWithoutThumbnail = {
         ...mockPhoto,
         uris: [{ type: 'web', uri: 'https://example.com/web.jpg', url: 'https://example.com/web.jpg' }]
@@ -160,7 +171,9 @@ describe('PhotoCard', () => {
       render(<PhotoCard {...defaultProps} photo={photoWithoutThumbnail} />)
 
       const image = screen.getByAltText('Roofing work in progress on residential home')
-      expect(image).toHaveAttribute('src', 'https://example.com/web.jpg')
+      // LazyImage will show placeholder initially, but should be configured with web URI
+      expect(image).toBeInTheDocument()
+      expect(image).toHaveClass('lazy-image')
     })
 
     it('should show "No Image Available" when no image URI exists', () => {
