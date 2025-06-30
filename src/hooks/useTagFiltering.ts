@@ -12,10 +12,12 @@ export interface UseTagFilteringReturn {
   filteredPhotos: Photo[]
   isFiltering: boolean
   availableFilterTags: Tag[]
+  filterLogic: 'AND' | 'OR'
   
   // Actions
   toggleTag: (tagId: string) => void
   clearAllFilters: () => void
+  setFilterLogic: (logic: 'AND' | 'OR') => void
 }
 
 export const useTagFiltering = (
@@ -23,6 +25,7 @@ export const useTagFiltering = (
   options: UseTagFilteringOptions = {}
 ): UseTagFilteringReturn => {
   const [activeTagIds, setActiveTagIds] = useState<string[]>([])
+  const [filterLogic, setFilterLogic] = useState<'AND' | 'OR'>('OR')
 
   // Compute available filter tags from all photos (deduplicated by display_value)
   const availableFilterTags = useMemo(() => {
@@ -57,16 +60,23 @@ export const useTagFiltering = (
         return false
       }
 
-      const photoTagDisplayValues = photo.tags
-        .filter(tag => tag && tag.display_value)
-        .map(tag => tag.display_value.toLowerCase())
+      const photoTagIds = photo.tags
+        .filter(tag => tag && tag.id)
+        .map(tag => tag.id)
 
-      // OR logic: photo must have AT LEAST ONE selected tag (by display value)
-      return activeTagIds.some(activeTagId => 
-        photoTagDisplayValues.includes(activeTagId.toLowerCase())
-      )
+      if (filterLogic === 'AND') {
+        // AND logic: photo must have ALL selected tags
+        return activeTagIds.every(activeTagId => 
+          photoTagIds.includes(activeTagId)
+        )
+      } else {
+        // OR logic: photo must have AT LEAST ONE selected tag
+        return activeTagIds.some(activeTagId => 
+          photoTagIds.includes(activeTagId)
+        )
+      }
     })
-  }, [photos, activeTagIds])
+  }, [photos, activeTagIds, filterLogic])
 
   // Derived state
   const isFiltering = useMemo(() => {
@@ -77,29 +87,20 @@ export const useTagFiltering = (
   const toggleTag = useCallback((tagId: string) => {
     console.log(`[useTagFiltering] Toggling filter for tag ${tagId}`)
     
-    // Find the tag to get its display value
-    const targetTag = availableFilterTags.find(tag => tag.id === tagId)
-    if (!targetTag) {
-      console.warn(`[useTagFiltering] Tag with id ${tagId} not found in available filter tags`)
-      return
-    }
-    
-    const displayValue = targetTag.display_value.toLowerCase()
-    
     setActiveTagIds(prevActiveTagIds => {
-      if (prevActiveTagIds.includes(displayValue)) {
+      if (prevActiveTagIds.includes(tagId)) {
         // Remove tag from active filters
-        const newActiveTagIds = prevActiveTagIds.filter(id => id !== displayValue)
-        console.log(`[useTagFiltering] Removed tag "${targetTag.display_value}", active filters:`, newActiveTagIds)
+        const newActiveTagIds = prevActiveTagIds.filter(id => id !== tagId)
+        console.log(`[useTagFiltering] Removed tag "${tagId}", active filters:`, newActiveTagIds)
         return newActiveTagIds
       } else {
         // Add tag to active filters
-        const newActiveTagIds = [...prevActiveTagIds, displayValue]
-        console.log(`[useTagFiltering] Added tag "${targetTag.display_value}", active filters:`, newActiveTagIds)
+        const newActiveTagIds = [...prevActiveTagIds, tagId]
+        console.log(`[useTagFiltering] Added tag "${tagId}", active filters:`, newActiveTagIds)
         return newActiveTagIds
       }
     })
-  }, [availableFilterTags])
+  }, [])
 
   const clearAllFilters = useCallback(() => {
     console.log('[useTagFiltering] Clearing all filters')
@@ -111,7 +112,9 @@ export const useTagFiltering = (
     filteredPhotos,
     isFiltering,
     availableFilterTags,
+    filterLogic,
     toggleTag,
     clearAllFilters,
+    setFilterLogic,
   }
 }

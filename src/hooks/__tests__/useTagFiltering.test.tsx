@@ -264,6 +264,7 @@ describe('useTagFiltering', () => {
       const { result } = renderHook(() => useTagFiltering(mockPhotos))
 
       act(() => {
+        result.current.setFilterLogic('AND')
         result.current.toggleTag('tag-1') // Roofing
         result.current.toggleTag('tag-2') // Repair
       })
@@ -277,6 +278,7 @@ describe('useTagFiltering', () => {
       const { result } = renderHook(() => useTagFiltering(mockPhotos))
 
       act(() => {
+        result.current.setFilterLogic('AND')
         result.current.toggleTag('tag-2') // Repair
         result.current.toggleTag('tag-3') // Inspection (no photos have both)
       })
@@ -336,6 +338,7 @@ describe('useTagFiltering', () => {
 
       // Start with AND mode, select multiple tags
       act(() => {
+        result.current.setFilterLogic('AND')
         result.current.toggleTag('tag-1')
         result.current.toggleTag('tag-2')
       })
