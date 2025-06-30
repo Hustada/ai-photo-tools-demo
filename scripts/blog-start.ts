@@ -47,6 +47,31 @@ async function startBlogSession() {
       process.exit(1);
     }
 
+    // Check for main branch and warn
+    const { execSync } = await import('child_process');
+    const currentBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
+    const mainBranches = ['main', 'master', 'develop', 'dev'];
+    
+    if (mainBranches.includes(currentBranch.toLowerCase())) {
+      console.warn('⚠️  Warning: You\'re working on the main branch!');
+      console.log('🎯 Best practice: Create a feature branch for new development work\n');
+      
+      const suggestedBranchName = `feat/${featureName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`;
+      
+      console.log('💡 Suggested workflow:');
+      console.log(`   git checkout -b ${suggestedBranchName}`);
+      console.log(`   npm run blog:start "${featureName}"`);
+      console.log('');
+      console.log('⚡ Or continue on main branch (not recommended for features)');
+      console.log('   Press Ctrl+C to cancel and create a branch');
+      console.log('   Or wait 5 seconds to continue...\n');
+      
+      // Give user time to read and potentially cancel
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      console.log('Continuing on main branch...\n');
+    }
+
     // Create new session
     const newSession = createSession(featureName, description, tags);
     
