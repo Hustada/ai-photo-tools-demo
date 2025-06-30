@@ -3,6 +3,7 @@
 import React from 'react';
 import type { Photo, Tag as CompanyCamTag } from '../types';
 import { useUserContext } from '../contexts/UserContext';
+import LazyImage from './LazyImage';
 
 // Interface for mock/local tag definitions (e.g., from mockTagsData)
 interface MockTag {
@@ -77,10 +78,20 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
     >
       <div className="w-full h-48 rounded-md mb-3 bg-gray-100 flex items-center justify-center overflow-hidden">
         {thumbnailUrl ? (
-          <img
+          <LazyImage
             src={thumbnailUrl}
             alt={photo.description || `Photo by ${photo.creator_name}`}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover rounded-md"
+            width={300}
+            height={192}
+            loadingThreshold={100}
+            onLoad={() => {
+              // Optional: track successful image loads for analytics
+              console.debug(`[PhotoCard] Image loaded for photo ${photo.id}`);
+            }}
+            onError={() => {
+              console.warn(`[PhotoCard] Failed to load image for photo ${photo.id}`);
+            }}
           />
         ) : (
           <span className="text-gray-600 text-sm">No Image Available</span>

@@ -6,6 +6,33 @@ import PhotoCard, { type PhotoCardAiSuggestionState } from '../PhotoCard'
 import { UserContextProvider } from '../../contexts/UserContext'
 import type { Photo, Tag } from '../../types'
 
+// Mock IntersectionObserver for LazyImage
+const mockIntersectionObserver = vi.fn();
+mockIntersectionObserver.mockReturnValue({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+});
+Object.defineProperty(window, 'IntersectionObserver', {
+  writable: true,
+  configurable: true,
+  value: mockIntersectionObserver,
+});
+
+// Mock Image constructor for LazyImage
+Object.defineProperty(global, 'Image', {
+  writable: true,
+  configurable: true,
+  value: vi.fn().mockImplementation(() => ({
+    onload: null,
+    onerror: null,
+    src: '',
+    complete: false,
+    naturalWidth: 0,
+    naturalHeight: 0
+  }))
+});
+
 // Mock UserContext
 vi.mock('../../contexts/UserContext', async () => {
   const actual = await vi.importActual('../../contexts/UserContext')
