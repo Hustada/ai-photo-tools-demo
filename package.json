@@ -14,7 +14,11 @@
     "test:coverage": "vitest --coverage",
     "test:watch": "vitest --watch",
     "clean:api": "find api -name '*.js' -delete && find api -name '*.js.map' -delete",
-    "vercel:dev": "npm run clean:api && vercel dev"
+    "vercel:dev": "npm run clean:api && vercel dev",
+    "blog:start": "tsx ./scripts/blog-start.ts",
+    "blog:complete": "tsx ./scripts/blog-complete.ts",
+    "blog:status": "tsx ./scripts/blog-status.ts",
+    "blog:cancel": "tsx ./scripts/blog-cancel.ts"
   },
   "dependencies": {
     "@google-cloud/vision": "^5.1.0",

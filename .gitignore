@@ -38,3 +38,6 @@ vite.config.js
 coverage/
 .aider*
 source-images/*.jpeg
+
+# Blog session files
+.blog-session.json
