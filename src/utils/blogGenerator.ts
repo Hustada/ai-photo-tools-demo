@@ -1,6 +1,7 @@
 // © 2025 Mark Hustad — MIT License
 // AI-powered blog post generation using OpenAI
 
+import 'dotenv/config';
 import { OpenAI } from 'openai';
 import type { BlogSession } from './blogSession.js';
 import type { GitChangeAnalysis } from './gitAnalysis.js';
@@ -31,6 +32,11 @@ export interface GeneratedBlog {
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Verify API key is available
+if (!process.env.OPENAI_API_KEY) {
+  console.warn('[BlogGenerator] OPENAI_API_KEY not found in environment variables');
+}
 
 // Main blog generation function
 export const generateBlogPost = async (
