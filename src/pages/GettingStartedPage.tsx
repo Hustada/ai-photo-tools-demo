@@ -106,12 +106,12 @@ npm run blog:status
 ✨ Ready to generate blog post when you complete the session
 \`\`\`
 
-### Step 4: Complete & Generate Blog
+### Step 4: Preview Your Blog
 
-When your feature is done, tell the system to analyze everything and write the blog:
+First, generate a preview to review the content:
 
 \`\`\`bash
-npm run blog:complete
+npm run blog:preview
 \`\`\`
 
 **What happens behind the scenes:**
@@ -127,13 +127,38 @@ The system analyzes ALL your commits:
 It sends this analysis to OpenAI GPT-4 with prompts like:
 > "Write a comprehensive technical blog post about this Mobile Navigation feature. Here are the actual code changes, commit history, and file modifications..."
 
-#### 📝 Blog Post Creation
-The AI writes a full blog post including:
+#### 📝 Draft Creation
+The AI creates a draft with:
 - Technical overview and motivation
 - Code examples from your actual changes
 - Architecture decisions and trade-offs
 - Performance considerations
 - Lessons learned and best practices
+
+### Step 5: Edit (Optional)
+
+Review and edit your draft:
+
+\`\`\`bash
+# Edit the generated markdown
+code .blog-drafts/[session-id].md
+\`\`\`
+
+You can refine:
+- Title and excerpt
+- Technical explanations
+- Code examples
+- Tags and metadata
+
+### Step 6: Publish
+
+When satisfied, publish the final post:
+
+\`\`\`bash
+npm run blog:publish
+\`\`\`
+
+This completes the session and publishes to your blog!
 
 ---
 
@@ -142,9 +167,11 @@ The AI writes a full blog post including:
 | Command | Description | Example |
 |---------|-------------|---------|
 | \`npm run blog:start\` | Start documentation session | \`npm run blog:start "Feature Name"\` |
-| \`npm run blog:complete\` | Complete session & generate blog | \`npm run blog:complete\` |
+| \`npm run blog:preview\` | Generate draft for review | \`npm run blog:preview\` |
+| \`npm run blog:publish\` | Publish reviewed blog post | \`npm run blog:publish\` |
 | \`npm run blog:status\` | Check current session status | \`npm run blog:status\` |
 | \`npm run blog:cancel\` | Cancel active session | \`npm run blog:cancel\` |
+| \`npm run blog:cleanup\` | Clean up stale sessions | \`npm run blog:cleanup\` |
 
 ### Advanced Usage
 
