@@ -65,9 +65,6 @@ vi.mock('../../hooks/useAiEnhancements', () => ({
   useAiEnhancements: vi.fn(),
 }))
 
-vi.mock('../../hooks/useRetentionCleanup', () => ({
-  useRetentionCleanup: vi.fn(),
-}))
 
 vi.mock('../../hooks/useNotificationManager', () => ({
   useNotificationManager: vi.fn(),
@@ -80,7 +77,6 @@ import { useTagManagement } from '../../hooks/useTagManagement'
 import { useTagFiltering } from '../../hooks/useTagFiltering'
 import { usePhotoModal } from '../../hooks/usePhotoModal'
 import { useAiEnhancements } from '../../hooks/useAiEnhancements'
-import { useRetentionCleanup } from '../../hooks/useRetentionCleanup'
 import { useNotificationManager } from '../../hooks/useNotificationManager'
 
 const mockUser: CurrentUser = {
@@ -221,11 +217,6 @@ describe('HomePage', () => {
       loadPersistedEnhancements: vi.fn(),
     })
 
-    vi.mocked(useRetentionCleanup).mockReturnValue({
-      runCleanup: vi.fn(),
-      scheduledCleanupInterval: null,
-      isCleanupEnabled: true,
-    })
 
     vi.mocked(useNotificationManager).mockReturnValue({
       notifications: [],
