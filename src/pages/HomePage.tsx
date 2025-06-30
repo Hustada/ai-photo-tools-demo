@@ -178,6 +178,13 @@ const HomePageContent: React.FC = () => {
             className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shadow-lg"
           />
           <h1 className="text-2xl sm:text-3xl font-bold text-orange-400">Scout AI</h1>
+          <a 
+            href="/blog"
+            className="hidden sm:block text-sm text-gray-300 hover:text-orange-400 transition-colors px-3 py-1 rounded-md hover:bg-gray-800"
+            title="View development blog"
+          >
+            📝 Blog
+          </a>
         </div>
 
         {/* Right side: User Info / Loading / Error */}

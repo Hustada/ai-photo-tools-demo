@@ -228,10 +228,12 @@ describe('PhotoCard', () => {
       const aiTag = screen.getByText('Progress')
       const normalTag = screen.getByText('Roofing')
 
-      // AI tag should have teal styling
-      expect(aiTag).toHaveClass('bg-teal-600')
-      // Normal tag should have gray styling
-      expect(normalTag).toHaveClass('bg-gray-600')
+      // AI tag should have gray AI styling (not active)
+      expect(aiTag).toHaveClass('bg-gray-200')
+      expect(aiTag).toHaveClass('text-gray-800')
+      // Normal tag should have standard gray styling
+      expect(normalTag).toHaveClass('bg-gray-100')
+      expect(normalTag).toHaveClass('text-gray-700')
     })
 
     it('should apply active styling to filtered tags', () => {
@@ -240,10 +242,12 @@ describe('PhotoCard', () => {
       const activeTag = screen.getByText('Roofing')
       const inactiveTag = screen.getByText('Progress')
 
-      // Active tag should have blue styling
-      expect(activeTag).toHaveClass('bg-blue-500')
-      // Inactive AI tag should still have teal styling
-      expect(inactiveTag).toHaveClass('bg-teal-600')
+      // Active normal tag should have dark gray styling
+      expect(activeTag).toHaveClass('bg-gray-800')
+      expect(activeTag).toHaveClass('text-white')
+      // Inactive AI tag should have standard AI styling
+      expect(inactiveTag).toHaveClass('bg-gray-200')
+      expect(inactiveTag).toHaveClass('text-gray-800')
     })
 
     it('should handle tag clicks when onTagClick is provided', async () => {
@@ -306,7 +310,7 @@ describe('PhotoCard', () => {
     it('should show AI suggestion button when no suggestions exist', () => {
       render(<PhotoCard {...defaultProps} />)
 
-      expect(screen.getByText('Suggest AI Tags')).toBeInTheDocument()
+      expect(screen.getByText('Suggest Tags')).toBeInTheDocument()
     })
 
     it('should show loading state when fetching suggestions', () => {
@@ -327,7 +331,7 @@ describe('PhotoCard', () => {
       const user = userEvent.setup()
       render(<PhotoCard {...defaultProps} />)
 
-      const aiButton = screen.getByText('Suggest AI Tags')
+      const aiButton = screen.getByText('Suggest Tags')
       await user.click(aiButton)
 
       expect(mockOnFetchAiSuggestions).toHaveBeenCalledWith(
@@ -348,7 +352,7 @@ describe('PhotoCard', () => {
 
       render(<PhotoCard {...defaultProps} photo={photoWithoutWeb} />)
 
-      const aiButton = screen.getByText('Suggest AI Tags')
+      const aiButton = screen.getByText('Suggest Tags')
       await user.click(aiButton)
 
       expect(mockOnFetchAiSuggestions).toHaveBeenCalledWith(
@@ -366,7 +370,7 @@ describe('PhotoCard', () => {
 
       render(<PhotoCard {...defaultProps} photo={photoMinimal} />)
 
-      const aiButton = screen.getByText('Suggest AI Tags')
+      const aiButton = screen.getByText('Suggest Tags')
       await user.click(aiButton)
 
       expect(mockOnFetchAiSuggestions).toHaveBeenCalledWith(
@@ -385,7 +389,7 @@ describe('PhotoCard', () => {
 
       render(<PhotoCard {...defaultProps} photo={photoWithoutUrls} />)
 
-      const aiButton = screen.getByText('Suggest AI Tags')
+      const aiButton = screen.getByText('Suggest Tags')
       await user.click(aiButton)
 
       expect(mockOnFetchAiSuggestions).not.toHaveBeenCalled()
@@ -435,7 +439,7 @@ describe('PhotoCard', () => {
       const user = userEvent.setup()
       render(<PhotoCard {...defaultProps} />)
 
-      const aiButton = screen.getByText('Suggest AI Tags')
+      const aiButton = screen.getByText('Suggest Tags')
       await user.click(aiButton)
 
       expect(mockOnPhotoClick).not.toHaveBeenCalled()
@@ -483,8 +487,9 @@ describe('PhotoCard', () => {
 
       const activeAiTag = screen.getByText('Progress')
       
-      // Should have AI tag active styling (line 114)
-      expect(activeAiTag).toHaveClass('bg-teal-500')
+      // Should have AI tag active styling (gray-700 for active AI tags)
+      expect(activeAiTag).toHaveClass('bg-gray-700')
+      expect(activeAiTag).toHaveClass('text-white')
     })
 
     it('should apply correct styling for inactive tags when onTagClick is not provided', () => {
@@ -497,8 +502,9 @@ describe('PhotoCard', () => {
 
       const normalTag = screen.getByText('Roofing')
       
-      // Should have non-clickable styling (line 120)
-      expect(normalTag).toHaveClass('bg-gray-700')
+      // Should have non-clickable styling (bg-gray-50 text-gray-500)
+      expect(normalTag).toHaveClass('bg-gray-50')
+      expect(normalTag).toHaveClass('text-gray-500')
     })
   })
 
