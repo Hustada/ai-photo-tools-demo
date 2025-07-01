@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useScoutAi } from '../contexts/ScoutAiContext';
 import { ScoutAiNotification } from './ScoutAiNotification';
-import { AnalysisModeSelector } from './AnalysisModeSelector';
+// Removed AnalysisModeSelector import - using external trigger from FilterBar
 import type { Photo } from '../types';
 import type { ScoutAiSuggestion, CurationRecommendation } from '../types/scoutai';
 import type { FilterOptions } from '../utils/photoFiltering';
@@ -40,6 +40,25 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
       return () => clearTimeout(timer);
     }
   }, [scoutAi.suggestions, showSuggestions]);
+
+  // Watch for external analysis triggers and show suggestions UI
+  useEffect(() => {
+    if (scoutAi.isAnalyzing) {
+      console.log('[ScoutAiDemo] External analysis detected, showing UI');
+      setShowSuggestions(true);
+      setIsMinimized(false);
+      setHasAnalyzed(false);
+    }
+  }, [scoutAi.isAnalyzing]);
+
+  // Watch for analysis completion and suggestions
+  useEffect(() => {
+    if (!scoutAi.isAnalyzing && scoutAi.suggestions.length > 0) {
+      console.log('[ScoutAiDemo] Analysis completed, showing suggestions');
+      setHasAnalyzed(true);
+      setShowSuggestions(true);
+    }
+  }, [scoutAi.isAnalyzing, scoutAi.suggestions.length]);
 
   // Handle manual trigger for analysis with optional filter options
   const handleManualAnalysis = async (filterOptions?: FilterOptions) => {
@@ -296,11 +315,7 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
                 ✓ {completedSuggestions.length} applied
               </div>
             )}
-            <AnalysisModeSelector
-              photos={photos}
-              isAnalyzing={scoutAi.isAnalyzing}
-              onAnalyze={handleManualAnalysis}
-            />
+            {/* Analysis triggered externally from FilterBar */}
             {showSuggestions && activeSuggestions.length === 0 && completedSuggestions.length > 0 && (
               <button
                 onClick={() => setIsMinimized(true)}
