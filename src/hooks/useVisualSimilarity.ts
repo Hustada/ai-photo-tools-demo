@@ -279,22 +279,26 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
         console.log('[VisualSimilarity] Layer 1.5: Checking for near-duplicates using perceptual hashing...');
         const pHashStartTime = Date.now();
         
-        const photoData = remainingPhotos.map(photo => ({
-          id: photo.id,
-          imageUrl: photo.uris?.find(uri => uri.type === 'web')?.uri 
-                  || photo.uris?.find(uri => uri.type === 'original')?.uri 
-                  || photo.photo_url
-        })).filter(p => p.imageUrl);
-        
-        const perceptualHashes = await batchCalculateHashes(photoData, 3);
-        
-        if (controller.signal.aborted) {
-          throw new Error('Analysis cancelled');
-        }
-        
-        // Find perceptual similarities with a stricter threshold for construction photos
-        const perceptualGroups = findPerceptualSimilarities(perceptualHashes, 0.85); // 85% similar - stricter to avoid false groupings
-        console.log(`[VisualSimilarity] Found ${perceptualGroups.length} perceptual similarity groups`);
+        try {
+          const photoData = remainingPhotos.map(photo => ({
+            id: photo.id,
+            imageUrl: photo.uris?.find(uri => uri.type === 'web')?.uri 
+                    || photo.uris?.find(uri => uri.type === 'original')?.uri 
+                    || photo.photo_url
+          })).filter(p => p.imageUrl);
+          
+          console.log('[VisualSimilarity] About to calculate perceptual hashes for', photoData.length, 'photos');
+          const perceptualHashes = await batchCalculateHashes(photoData, 3);
+          console.log('[VisualSimilarity] Perceptual hashing completed, received', perceptualHashes.length, 'results');
+          
+          if (controller.signal.aborted) {
+            throw new Error('Analysis cancelled');
+          }
+          
+          // Find perceptual similarities with a stricter threshold for construction photos
+          console.log('[VisualSimilarity] Looking for perceptual similarities with 85% threshold...');
+          const perceptualGroups = findPerceptualSimilarities(perceptualHashes, 0.85); // 85% similar - stricter to avoid false groupings
+          console.log(`[VisualSimilarity] Found ${perceptualGroups.length} perceptual similarity groups`);
         
         // Convert perceptual groups to PhotoSimilarityGroups
         perceptualDuplicateGroups = perceptualGroups.map(pGroup => {
@@ -330,6 +334,11 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
         });
         
         console.log(`[VisualSimilarity] Perceptual hashing removed ${perceptualPhotoIds.size} near-duplicates, ${remainingPhotos.length} photos remaining for TensorFlow`);
+        } catch (error) {
+          console.error('[VisualSimilarity] PERCEPTUAL HASHING FAILED:', error);
+          console.log('[VisualSimilarity] Continuing without perceptual hash analysis...');
+          // Continue with remaining photos, no perceptual groups
+        }
       } else {
         console.log('[VisualSimilarity] Layer 1.5: Perceptual hash detection DISABLED');
       }
