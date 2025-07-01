@@ -265,6 +265,20 @@ const HomePageContent: React.FC = () => {
         )}
 
 
+        {/* Scout AI Analysis Interface */}
+        {currentUser && tagFiltering.filteredPhotos.length >= 2 && (
+          <div className="mb-6">
+            <ScoutAiDemo
+              photos={tagFiltering.filteredPhotos}
+              visible={true}
+              onPhotoUpdate={(updatedPhoto: Photo) => {
+                // Update photo in cache after Scout AI suggestion is applied
+                photosQuery.updatePhotoInCache(updatedPhoto);
+              }}
+            />
+          </div>
+        )}
+
         {/* Notifications Panel */}
         {notificationManager.hasActiveNotifications && (
           <div className="mb-6">
