@@ -265,8 +265,8 @@ const HomePageContent: React.FC = () => {
         )}
 
 
-        {/* Scout AI Analysis Interface */}
-        {currentUser && tagFiltering.filteredPhotos.length >= 2 && (
+        {/* Scout AI Analysis Interface - Only show during/after analysis */}
+        {currentUser && tagFiltering.filteredPhotos.length >= 2 && (scoutAi.isAnalyzing || scoutAi.suggestions.length > 0) && (
           <div className="mb-6">
             <ScoutAiDemo
               photos={tagFiltering.filteredPhotos}
