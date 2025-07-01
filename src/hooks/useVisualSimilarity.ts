@@ -111,11 +111,36 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
     const filtered = groups.filter(group => group.confidence >= confidenceThreshold);
     const rejected = groups.filter(group => group.confidence < confidenceThreshold);
     
-    if (rejected.length > 0) {
-      console.log(`[VisualSimilarity] Confidence filtering: ${filtered.length}/${groups.length} groups above ${(confidenceThreshold * 100).toFixed(0)}% threshold (85% default)`);
-      console.log('[VisualSimilarity] Filtered out low-confidence groups:', 
-        rejected.map(g => `${g.id} (${(g.confidence * 100).toFixed(1)}%)`).join(', '));
+    // Always log filtering results for debugging
+    console.log(`[VisualSimilarity] ===== CONFIDENCE FILTERING RESULTS =====`);
+    console.log(`[VisualSimilarity] Total groups found: ${groups.length}`);
+    console.log(`[VisualSimilarity] Confidence threshold: ${(confidenceThreshold * 100).toFixed(0)}%`);
+    console.log(`[VisualSimilarity] Groups ABOVE threshold: ${filtered.length}`);
+    console.log(`[VisualSimilarity] Groups BELOW threshold: ${rejected.length}`);
+    
+    if (groups.length > 0) {
+      // Show all groups with their confidence scores
+      console.log('[VisualSimilarity] All groups with confidence scores:');
+      groups.forEach((g, i) => {
+        console.log(`  ${i + 1}. ${g.id}: ${(g.confidence * 100).toFixed(1)}% confidence, ${g.photos.length} photos, type: ${g.groupType}`);
+      });
     }
+    
+    if (rejected.length > 0) {
+      console.log('[VisualSimilarity] Groups REJECTED (below 85%):');
+      rejected.forEach((g, i) => {
+        console.log(`  - ${g.id}: ${(g.confidence * 100).toFixed(1)}% confidence, ${g.photos.length} photos`);
+      });
+    }
+    
+    if (filtered.length > 0) {
+      console.log('[VisualSimilarity] Groups ACCEPTED (above 85%):');
+      filtered.forEach((g, i) => {
+        console.log(`  + ${g.id}: ${(g.confidence * 100).toFixed(1)}% confidence, ${g.photos.length} photos`);
+      });
+    }
+    
+    console.log(`[VisualSimilarity] =====================================`);
     
     return filtered;
   }, [confidenceThreshold]);
