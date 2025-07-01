@@ -10,7 +10,7 @@ interface FilterBarProps {
   filteredCount: number;
   onRefresh?: () => void;
   isRefreshing?: boolean;
-  onAnalyze?: (mode: 'new' | 'all') => void;
+  onAnalyze?: (mode: 'new' | 'all' | 'force') => void;
   isAnalyzing?: boolean;
 }
 
@@ -28,7 +28,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   isAnalyzing
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [analysisMode, setAnalysisMode] = useState<'new' | 'all'>('new');
+  const [analysisMode, setAnalysisMode] = useState<'new' | 'all' | 'force'>('new');
   const [showAnalysisDropdown, setShowAnalysisDropdown] = useState(false);
   const [isTagPanelExpanded, setIsTagPanelExpanded] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
@@ -106,7 +106,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                           onChange={() => setAnalysisMode('new')}
                           className="text-orange-600"
                         />
-                        <span className="text-sm text-gray-300">New Photos (30 days)</span>
+                        <span className="text-sm text-gray-300">New Photos Only (30 days)</span>
                       </label>
                       <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-700 min-h-[44px]">
                         <input
@@ -117,7 +117,18 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                           onChange={() => setAnalysisMode('all')}
                           className="text-orange-600"
                         />
-                        <span className="text-sm text-gray-300">All Photos</span>
+                        <span className="text-sm text-gray-300">All Photos (Skip Analyzed)</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-700 min-h-[44px]">
+                        <input
+                          type="radio"
+                          name="analysisMode"
+                          value="force"
+                          checked={analysisMode === 'force'}
+                          onChange={() => setAnalysisMode('force')}
+                          className="text-orange-600"
+                        />
+                        <span className="text-sm text-gray-300">Force Re-analysis (Testing)</span>
                       </label>
                     </div>
                   </div>

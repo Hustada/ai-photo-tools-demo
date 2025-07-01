@@ -275,7 +275,7 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
       
       // Layer 1.5: Check for near-duplicates using perceptual hashing
       if (enabledLayers.perceptualHash && remainingPhotos.length > 1) {
-        setState(prev => ({ ...prev, progress: 15 }));
+        setState(prev => ({ ...prev, progress: 10 }));
         console.log('[VisualSimilarity] Layer 1.5: Checking for near-duplicates using perceptual hashing...');
         const pHashStartTime = Date.now();
         
@@ -352,7 +352,7 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
       
       // Layer 2: TensorFlow.js Visual Feature Extraction (FREE, local processing)
       if (enabledLayers.tensorFlow) {
-        setState(prev => ({ ...prev, progress: 25 }));
+        setState(prev => ({ ...prev, progress: 20 }));
         console.log('[VisualSimilarity] Layer 2: TensorFlow.js visual feature extraction...');
         const tfStartTime = Date.now();
         
@@ -367,7 +367,7 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
                   || photo.photo_url
         })).filter(p => p.imageUrl);
         
-        setState(prev => ({ ...prev, progress: 45 }));
+        setState(prev => ({ ...prev, progress: 35 }));
         visualFeatures = await batchExtractFeatures(photoData, 3);
         
         if (controller.signal.aborted) {
@@ -377,7 +377,7 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
         console.log(`[VisualSimilarity] Extracted features for ${visualFeatures.length}/${remainingPhotos.length} photos`);
         
         // Find visual similarity groups using TensorFlow features
-        setState(prev => ({ ...prev, progress: 55 }));
+        setState(prev => ({ ...prev, progress: 45 }));
         console.log('[VisualSimilarity] Finding visual similarity groups...');
         
         // Extremely high threshold for MobileNet features due to high similarities
@@ -423,7 +423,7 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
       
       // Step 3: Metadata-based pre-filtering
       if (enabledLayers.metadata) {
-        setState(prev => ({ ...prev, progress: 50 }));
+        setState(prev => ({ ...prev, progress: 55 }));
         console.log('[VisualSimilarity] Layer 3: Metadata pre-filtering (PERMISSIVE mode for testing)');
         const metadataStartTime = Date.now();
         const metadataCandidates = findLikelyDuplicateCandidates(candidatePhotos, 'permissive');
@@ -455,14 +455,14 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
         
         console.log(`[VisualSimilarity] Analyzing ${samplePhotos.length} photos for visual similarity`);
         
-        setState(prev => ({ ...prev, progress: 20 }));
+        setState(prev => ({ ...prev, progress: 65 }));
         const descriptions = await batchGenerateDescriptions(samplePhotos);
         
         if (controller.signal.aborted) {
           throw new Error('Analysis cancelled');
         }
         
-        setState(prev => ({ ...prev, progress: 70 }));
+        setState(prev => ({ ...prev, progress: 75 }));
         
         // Quick visual similarity check
         const visualGroups: PhotoSimilarityGroup[] = [];
@@ -547,7 +547,7 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
       let aiDuration = 0;
       
       // Step 4: TensorFlow-based similarity analysis (PRIMARY ENGINE)
-      setState(prev => ({ ...prev, progress: 60 }));
+      setState(prev => ({ ...prev, progress: 85 }));
       console.log('[VisualSimilarity] Layer 4: TensorFlow-based similarity analysis (PRIMARY)');
       const aiStartTime = Date.now();
       

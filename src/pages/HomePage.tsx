@@ -130,12 +130,21 @@ const HomePageContent: React.FC = () => {
     photosQuery.refresh();
   };
 
-  const handleAnalyzePhotos = (mode: 'new' | 'all') => {
+  const handleAnalyzePhotos = (mode: 'new' | 'all' | 'force') => {
     if (!currentUser) return; // Don't analyze if no user
     
-    const filterOptions = mode === 'new' 
-      ? { mode: 'smart' as const, newPhotoDays: 30, forceReanalysis: false }
-      : { mode: 'all' as const, forceReanalysis: true }; // Force reanalysis when selecting "All Photos"
+    let filterOptions;
+    switch (mode) {
+      case 'new':
+        filterOptions = { mode: 'smart' as const, newPhotoDays: 30, forceReanalysis: false };
+        break;
+      case 'all':
+        filterOptions = { mode: 'all' as const, forceReanalysis: false }; // Skip already analyzed photos
+        break;
+      case 'force':
+        filterOptions = { mode: 'all' as const, forceReanalysis: true }; // Force reanalysis of all photos
+        break;
+    }
     
     console.log('[HomePage] Triggering analysis with mode:', mode, 'options:', filterOptions);
     scoutAi.analyzeSimilarPhotos(photosQuery.photos, true, filterOptions);
@@ -267,7 +276,7 @@ const HomePageContent: React.FC = () => {
 
 
         {/* Scout AI Analysis Interface - Only show during/after analysis */}
-        {currentUser && tagFiltering.filteredPhotos.length >= 2 && (scoutAi.isAnalyzing || scoutAi.suggestions.length > 0) && (
+        {currentUser && tagFiltering.filteredPhotos.length >= 2 && (scoutAi.isAnalyzing || scoutAi.suggestions.filter(s => s.status !== 'dismissed' && s.status !== 'rejected').length > 0) && (
           <div className="mb-6">
             <ScoutAiDemo
               photos={tagFiltering.filteredPhotos}
