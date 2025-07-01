@@ -173,13 +173,22 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
       }
 
       console.log('[Scout AI] Analyzing', photosToAnalyze.length, 'photos using enhanced visual similarity pipeline');
+      console.log('[Scout AI] Photos being analyzed:', photosToAnalyze.map(p => p.id).join(', '));
       
       // Use the enhanced visual similarity hook (same as test page)
       const groups = await visualSimilarity.analyzeSimilarity(photosToAnalyze);
       
       console.log('[Scout AI] Enhanced pipeline found', groups.length, 'similarity groups');
+      console.log('[Scout AI] Raw groups before filtering:', JSON.stringify(groups.map(g => ({
+        id: g.id,
+        photoCount: g.photos.length,
+        confidence: g.confidence,
+        groupType: g.groupType,
+        photoIds: g.photos.map(p => p.id)
+      })), null, 2));
       
       if (groups.length > 0) {
+        console.log('[Scout AI] Processing', groups.length, 'groups into recommendations...');
         // Generate recommendations for each group
         const recommendations = groups.map(group => generateCurationRecommendation(group));
         
@@ -202,19 +211,25 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
         console.log('[Scout AI] Generated enhanced similarity suggestion:', suggestion.message);
         console.log('[Scout AI] Groups:', groups.map(g => `${g.groupType} (${(g.confidence * 100).toFixed(1)}% confidence, ${g.photos.length} photos)`));
       } else {
-        console.log('[Scout AI] No similarity groups found above 85% confidence threshold');
-        console.log('[Scout AI] This is normal - your photos may not have duplicates or high similarity');
+        console.log('[Scout AI] No similarity groups returned from visual similarity analysis');
+        console.log('[Scout AI] Checking visual similarity state...');
+        console.log('[Scout AI] Visual similarity state:', {
+          isAnalyzing: visualSimilarity.state.isAnalyzing,
+          hasError: !!visualSimilarity.state.error,
+          error: visualSimilarity.state.error,
+          allGroupsCount: visualSimilarity.state.allGroups?.length || 0,
+          filteredGroupsCount: visualSimilarity.state.filteredGroups?.length || 0
+        });
         
-        // For debugging: Show what similarities were found (if any)
-        if (visualSimilarity.state.lastAnalysisResults) {
-          const allResults = visualSimilarity.state.lastAnalysisResults;
-          const sortedResults = allResults.sort((a, b) => b.confidence - a.confidence);
-          const topResults = sortedResults.slice(0, 5);
-          
-          console.log('[Scout AI] Top 5 similarity matches found:');
-          topResults.forEach((result, i) => {
-            console.log(`  ${i + 1}. ${(result.confidence * 100).toFixed(1)}% confidence - ${result.photos.length} photos`);
-          });
+        // Check if there are groups that were filtered out
+        if (visualSimilarity.state.allGroups && visualSimilarity.state.allGroups.length > 0) {
+          console.log('[Scout AI] Found', visualSimilarity.state.allGroups.length, 'total groups (before confidence filtering)');
+          console.log('[Scout AI] All groups details:', JSON.stringify(visualSimilarity.state.allGroups.map(g => ({
+            id: g.id,
+            confidence: (g.confidence * 100).toFixed(1) + '%',
+            photoCount: g.photos.length,
+            groupType: g.groupType
+          })), null, 2));
         }
         
         // Temporarily show a message to user
@@ -254,7 +269,7 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     } finally {
       setIsAnalyzing(false);
     }
-  }, [userPreferences, visualSimilarity]);
+  }, [userPreferences, visualSimilarity, analysisTracking]);
 
   // Generate a suggestion from similarity groups (used by analyzeSimilarPhotos)
   const generateSuggestion = useCallback((groups: PhotoSimilarityGroup[]): ScoutAiSuggestion => {

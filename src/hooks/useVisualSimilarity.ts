@@ -502,6 +502,12 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
         
         // Combine exact duplicates, perceptual duplicates, and visual groups
         const allSampleGroups = [...exactDuplicateGroups, ...perceptualDuplicateGroups, ...visualGroups];
+        console.log('[VisualSimilarity] SECONDARY ANALYSIS RESULTS:');
+        console.log('[VisualSimilarity] - Exact duplicate groups:', exactDuplicateGroups.length);
+        console.log('[VisualSimilarity] - Perceptual duplicate groups:', perceptualDuplicateGroups.length);
+        console.log('[VisualSimilarity] - Visual similarity groups:', visualGroups.length);
+        console.log('[VisualSimilarity] - Total groups before filtering:', allSampleGroups.length);
+        
         const filteredSampleGroups = filterGroupsByConfidence(allSampleGroups);
         
         setState(prev => ({
@@ -669,6 +675,12 @@ export const useVisualSimilarity = (options: UseVisualSimilarityOptions = {}): U
 
       // Combine exact duplicates, perceptual duplicates, and similarity groups
       const allGroups = [...exactDuplicateGroups, ...perceptualDuplicateGroups, ...finalGroups];
+      console.log('[VisualSimilarity] FINAL PIPELINE RESULTS:');
+      console.log('[VisualSimilarity] - Exact duplicate groups:', exactDuplicateGroups.length);
+      console.log('[VisualSimilarity] - Perceptual duplicate groups:', perceptualDuplicateGroups.length);
+      console.log('[VisualSimilarity] - TensorFlow similarity groups:', finalGroups.length);
+      console.log('[VisualSimilarity] - Total groups before filtering:', allGroups.length);
+      
       const filteredGroups = filterGroupsByConfidence(allGroups);
       
       setState(prev => ({
