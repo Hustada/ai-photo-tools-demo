@@ -135,8 +135,9 @@ const HomePageContent: React.FC = () => {
     
     const filterOptions = mode === 'new' 
       ? { mode: 'smart' as const, newPhotoDays: 30, forceReanalysis: false }
-      : { mode: 'all' as const, forceReanalysis: false };
+      : { mode: 'all' as const, forceReanalysis: true }; // Force reanalysis when selecting "All Photos"
     
+    console.log('[HomePage] Triggering analysis with mode:', mode, 'options:', filterOptions);
     scoutAi.analyzeSimilarPhotos(photosQuery.photos, true, filterOptions);
   };
 
