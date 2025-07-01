@@ -42,7 +42,7 @@ const BlogPage: React.FC = () => {
                 filename: post.metadata.slug || post.metadata.id,
                 readingTime: post.metadata.readingTime,
                 tags: post.metadata.tags || [],
-                heroImage: `/api/generate-blog-image?blogId=${post.metadata.id}&style=technical`
+                heroImage: `/blog-images/${post.metadata.id}-hero.jpg`
               }));
               
               // API already sorts by date (newest first), so no need to sort again
@@ -120,7 +120,7 @@ const BlogPage: React.FC = () => {
             postContent = {
               metadata: {
                 ...post,
-                heroImage: `/api/generate-blog-image?blogId=${post.id}&style=technical`
+                heroImage: `/blog-images/${post.id}-hero.jpg`
               },
               content: apiResponse.post.content,
               rawContent: apiResponse.post.rawContent

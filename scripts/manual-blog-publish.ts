@@ -36,25 +36,128 @@ The first step was to categorize the failing tests:
 Rather than addressing random failures, we tackled each category systematically:
 
 #### useTagFiltering Hook Fixes
+
 The hook had fundamental interface mismatches. The tests expected:
 - A \`setFilterLogic\` function for AND/OR switching
 - \`activeTagIds\` to store actual tag IDs, not display values
 - Proper filtering logic implementation
 
-**Solution**: Redesigned the hook interface to match test expectations while maintaining backward compatibility.
+**Original broken interface**:
+\`\`\`typescript
+export interface UseTagFilteringReturn {
+  activeTagIds: string[]
+  filteredPhotos: Photo[]
+  isFiltering: boolean
+  availableFilterTags: Tag[]
+  toggleTag: (tagId: string) => void
+  clearAllFilters: () => void
+  // Missing setFilterLogic function!
+}
+\`\`\`
+
+**Fixed interface**:
+\`\`\`typescript
+export interface UseTagFilteringReturn {
+  activeTagIds: string[]
+  filteredPhotos: Photo[]
+  isFiltering: boolean
+  availableFilterTags: Tag[]
+  filterLogic: 'AND' | 'OR'  // Added state
+  toggleTag: (tagId: string) => void
+  clearAllFilters: () => void
+  setFilterLogic: (logic: 'AND' | 'OR') => void  // Added function
+}
+\`\`\`
+
+**Updated filtering logic**:
+\`\`\`typescript
+const filteredPhotos = useMemo(() => {
+  if (activeTagIds.length === 0) return photos
+
+  return photos.filter(photo => {
+    if (!photo.tags || !Array.isArray(photo.tags)) return false
+
+    const photoTagIds = photo.tags
+      .filter(tag => tag && tag.id)
+      .map(tag => tag.id)
+
+    if (filterLogic === 'AND') {
+      // AND logic: photo must have ALL selected tags
+      return activeTagIds.every(activeTagId => 
+        photoTagIds.includes(activeTagId)
+      )
+    } else {
+      // OR logic: photo must have AT LEAST ONE selected tag
+      return activeTagIds.some(activeTagId => 
+        photoTagIds.includes(activeTagId)
+      )
+    }
+  })
+}, [photos, activeTagIds, filterLogic])
+\`\`\`
 
 #### Test Environment Infrastructure
+
 HomePage tests were failing due to missing browser API mocks. The LazyImage component relied on IntersectionObserver, which doesn't exist in jsdom.
 
-**Solution**: Added comprehensive mocking in the test setup:
-- IntersectionObserver with realistic callback behavior
-- ResizeObserver for component compatibility
-- HTMLElement.scrollIntoView for complete coverage
+**The Problem**:
+\`\`\`
+ReferenceError: IntersectionObserver is not defined
+  at LazyImage.tsx:110:31
+\`\`\`
 
-#### Integration Test Compatibility
-Integration tests failed because they tested real component interactions but lacked proper browser environment simulation.
+**Solution - Global test setup**:
+\`\`\`typescript
+// src/test/setup.ts
+import '@testing-library/jest-dom'
 
-**Solution**: Enhanced the global test setup to provide realistic browser API behavior.
+// Mock IntersectionObserver for LazyImage component
+global.IntersectionObserver = vi.fn().mockImplementation((callback) => ({
+  disconnect: vi.fn(),
+  observe: vi.fn((element) => {
+    // Immediately trigger callback as if element is visible
+    setTimeout(() => {
+      callback([{
+        isIntersecting: true,
+        target: element,
+        intersectionRatio: 1,
+        boundingClientRect: {},
+        intersectionRect: {},
+        rootBounds: {},
+        time: 0,
+      }], mockObserver)
+    }, 0)
+  }),
+  unobserve: vi.fn(),
+  takeRecords: vi.fn(),
+}))
+
+// Mock ResizeObserver and other browser APIs
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  disconnect: vi.fn(),
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+}))
+\`\`\`
+
+#### Missing Import Cleanup
+
+We also found tests importing non-existent hooks:
+
+**The Problem**:
+\`\`\`typescript
+// HomePage.test.tsx - BROKEN
+import { useRetentionCleanup } from '../../hooks/useRetentionCleanup'
+//                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//                                  This file doesn't exist!
+\`\`\`
+
+**Solution**: Remove unused imports and mocks:
+\`\`\`typescript
+// Remove these lines:
+// import { useRetentionCleanup } from '../../hooks/useRetentionCleanup'
+// vi.mocked(useRetentionCleanup).mockReturnValue({...})
+\`\`\`
 
 ## Key Technical Decisions
 
@@ -62,7 +165,20 @@ Integration tests failed because they tested real component interactions but lac
 Instead of changing tests to match broken implementations, we fixed implementations to match expected interfaces. This maintains the value of tests as specifications.
 
 ### Realistic Mocking
-Rather than simple stub functions, we implemented mocks that simulate realistic browser behavior, ensuring tests reflect real-world usage.
+Rather than simple stub functions, we implemented mocks that simulate realistic browser behavior:
+
+\`\`\`typescript
+// Bad: Simple stub
+global.IntersectionObserver = vi.fn()
+
+// Good: Realistic behavior simulation
+global.IntersectionObserver = vi.fn().mockImplementation((callback) => ({
+  observe: vi.fn((element) => {
+    // Actually trigger the callback like real browser would
+    setTimeout(() => callback([{isIntersecting: true, target: element}]), 0)
+  })
+}))
+\`\`\`
 
 ### Infrastructure Investment
 We prioritized test environment setup, recognizing that reliable test infrastructure enables confident development.
@@ -70,9 +186,12 @@ We prioritized test environment setup, recognizing that reliable test infrastruc
 ## Results and Impact
 
 - **Fixed 53+ failing tests** across multiple test suites
-- **Improved development workflow** with reliable test execution
+- **Improved development workflow** with reliable test execution  
 - **Enhanced test infrastructure** for future development
 - **Documented systematic debugging approaches**
+
+**Before**: 53+ failing tests across multiple categories
+**After**: All tests passing with improved infrastructure
 
 ## Lessons Learned
 
