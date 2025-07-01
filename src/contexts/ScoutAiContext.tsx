@@ -203,7 +203,34 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
         console.log('[Scout AI] Groups:', groups.map(g => `${g.groupType} (${(g.confidence * 100).toFixed(1)}% confidence, ${g.photos.length} photos)`));
       } else {
         console.log('[Scout AI] No similarity groups found above 85% confidence threshold');
-        // This is normal - not all photo sets will have duplicates/similar photos
+        console.log('[Scout AI] This is normal - your photos may not have duplicates or high similarity');
+        
+        // For debugging: Show what similarities were found (if any)
+        if (visualSimilarity.state.lastAnalysisResults) {
+          const allResults = visualSimilarity.state.lastAnalysisResults;
+          const sortedResults = allResults.sort((a, b) => b.confidence - a.confidence);
+          const topResults = sortedResults.slice(0, 5);
+          
+          console.log('[Scout AI] Top 5 similarity matches found:');
+          topResults.forEach((result, i) => {
+            console.log(`  ${i + 1}. ${(result.confidence * 100).toFixed(1)}% confidence - ${result.photos.length} photos`);
+          });
+        }
+        
+        // Temporarily show a message to user
+        const debugSuggestion: ScoutAiSuggestion = {
+          id: `debug-${Date.now()}`,
+          type: 'photo_curation',
+          message: `Analysis complete! No duplicate or highly similar photos found above 85% confidence threshold. Your photos appear to be sufficiently unique.`,
+          recommendations: [],
+          confidence: 'low',
+          actionable: false,
+          createdAt: new Date(),
+          status: 'pending'
+        };
+        
+        setSuggestions([debugSuggestion]);
+        console.log('[Scout AI] Added debug message for user feedback');
       }
 
       // Mark analyzed photos as analyzed in the database (fire and forget)
