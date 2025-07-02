@@ -2,6 +2,8 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
+import type { GitChangeAnalysis } from '../src/utils/gitAnalysis.js';
+import type { BlogSession } from '../src/utils/blogSession.js';
 
 export interface BlogPostMetadata {
   id: string;
@@ -23,6 +25,11 @@ export interface BlogPost {
   updatedAt: string;
   gitCommitHash?: string;
   branchName?: string;
+  // Enhanced data for regeneration
+  gitAnalysis?: GitChangeAnalysis;  // Complete git analysis for regeneration
+  sessionData?: BlogSession;        // Original session data
+  startCommit?: string;             // Start commit for git range
+  endCommit?: string;               // End commit for git range
 }
 
 interface BlogPostsResponse {
@@ -141,8 +148,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           }
 
-          // Sort by date (newest first)
-          posts.sort((a, b) => new Date(b.metadata.date).getTime() - new Date(a.metadata.date).getTime());
+          // Sort by date (newest first) - handle mixed date formats
+          posts.sort((a, b) => {
+            const dateA = a.metadata.date ? new Date(a.metadata.date).getTime() : 0;
+            const dateB = b.metadata.date ? new Date(b.metadata.date).getTime() : 0;
+            
+            // Handle invalid dates by treating them as very old
+            const validDateA = isNaN(dateA) ? 0 : dateA;
+            const validDateB = isNaN(dateB) ? 0 : dateB;
+            
+            return validDateB - validDateA;
+          });
 
           return res.status(200).json({
             success: true,

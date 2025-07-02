@@ -144,7 +144,12 @@ async function completeBlogSession() {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             gitCommitHash: currentCommit.substring(0, 8),
-            branchName: currentBranch
+            branchName: currentBranch,
+            // Store complete generation context for regeneration
+            gitAnalysis: analysis,
+            sessionData: activeSession,
+            startCommit: activeSession.startCommit,
+            endCommit: currentCommit
           };
 
           const publishResponse = await fetch('http://localhost:3000/api/blog-posts', {
