@@ -36,6 +36,7 @@ interface PhotoCardProps {
   activeTagIds?: CompanyCamTag['id'][];
   aiSuggestionData?: PhotoCardAiSuggestionState;
   onFetchAiSuggestions: (photoId: string, photoUrl: string) => Promise<void>;
+  onUnarchivePhoto?: (photoId: string) => void;
 }
 
 const PhotoCard: React.FC<PhotoCardProps> = ({
@@ -49,6 +50,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
   activeTagIds,
   aiSuggestionData,
   onFetchAiSuggestions,
+  onUnarchivePhoto,
 }) => {
   const { userSettings } = useUserContext();
   const thumbnailUrl = photo.uris.find((uri) => uri.type === 'thumbnail')?.uri 
@@ -71,12 +73,41 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
     onFetchAiSuggestions(photo.id, imageUrlToSend);
   };
 
+  const isArchived = photo.archive_state === 'archived';
+
   return (
     <div
-      className="bg-white border border-gray-700 p-4 rounded-lg cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-200 ease-in-out flex flex-col text-gray-800"
+      className={`border p-4 rounded-lg cursor-pointer shadow-md hover:shadow-xl transition-all duration-200 ease-in-out flex flex-col relative ${
+        isArchived 
+          ? 'bg-gray-100 border-gray-400 opacity-60' 
+          : 'bg-white border-gray-700 text-gray-800'
+      }`}
       onClick={() => onPhotoClick(photo)}
     >
-      <div className="w-full h-48 rounded-md mb-3 bg-gray-100 flex items-center justify-center overflow-hidden">
+      {/* Archived Badge with Unarchive Button */}
+      {isArchived && (
+        <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
+          <div className="bg-red-600 text-white px-2 py-1 text-xs font-bold rounded">
+            ARCHIVED
+          </div>
+          {onUnarchivePhoto && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onUnarchivePhoto(photo.id);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 text-xs font-bold rounded transition-colors"
+              title="Unarchive this photo"
+            >
+              UNARCHIVE
+            </button>
+          )}
+        </div>
+      )}
+      
+      <div className={`w-full h-48 rounded-md mb-3 bg-gray-100 flex items-center justify-center overflow-hidden ${
+        isArchived ? 'grayscale' : ''
+      }`}>
         {thumbnailUrl ? (
           <LazyImage
             src={thumbnailUrl}

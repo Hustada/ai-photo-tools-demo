@@ -96,13 +96,28 @@ export const usePhotosQuery = (options: UsePhotosQueryOptions = {}): UsePhotosQu
   useMemo(() => {
     if (currentPagePhotos.length > 0) {
       setAllFetchedPhotos(prevPhotos => {
+        // Apply archived states from localStorage
+        const archivedPhotoIds = JSON.parse(localStorage.getItem('archivedPhotos') || '[]');
+        
+        const photosWithArchiveState = currentPagePhotos.map(photo => {
+          if (archivedPhotoIds.includes(photo.id)) {
+            return {
+              ...photo,
+              archive_state: 'archived' as const,
+              archived_at: Date.now(),
+              archive_reason: 'User archived for testing'
+            };
+          }
+          return photo;
+        });
+
         if (currentPage === 1) {
           // First page or refresh - replace all photos
-          return currentPagePhotos;
+          return photosWithArchiveState;
         } else {
           // Additional page - append new photos, avoiding duplicates
           const existingIds = new Set(prevPhotos.map(p => p.id));
-          const newPhotos = currentPagePhotos.filter(p => !existingIds.has(p.id));
+          const newPhotos = photosWithArchiveState.filter(p => !existingIds.has(p.id));
           return [...prevPhotos, ...newPhotos];
         }
       });
@@ -144,6 +159,20 @@ export const usePhotosQuery = (options: UsePhotosQueryOptions = {}): UsePhotosQu
 
   // Optimistic update for photo modifications
   const updatePhotoInCache = useCallback((updatedPhoto: Photo) => {
+    // Save archive state to localStorage for persistence across refresh
+    if (updatedPhoto.archive_state === 'archived') {
+      const archivedPhotos = JSON.parse(localStorage.getItem('archivedPhotos') || '[]');
+      if (!archivedPhotos.includes(updatedPhoto.id)) {
+        archivedPhotos.push(updatedPhoto.id);
+        localStorage.setItem('archivedPhotos', JSON.stringify(archivedPhotos));
+      }
+    } else {
+      // Remove from archived list if unarchived
+      const archivedPhotos = JSON.parse(localStorage.getItem('archivedPhotos') || '[]');
+      const filteredArchived = archivedPhotos.filter((id: string) => id !== updatedPhoto.id);
+      localStorage.setItem('archivedPhotos', JSON.stringify(filteredArchived));
+    }
+
     // Update the query cache for current page
     queryClient.setQueryData(
       photoQueryKeys.list(currentPage, { tagIds }),

@@ -46,7 +46,15 @@ const HomePageContent: React.FC = () => {
     currentPhoto: undefined, // Will be set per photo as needed
   });
   
-  const tagFiltering = useTagFiltering(photosQuery.photos);
+  // State for archived photos toggle
+  const [showArchivedPhotos, setShowArchivedPhotos] = React.useState(false);
+  
+  // Calculate archived photo count
+  const archivedCount = React.useMemo(() => {
+    return photosQuery.photos.filter(photo => photo.archive_state === 'archived').length;
+  }, [photosQuery.photos]);
+  
+  const tagFiltering = useTagFiltering(photosQuery.photos, { showArchivedPhotos });
   const tagManagement = useTagManagement(tagFiltering.filteredPhotos, currentUser, {
     onPhotoUpdate: (photoId: string, newTag: Tag, _isFromAiSuggestion: boolean) => {
       // Update the photo in cache with new tag
@@ -128,6 +136,24 @@ const HomePageContent: React.FC = () => {
 
   const handleRefreshPhotos = () => {
     photosQuery.refresh();
+  };
+
+  const handleUnarchivePhoto = (photoId: string) => {
+    console.log('[HomePage] Unarchiving photo:', photoId);
+    const photo = photosQuery.allPhotos.find(p => p.id === photoId);
+    if (!photo) {
+      console.error('[HomePage] Photo not found for unarchiving:', photoId);
+      return;
+    }
+
+    const updatedPhoto: Photo = {
+      ...photo,
+      archive_state: undefined, // Remove archive state completely
+      archived_at: undefined,
+      archive_reason: undefined
+    };
+
+    photosQuery.updatePhotoInCache(updatedPhoto);
   };
 
   const handleAnalyzePhotos = (mode: 'new' | 'all' | 'force') => {
@@ -249,21 +275,22 @@ const HomePageContent: React.FC = () => {
       </div>
 
       <div className="p-5 font-sans">
-        {/* Filter Section */}
-        {tagFiltering.availableFilterTags.length > 0 && (
-          <FilterBar
-            availableTags={tagFiltering.availableFilterTags}
-            activeTags={tagFiltering.activeTagIds}
-            onToggleTag={tagFiltering.toggleTag}
-            onClearAll={tagFiltering.clearAllFilters}
-            totalPhotos={photosQuery.allPhotos.length}
-            filteredCount={tagFiltering.filteredPhotos.length}
-            onRefresh={handleRefreshPhotos}
-            isRefreshing={photosQuery.isLoading}
-            onAnalyze={currentUser ? handleAnalyzePhotos : undefined}
-            isAnalyzing={currentUser ? scoutAi.isAnalyzing : false}
-          />
-        )}
+        {/* Filter Section - Always show FilterBar */}
+        <FilterBar
+          availableTags={tagFiltering.availableFilterTags}
+          activeTags={tagFiltering.activeTagIds}
+          onToggleTag={tagFiltering.toggleTag}
+          onClearAll={tagFiltering.clearAllFilters}
+          totalPhotos={photosQuery.allPhotos.length}
+          filteredCount={tagFiltering.filteredPhotos.length}
+          onRefresh={handleRefreshPhotos}
+          isRefreshing={photosQuery.isLoading}
+          onAnalyze={currentUser ? handleAnalyzePhotos : undefined}
+          isAnalyzing={currentUser ? scoutAi.isAnalyzing : false}
+          showArchivedPhotos={showArchivedPhotos}
+          onToggleArchivedPhotos={setShowArchivedPhotos}
+          archivedCount={archivedCount}
+        />
 
 
         {photosQuery.error && <p className="text-red-400 text-center mb-4 p-3 bg-red-900 border border-red-700 rounded-md">Error: {photosQuery.error.message}</p>}
@@ -328,6 +355,7 @@ const HomePageContent: React.FC = () => {
                 mockTagsData={[]} // For manually adding known tags, not AI ones
                 aiSuggestionData={aiData}
                 onFetchAiSuggestions={aiEnhancements.fetchAiSuggestions}
+                onUnarchivePhoto={handleUnarchivePhoto}
               />
             );
           })}

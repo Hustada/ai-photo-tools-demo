@@ -15,6 +15,7 @@
     "test:watch": "vitest --watch",
     "clean:api": "find api -name '*.js' -delete && find api -name '*.js.map' -delete",
     "vercel:dev": "npm run clean:api && vercel dev",
+    "dev:full": "npm run clean:api && vercel dev --listen 3000 & npm run dev",
     "blog:start": "tsx ./scripts/blog-start.ts",
     "blog:complete": "tsx ./scripts/blog-complete.ts",
     "blog:status": "tsx ./scripts/blog-status.ts",

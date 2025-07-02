@@ -3,7 +3,7 @@ import { useState, useCallback, useMemo } from 'react'
 import type { Photo, Tag } from '../types'
 
 export interface UseTagFilteringOptions {
-  // Future options can be added here if needed
+  showArchivedPhotos?: boolean; // Whether to include archived photos in results
 }
 
 export interface UseTagFilteringReturn {
@@ -24,6 +24,7 @@ export const useTagFiltering = (
   photos: Photo[],
   options: UseTagFilteringOptions = {}
 ): UseTagFilteringReturn => {
+  const { showArchivedPhotos = false } = options;
   const [activeTagIds, setActiveTagIds] = useState<string[]>([])
   const [filterLogic, setFilterLogic] = useState<'AND' | 'OR'>('OR')
 
@@ -51,11 +52,19 @@ export const useTagFiltering = (
 
   // Apply filtering logic to photos
   const filteredPhotos = useMemo(() => {
-    if (activeTagIds.length === 0) {
-      return photos
+    // First filter out archived photos unless showArchivedPhotos is true
+    let photosToFilter = photos;
+    if (!showArchivedPhotos) {
+      photosToFilter = photos.filter(photo => photo.archive_state !== 'archived');
     }
 
-    return photos.filter(photo => {
+    // If no tag filters are active, return all non-archived photos
+    if (activeTagIds.length === 0) {
+      return photosToFilter;
+    }
+
+    // Apply tag filtering
+    return photosToFilter.filter(photo => {
       if (!photo.tags || !Array.isArray(photo.tags)) {
         return false
       }
@@ -76,7 +85,7 @@ export const useTagFiltering = (
         )
       }
     })
-  }, [photos, activeTagIds, filterLogic])
+  }, [photos, activeTagIds, filterLogic, showArchivedPhotos])
 
   // Derived state
   const isFiltering = useMemo(() => {

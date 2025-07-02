@@ -12,6 +12,9 @@ interface FilterBarProps {
   isRefreshing?: boolean;
   onAnalyze?: (mode: 'new' | 'all' | 'force') => void;
   isAnalyzing?: boolean;
+  showArchivedPhotos?: boolean;
+  onToggleArchivedPhotos?: (show: boolean) => void;
+  archivedCount?: number;
 }
 
 
@@ -25,7 +28,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   onRefresh,
   isRefreshing,
   onAnalyze,
-  isAnalyzing
+  isAnalyzing,
+  showArchivedPhotos = false,
+  onToggleArchivedPhotos,
+  archivedCount = 0
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [analysisMode, setAnalysisMode] = useState<'new' | 'all' | 'force'>('new');
@@ -165,6 +171,21 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             >
               <path d="M7 10l5 5 5-5z"/>
             </svg>
+          </button>
+        )}
+        
+        {/* Show Archived Photos Toggle */}
+        {archivedCount > 0 && onToggleArchivedPhotos && (
+          <button
+            onClick={() => onToggleArchivedPhotos(!showArchivedPhotos)}
+            className={`px-4 py-3 sm:py-2 border transition-colors text-sm font-medium min-h-[44px] sm:min-h-[auto] flex items-center justify-center gap-2 ${
+              showArchivedPhotos 
+                ? 'bg-orange-600 text-white border-orange-600 hover:bg-orange-700' 
+                : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 hover:border-orange-500'
+            }`}
+          >
+            <span>{showArchivedPhotos ? 'Hide' : 'Show'} Archived Photos</span>
+            <span className="text-xs opacity-75">({archivedCount})</span>
           </button>
         )}
       </div>
