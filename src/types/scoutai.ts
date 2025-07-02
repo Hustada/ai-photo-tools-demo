@@ -121,6 +121,7 @@ export interface ScoutAiContextType {
   undoLastAction: (photos: Photo[], onPhotoUpdate: (photo: Photo) => void) => Promise<void>;
   clearUndoStack: () => void;
   clearSuggestions: () => void;
+  updateSuggestionStatus: (suggestionId: string, status: 'pending' | 'accepted' | 'rejected' | 'dismissed') => void;
   
   // Visual similarity functionality
   visualSimilarity: {

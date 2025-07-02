@@ -1,6 +1,7 @@
 // © 2025 Mark Hustad — MIT License
 
 import { companyCamService } from '../../services/companyCamService';
+import { persistentCache } from '../../utils/persistentCache';
 import type { Photo, Tag } from '../../types';
 
 // Local type for API enhancement response
@@ -103,13 +104,41 @@ export const fetchPhotosWithEnhancements = async (
   apiKey: string,
   page: number = 1,
   perPage: number = 20,
-  tagIds?: string[]
+  tagIds?: string[],
+  forceRefresh: boolean = false
 ): Promise<Photo[]> => {
-  console.log(`[photoQueries] Fetching photos with enhancements - page: ${page}, perPage: ${perPage}, tagIds:`, tagIds);
+  console.log(`[photoQueries] Fetching photos with enhancements - page: ${page}, perPage: ${perPage}, tagIds:`, tagIds, `forceRefresh: ${forceRefresh}`);
 
-  // 1. Fetch basic photos
+  // Check persistent cache first (only for page 1 and no tag filters and not forcing refresh)
+  if (page === 1 && (!tagIds || tagIds.length === 0) && !forceRefresh) {
+    if (persistentCache.hasFreshData()) {
+      const cached = persistentCache.getPhotos();
+      console.log(`[photoQueries] Using cached photos (${cached.totalCached} photos, cache age: ${persistentCache.getCacheInfo().cacheAge})`);
+      
+      // Apply archive states from localStorage to cached photos
+      const archivedPhotoIds = JSON.parse(localStorage.getItem('archivedPhotos') || '[]');
+      const photosWithArchiveState = cached.photos.map(photo => {
+        if (archivedPhotoIds.includes(photo.id)) {
+          return {
+            ...photo,
+            archive_state: 'archived' as const,
+            archived_at: Date.now(),
+            archive_reason: 'User archived for testing'
+          };
+        }
+        return photo;
+      });
+      
+      // Return the requested page from cache
+      const startIndex = (page - 1) * perPage;
+      const endIndex = startIndex + perPage;
+      return photosWithArchiveState.slice(startIndex, endIndex);
+    }
+  }
+
+  // 1. Fetch basic photos from API
   const basicPhotos = await companyCamService.getPhotos(apiKey, page, perPage, tagIds);
-  console.log(`[photoQueries] Fetched ${basicPhotos.length} basic photos`);
+  console.log(`[photoQueries] Fetched ${basicPhotos.length} basic photos from API`);
 
   if (basicPhotos.length === 0) {
     return [];
@@ -173,14 +202,27 @@ export const fetchPhotosWithEnhancements = async (
       }
     }
 
+    // Apply archive state from localStorage
+    const archivedPhotoIds = JSON.parse(localStorage.getItem('archivedPhotos') || '[]');
+    const isArchived = archivedPhotoIds.includes(basicPhoto.id);
+    
     return {
       ...basicPhoto,
       description: finalDescription,
       tags: finalTags,
+      archive_state: isArchived ? 'archived' as const : undefined,
+      archived_at: isArchived ? Date.now() : undefined,
+      archive_reason: isArchived ? 'User archived for testing' : undefined,
     };
   });
 
   console.log(`[photoQueries] Successfully enhanced ${enhancedPhotos.length} photos with tags and AI data`);
+  
+  // Save to persistent cache if this is page 1 and no filters
+  if (page === 1 && (!tagIds || tagIds.length === 0)) {
+    persistentCache.savePhotos(enhancedPhotos, page);
+  }
+  
   return enhancedPhotos;
 };
 

@@ -235,8 +235,10 @@ export const ScoutAiDemo: React.FC<ScoutAiDemoProps> = ({ photos, visible, onPho
       console.log('[ScoutAiDemo] Applying modified actions:', actions);
       await scoutAi.applyCurationActions(actions, photos, onPhotoUpdate);
       
-      // Mark suggestion as accepted and close modal
-      await scoutAi.acceptSuggestion(showDetails.id, photos, onPhotoUpdate);
+      // Mark suggestion as accepted WITHOUT re-applying original recommendations
+      // We just applied the user's custom selections, so don't override them
+      const updatedSuggestion = { ...showDetails, status: 'accepted' as const };
+      scoutAi.updateSuggestionStatus(showDetails.id, 'accepted');
       setShowDetails(null);
     } catch (error) {
       console.error('[ScoutAiDemo] Failed to apply changes:', error);

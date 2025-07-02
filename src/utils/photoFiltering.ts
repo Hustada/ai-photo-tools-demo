@@ -11,6 +11,7 @@ export interface FilterOptions {
   selectedPhotoIds?: string[];
   newPhotoDays?: number; // For 'smart' mode
   forceReanalysis?: boolean; // Ignore previous analysis
+  includeArchived?: boolean; // Include archived photos (default: false)
 }
 
 /**
@@ -20,26 +21,29 @@ export function filterPhotosForAnalysis(
   photos: Photo[], 
   options: FilterOptions
 ): Photo[] {
-  const { mode, startDate, endDate, selectedPhotoIds, newPhotoDays = 7, forceReanalysis = false } = options;
+  const { mode, startDate, endDate, selectedPhotoIds, newPhotoDays = 7, forceReanalysis = false, includeArchived = false } = options;
+  
+  // First filter out archived photos unless explicitly included
+  const filteredPhotos = includeArchived ? photos : photos.filter(photo => photo.archive_state !== 'archived');
 
   switch (mode) {
     case 'smart':
-      return getSmartFilteredPhotos(photos, newPhotoDays, forceReanalysis);
+      return getSmartFilteredPhotos(filteredPhotos, newPhotoDays, forceReanalysis);
       
     case 'date-range':
       if (!startDate || !endDate) {
         throw new Error('Start date and end date are required for date-range mode');
       }
-      return getPhotosInDateRange(photos, startDate, endDate, forceReanalysis);
+      return getPhotosInDateRange(filteredPhotos, startDate, endDate, forceReanalysis);
       
     case 'all':
-      return forceReanalysis ? photos : getUnanalyzedPhotos(photos);
+      return forceReanalysis ? filteredPhotos : getUnanalyzedPhotos(filteredPhotos);
       
     case 'selection':
       if (!selectedPhotoIds || selectedPhotoIds.length === 0) {
         throw new Error('Selected photo IDs are required for selection mode');
       }
-      return photos.filter(photo => selectedPhotoIds.includes(photo.id));
+      return filteredPhotos.filter(photo => selectedPhotoIds.includes(photo.id));
       
     default:
       throw new Error(`Unknown analysis mode: ${mode}`);
@@ -122,12 +126,13 @@ function getUnanalyzedPhotos(photos: Photo[]): Photo[] {
  * Get analysis mode description for UI display
  */
 export function getAnalysisModeDescription(options: FilterOptions): string {
-  const { mode, startDate, endDate, selectedPhotoIds, newPhotoDays = 7, forceReanalysis } = options;
+  const { mode, startDate, endDate, selectedPhotoIds, newPhotoDays = 7, forceReanalysis, includeArchived = false } = options;
 
   switch (mode) {
     case 'smart':
       const forceText = forceReanalysis ? ' (re-analyzing all)' : '';
-      return `New photos from last ${newPhotoDays} day${newPhotoDays === 1 ? '' : 's'}${forceText}`;
+      const smartArchiveText = includeArchived ? ' including archived' : ' excluding archived';
+      return `New photos from last ${newPhotoDays} day${newPhotoDays === 1 ? '' : 's'}${forceText}${smartArchiveText}`;
       
     case 'date-range':
       if (!startDate || !endDate) return 'Custom date range';
@@ -137,7 +142,8 @@ export function getAnalysisModeDescription(options: FilterOptions): string {
       return `${start} to ${end}${forceRangeText}`;
       
     case 'all':
-      return forceReanalysis ? 'All photos (re-analyzing)' : 'All unanalyzed photos';
+      const archiveText = includeArchived ? ' including archived' : ' excluding archived';
+      return forceReanalysis ? `All photos (re-analyzing${archiveText})` : `All unanalyzed photos${archiveText}`;
       
     case 'selection':
       const count = selectedPhotoIds?.length || 0;

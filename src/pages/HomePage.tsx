@@ -162,18 +162,19 @@ const HomePageContent: React.FC = () => {
     let filterOptions;
     switch (mode) {
       case 'new':
-        filterOptions = { mode: 'smart' as const, newPhotoDays: 30, forceReanalysis: false };
+        filterOptions = { mode: 'smart' as const, newPhotoDays: 30, forceReanalysis: false, includeArchived: false };
         break;
       case 'all':
-        filterOptions = { mode: 'all' as const, forceReanalysis: false }; // Skip already analyzed photos
+        filterOptions = { mode: 'all' as const, forceReanalysis: false, includeArchived: false }; // Skip already analyzed photos, exclude archived
         break;
       case 'force':
-        filterOptions = { mode: 'all' as const, forceReanalysis: true }; // Force reanalysis of all photos
+        filterOptions = { mode: 'all' as const, forceReanalysis: true, includeArchived: true }; // Force reanalysis of ALL photos including archived
         break;
     }
     
     console.log('[HomePage] Triggering analysis with mode:', mode, 'options:', filterOptions);
-    scoutAi.analyzeSimilarPhotos(photosQuery.photos, true, filterOptions);
+    // Use allPhotos instead of filtered photos to ensure we have access to all photos during action application
+    scoutAi.analyzeSimilarPhotos(photosQuery.allPhotos, true, filterOptions);
   };
 
   // Handle user context loading and errors
@@ -306,7 +307,7 @@ const HomePageContent: React.FC = () => {
         {currentUser && tagFiltering.filteredPhotos.length >= 2 && (scoutAi.isAnalyzing || scoutAi.suggestions.filter(s => s.status !== 'dismissed' && s.status !== 'rejected').length > 0) && (
           <div className="mb-6">
             <ScoutAiDemo
-              photos={tagFiltering.filteredPhotos}
+              photos={photosQuery.allPhotos}
               visible={true}
               onPhotoUpdate={(updatedPhoto: Photo) => {
                 // Update photo in cache after Scout AI suggestion is applied

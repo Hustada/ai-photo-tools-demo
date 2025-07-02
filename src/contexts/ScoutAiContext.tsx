@@ -501,6 +501,18 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     console.log('[Scout AI] Cleared undo stack');
   }, []);
 
+  // Update suggestion status without re-applying actions
+  const updateSuggestionStatus = useCallback((suggestionId: string, status: 'pending' | 'accepted' | 'rejected' | 'dismissed') => {
+    setSuggestions(prev => 
+      prev.map(suggestion => 
+        suggestion.id === suggestionId 
+          ? { ...suggestion, status }
+          : suggestion
+      )
+    );
+    console.log(`[Scout AI] Updated suggestion ${suggestionId} status to ${status}`);
+  }, []);
+
   const contextValue: ScoutAiContextType = {
     suggestions,
     userPreferences,
@@ -519,6 +531,7 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     undoLastAction,
     clearUndoStack,
     clearSuggestions,
+    updateSuggestionStatus,
     // Expose visual similarity functionality
     visualSimilarity: {
       state: visualSimilarity.state,

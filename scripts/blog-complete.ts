@@ -93,6 +93,35 @@ async function completeBlogSession() {
         console.log(`  Tags: ${generatedBlog.metadata.tags.join(', ')}`);
         console.log(`  Content Length: ${generatedBlog.content.length} characters`);
         
+        // Generate hero image with DALL-E
+        console.log('\n🎨 Generating hero image with DALL-E...');
+        try {
+          const blogId = `${activeSession.featureName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`;
+          
+          const imageResponse = await fetch('http://localhost:3000/api/generate-blog-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              blogId,
+              blogTitle: generatedBlog.metadata.title,
+              blogDescription: generatedBlog.metadata.description || activeSession.featureName,
+              style: 'technical'
+            })
+          });
+          
+          const imageResult = await imageResponse.json();
+          
+          if (imageResult.success) {
+            console.log(`✅ Hero image generated: ${imageResult.localPath}`);
+            console.log(`   Image URL: ${imageResult.imageUrl}`);
+            console.log(`   Prompt used: ${imageResult.prompt}`);
+          } else {
+            console.warn(`⚠️  Image generation failed: ${imageResult.error}`);
+          }
+        } catch (error) {
+          console.warn('⚠️  Image generation error:', error.message);
+        }
+        
         // TODO: In Phase 3D, we'll add the review and publishing workflow
         console.log('\n📤 Publishing to blog system...');
         console.log('(Note: Review and publishing workflow will be implemented in Phase 3D)');

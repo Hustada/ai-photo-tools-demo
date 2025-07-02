@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useState, useCallback, useMemo } from 'react';
 import { photoQueryKeys, fetchPhotosWithEnhancements } from '../lib/queries/photoQueries';
+import { persistentCache } from '../utils/persistentCache';
 import type { Photo } from '../types';
 
 interface UsePhotosQueryOptions {
@@ -65,11 +66,13 @@ export const usePhotosQuery = (options: UsePhotosQueryOptions = {}): UsePhotosQu
       if (!apiKey) {
         throw new Error('Please enter an API Key.');
       }
-      return fetchPhotosWithEnhancements(apiKey, currentPage, perPage, tagIds.length > 0 ? tagIds : undefined);
+      return fetchPhotosWithEnhancements(apiKey, currentPage, perPage, tagIds.length > 0 ? tagIds : undefined, false);
     },
     enabled: enabled && !!apiKey,
-    staleTime: 2 * 60 * 1000, // 2 minutes - photos don't change frequently
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes - photos don't change frequently
+    gcTime: 60 * 60 * 1000, // 1 hour - keep in memory longer
+    refetchOnWindowFocus: false, // Don't refetch when user comes back to tab
+    refetchOnMount: false, // Don't refetch on component mount if data exists
     retry: (failureCount, error) => {
       // Don't retry if it's an auth error (401/403)
       if (error && 'status' in error) {
@@ -147,8 +150,29 @@ export const usePhotosQuery = (options: UsePhotosQueryOptions = {}): UsePhotosQu
   const refresh = useCallback(() => {
     setCurrentPage(1);
     setAllFetchedPhotos([]);
-    refetch();
-  }, [refetch]);
+    // Clear persistent cache to force fresh API calls
+    persistentCache.clearPhotos();
+    // Clear React Query cache
+    queryClient.setQueryData(
+      photoQueryKeys.list(1, { tagIds }),
+      undefined
+    );
+    // Invalidate all photo queries to force fresh data
+    queryClient.invalidateQueries({
+      queryKey: photoQueryKeys.lists(),
+      exact: false
+    });
+    // Manually call the query function with forceRefresh=true
+    if (apiKey) {
+      fetchPhotosWithEnhancements(apiKey, 1, perPage, tagIds.length > 0 ? tagIds : undefined, true)
+        .then((freshPhotos) => {
+          queryClient.setQueryData(
+            photoQueryKeys.list(1, { tagIds }),
+            freshPhotos
+          );
+        });
+    }
+  }, [queryClient, apiKey, perPage, tagIds]);
 
   const setPage = useCallback((page: number) => {
     setCurrentPage(page);
