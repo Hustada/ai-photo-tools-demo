@@ -95,6 +95,7 @@ async function completeBlogSession() {
         
         // Generate hero image with DALL-E
         console.log('\n🎨 Generating hero image with DALL-E...');
+        let heroImageUrl = '';
         try {
           const blogId = `${activeSession.featureName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`;
           
@@ -115,6 +116,7 @@ async function completeBlogSession() {
             console.log(`✅ Hero image generated: ${imageResult.localPath}`);
             console.log(`   Image URL: ${imageResult.imageUrl}`);
             console.log(`   Prompt used: ${imageResult.prompt}`);
+            heroImageUrl = imageResult.imageUrl;
           } else {
             console.warn(`⚠️  Image generation failed: ${imageResult.error}`);
           }
@@ -122,9 +124,47 @@ async function completeBlogSession() {
           console.warn('⚠️  Image generation error:', error.message);
         }
         
-        // TODO: In Phase 3D, we'll add the review and publishing workflow
+        // Save blog post to the blog system
         console.log('\n📤 Publishing to blog system...');
-        console.log('(Note: Review and publishing workflow will be implemented in Phase 3D)');
+        try {
+          const blogPost = {
+            metadata: {
+              id: `${activeSession.featureName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`,
+              title: generatedBlog.metadata.title,
+              author: generatedBlog.metadata.author,
+              date: new Date().toISOString(),
+              description: generatedBlog.metadata.description || activeSession.featureName,
+              filename: `${activeSession.featureName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.md`,
+              readingTime: generatedBlog.metadata.readingTime,
+              tags: generatedBlog.metadata.tags,
+              heroImage: heroImageUrl
+            },
+            content: generatedBlog.content,
+            rawContent: generatedBlog.content,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            gitCommitHash: currentCommit.substring(0, 8),
+            branchName: currentBranch
+          };
+
+          const publishResponse = await fetch('http://localhost:3000/api/blog-posts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(blogPost)
+          });
+
+          const publishResult = await publishResponse.json();
+          
+          if (publishResult.success) {
+            console.log(`✅ Blog post published successfully!`);
+            console.log(`   Blog ID: ${blogPost.metadata.id}`);
+            console.log(`   View at: http://localhost:3000/blog/${blogPost.metadata.id}`);
+          } else {
+            console.warn(`⚠️  Blog publishing failed: ${publishResult.error}`);
+          }
+        } catch (error) {
+          console.warn('⚠️  Blog publishing error:', error.message);
+        }
         
       } catch (error) {
         console.error('❌ AI generation failed:', (error as Error).message);

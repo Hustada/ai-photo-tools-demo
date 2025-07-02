@@ -6,6 +6,25 @@ import { loadBlogPost, getAllBlogPosts, BlogPostContent, BlogPostMetadata } from
 import { generateBlogHeroImage } from '../utils/imageGeneration';
 import BlogArticle from '../components/BlogArticle';
 
+// Helper function to format dates for display
+const formatDisplayDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    // Check if it's a valid date
+    if (isNaN(date.getTime())) {
+      // If not a valid date, return as-is (might already be formatted)
+      return dateString;
+    }
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  } catch {
+    return dateString;
+  }
+};
+
 const BlogPage: React.FC = () => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState<BlogPostMetadata[]>([]);
@@ -33,11 +52,7 @@ const BlogPage: React.FC = () => {
                 id: post.metadata.id,
                 title: post.metadata.title,
                 author: post.metadata.author,
-                date: new Date(post.createdAt).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                }),
+                date: post.metadata.date,
                 description: post.metadata.excerpt || post.metadata.description || 'Technical development insights',
                 filename: post.metadata.slug || post.metadata.id,
                 readingTime: post.metadata.readingTime,
@@ -249,7 +264,7 @@ const BlogPage: React.FC = () => {
                         <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
                           <span>By {post.author}</span>
                           <span>•</span>
-                          <span>{post.date}</span>
+                          <span>{formatDisplayDate(post.date)}</span>
                           <span>•</span>
                           <span>{post.readingTime} min read</span>
                         </div>

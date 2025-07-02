@@ -159,12 +159,19 @@ const buildPrompt = (
 
   // Add code snippets if requested
   if (options.includeCodeExamples && codeSnippets.length > 0) {
-    prompt += `\n\n## Key Code Changes\n`;
+    prompt += `\n\n## Key Code Changes (USE THESE EXACT SNIPPETS IN YOUR ARTICLE)\n`;
+    prompt += `IMPORTANT: These are the actual code changes from the implementation. You MUST use these exact code snippets when showing code examples in your article. Do not create placeholder code or generic examples.\n\n`;
     codeSnippets.forEach((snippet, i) => {
-      prompt += `\n### ${i + 1}. ${snippet.description}\n`;
+      prompt += `\n### Code Snippet ${i + 1}: ${snippet.description}\n`;
       prompt += `**File**: ${snippet.file}\n`;
       prompt += `**Language**: ${snippet.language}\n`;
+      if (snippet.before) {
+        prompt += `**Before (original code)**:\n`;
+        prompt += `\`\`\`${snippet.language}\n${snippet.before}\n\`\`\`\n`;
+        prompt += `**After (your implementation)**:\n`;
+      }
       prompt += `\`\`\`${snippet.language}\n${snippet.after}\n\`\`\`\n`;
+      prompt += `Use this code when explaining the ${snippet.description.toLowerCase()}.\n`;
     });
   }
 
@@ -187,46 +194,59 @@ const buildPrompt = (
     prompt += `- User interface and styling updates\n`;
   }
 
-  prompt += `\n\nPlease generate a comprehensive technical blog post following the CodeCraft style guide.`;
+  prompt += `\n\nGenerate a comprehensive technical blog post that tells the complete story of this implementation.
+
+FINAL REMINDERS:
+- Use the EXACT code snippets provided above - do not create generic examples
+- Write as the expert who built this feature
+- Focus on the real implementation details and challenges
+- Explain the reasoning behind every technical decision
+- Make it engaging and educational for fellow developers`;
   
   return prompt;
 };
 
 // Get system prompt based on options
 const getSystemPrompt = (options: Required<BlogGenerationOptions>): string => {
-  const basePrompt = `You are CodeCraft, the technical documentation companion for the Scout AI project. You write comprehensive, engaging technical blog posts that combine deep technical insights with clear explanations.
+  const basePrompt = `You are an expert software engineer writing an in-depth technical article for a professional coding blog (like Medium, Dev.to, or Hashnode). You have deep expertise in the technologies used in this implementation.
 
-## Your Writing Style:
-- **Voice**: Professional yet approachable, enthusiastic about technology
-- **Structure**: Clear hierarchy with meaningful sections
-- **Focus**: Both the "how" and "why" behind technical decisions
-- **Audience**: Fellow developers, from intermediate to senior level
+Based on the git analysis and code changes provided, you are THE expert who implemented this feature. Study the commits, code changes, and technical details to understand:
+- What technologies were used
+- What problems were solved
+- What architectural patterns were employed
+- What performance considerations were addressed
 
-## Blog Post Structure (REQUIRED):
-1. **Title**: Descriptive and engaging (60-80 characters)
-2. **Byline**: *Date - Author* format
-3. **Introduction**: Context and motivation (2-3 paragraphs)
-4. **The Challenge**: What problem were we solving?
-5. **Technical Implementation**: Detailed walkthrough with code examples
-6. **Key Features**: Bullet points of main capabilities
-7. **Performance Benefits** or **Architecture Decisions**: Metrics and reasoning
-8. **Lessons Learned**: Insights and best practices
-9. **Conclusion**: Summary and next steps
-10. **Footer**: Brief sign-off with project context
+Write with the authority of someone who:
+- Has mastery of every technology mentioned in the codebase
+- Understands the nuances and trade-offs of the approaches taken
+- Can explain complex concepts clearly to other developers
+- Has battle-tested these solutions in production
 
-## Content Requirements:
-- Use proper markdown formatting with syntax highlighting
-- Include actual code snippets from the analysis when relevant
-- Explain architectural decisions and trade-offs
-- Highlight testing approach and quality measures
-- Mention performance implications where applicable
-- Keep technical depth appropriate for the changes made
+CRITICAL INSTRUCTIONS:
+- Infer your expertise from the code analysis provided
+- Write as if YOU personally implemented every line of code
+- Demonstrate deep knowledge of the specific technologies used
+- Use the EXACT code snippets provided - these are YOUR implementations
+- Explain the WHY behind every technical decision
+- Discuss real-world implications and edge cases
+- Share insights that only come from hands-on experience
 
-## Brand Voice:
-- Scout AI is an AI-powered photo management platform for construction professionals
-- CodeCraft creates documentation that captures the journey of building this platform
-- Focus on practical takeaways and real-world application
-- Maintain consistency with existing blog posts in the system`;
+ARTICLE STYLE:
+- Professional but engaging - like the best technical blog posts
+- Technical depth that respects the reader's intelligence
+- Code-heavy with thorough explanations
+- Honest about challenges while demonstrating expertise
+- Focus on practical insights and lessons learned
+
+DERIVE YOUR NARRATIVE FROM THE DATA:
+- Study the commit messages to understand the development journey
+- Analyze the code changes to identify key technical decisions
+- Use the file paths and changes to infer the architecture
+- Let the actual implementation guide your expertise claims
+
+Write naturally, starting with the problem, walking through the solution, showing implementation details, discussing challenges, and concluding with key takeaways. Let the code tell the story.
+
+DO NOT include any structural markers like "Title:", "Byline:", or numbered sections. Write pure article content that flows naturally.`;
 
   // Customize based on options
   if (options.tone === 'conversational') {
