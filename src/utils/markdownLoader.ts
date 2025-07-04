@@ -471,19 +471,19 @@ Our TDD approach resulted in robust test coverage:
 
 ## Lessons Learned
 
-### 1. **TDD Accelerates Development**
+### 1. TDD Accelerates Development
 Writing tests first forced us to think through edge cases and API design before implementation. This prevented architectural mistakes and reduced debugging time.
 
-### 2. **Browser API Mocking is Complex**
+### 2. Browser API Mocking is Complex
 Testing components that rely on browser APIs (Intersection Observer, Image, Canvas) requires comprehensive mocking strategies. We invested time in proper mocks that paid off in test reliability.
 
-### 3. **State Management Simplicity**
+### 3. State Management Simplicity
 Using local component state with \`useState\` was sufficient for this use case. We avoided over-engineering with complex state management libraries.
 
-### 4. **Performance vs. Complexity Trade-offs**
+### 4. Performance vs. Complexity Trade-offs
 The intersection observer adds complexity but delivers significant performance benefits. The trade-off is worthwhile for image-heavy applications.
 
-### 5. **CSS Animations Enhance UX**
+### 5. CSS Animations Enhance UX
 The blur-to-sharp transition and shimmer effects significantly improve perceived performance, even when actual load times are unchanged.
 
 ## Conclusion

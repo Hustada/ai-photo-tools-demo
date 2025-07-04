@@ -99,11 +99,110 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
 }) => {
   return (
     <div className={`markdown-content ${className}`}>
+      <style>{`
+        .markdown-content .anchor-link {
+          margin-left: 0.5rem;
+          text-decoration: none;
+          color: #d1d5db;
+          opacity: 0;
+          transition: opacity 0.2s ease, color 0.2s ease;
+          font-weight: normal;
+          font-size: 0.9em;
+          position: relative;
+        }
+        
+        .markdown-content .anchor-link-symbol {
+          display: inline-block;
+          padding: 0 0.25rem;
+        }
+        
+        .markdown-content h1:hover .anchor-link,
+        .markdown-content h2:hover .anchor-link,
+        .markdown-content h3:hover .anchor-link,
+        .markdown-content h4:hover .anchor-link,
+        .markdown-content h5:hover .anchor-link,
+        .markdown-content h6:hover .anchor-link {
+          opacity: 1;
+        }
+        
+        .markdown-content .anchor-link:hover {
+          color: #f97316;
+          text-decoration: none;
+        }
+        
+        .markdown-content .anchor-link:focus {
+          opacity: 1;
+          outline: 2px solid #f97316;
+          outline-offset: 2px;
+        }
+        
+        /* Ensure headings themselves don't appear as links */
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3,
+        .markdown-content h4,
+        .markdown-content h5,
+        .markdown-content h6 {
+          color: inherit;
+          text-decoration: none !important;
+          cursor: text;
+          position: relative;
+        }
+        
+        .markdown-content h1:hover,
+        .markdown-content h2:hover,
+        .markdown-content h3:hover,
+        .markdown-content h4:hover,
+        .markdown-content h5:hover,
+        .markdown-content h6:hover {
+          color: inherit;
+          text-decoration: none !important;
+        }
+        
+        /* If headings are wrapped in anchors, style those too */
+        .markdown-content h1 a:not(.anchor-link),
+        .markdown-content h2 a:not(.anchor-link),
+        .markdown-content h3 a:not(.anchor-link),
+        .markdown-content h4 a:not(.anchor-link),
+        .markdown-content h5 a:not(.anchor-link),
+        .markdown-content h6 a:not(.anchor-link) {
+          color: inherit !important;
+          text-decoration: none !important;
+          font-weight: inherit;
+        }
+        
+        .markdown-content h1 a:not(.anchor-link):hover,
+        .markdown-content h2 a:not(.anchor-link):hover,
+        .markdown-content h3 a:not(.anchor-link):hover,
+        .markdown-content h4 a:not(.anchor-link):hover,
+        .markdown-content h5 a:not(.anchor-link):hover,
+        .markdown-content h6 a:not(.anchor-link):hover {
+          color: inherit !important;
+          text-decoration: none !important;
+        }
+      `}</style>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={[
           rehypeSlug,
-          [rehypeAutolinkHeadings, { behavior: 'wrap' }]
+          [rehypeAutolinkHeadings, { 
+            behavior: 'append',
+            properties: {
+              className: ['anchor-link'],
+              'aria-label': 'Link to this section'
+            },
+            content: {
+              type: 'element',
+              tagName: 'span',
+              properties: {
+                className: ['anchor-link-symbol']
+              },
+              children: [{
+                type: 'text',
+                value: '#'
+              }]
+            }
+          }]
         ]}
         components={{
           // Custom heading components with better styling
