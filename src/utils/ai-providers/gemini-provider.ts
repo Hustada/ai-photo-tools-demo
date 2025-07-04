@@ -11,8 +11,8 @@ export class GeminiProvider implements AIProvider {
 
   constructor(config: AIProviderConfig) {
     this.client = new GoogleGenerativeAI(config.apiKey);
-    // Default to Gemini 2.5 Flash for fast, cost-effective generation
-    this.model = config.model || 'gemini-2.5-flash';
+    // Default to Gemini 2.5 Pro for latest capabilities  
+    this.model = config.model || 'gemini-2.5-pro';
   }
 
   async generateContent(options: AIGenerationOptions): Promise<string> {
