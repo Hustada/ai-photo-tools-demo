@@ -77,6 +77,8 @@ const DuplicateAnalysisPage: React.FC = () => {
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoMetadata | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<DuplicateGroup | null>(null);
   const [analysisFilter, setAnalysisFilter] = useState<'all' | 'duplicates' | 'burst_shots' | 'unique'>('all');
+  const [visualAnalysisMode, setVisualAnalysisMode] = useState<'metadata' | 'visual_review' | 'claude_analysis'>('metadata');
+  const [currentlyAnalyzing, setCurrentlyAnalyzing] = useState<PhotoMetadata | null>(null);
 
   // Fetch photos from CompanyCam API
   const fetchPhotos = async (maxPhotos: number = 50) => {
