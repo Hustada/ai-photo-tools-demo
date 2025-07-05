@@ -55,6 +55,7 @@ const getAIProvider = (): AIProvider => {
     case 'gemini':
       apiKey = process.env.GEMINI_API_KEY;
       model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+      console.log('[BlogGenerator] GEMINI_API_KEY from env:', apiKey?.substring(0, 20) + '...');
       if (!apiKey) {
         console.warn('[BlogGenerator] GEMINI_API_KEY not found in environment variables');
       }
