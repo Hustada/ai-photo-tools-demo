@@ -8,11 +8,27 @@ import { aiProviderFactory, type AIProvider, type AIProviderType } from './ai-pr
 // Note: BlogPost type will be imported when needed for publishing
 
 export interface BlogGenerationOptions {
+  // Document type for different team documentation needs
+  documentType?: 'feature-doc' | 'architecture-doc' | 'process-doc' | 'technical-spec' | 'implementation-guide';
+  
+  // Traditional style options (kept for backward compatibility)
   style?: 'technical' | 'tutorial' | 'overview' | 'deep-dive';
+  
+  // Team documentation tone
   tone?: 'professional' | 'conversational' | 'educational';
+  
+  // Target audience for the documentation
+  audience?: 'team-internal' | 'cross-team' | 'stakeholders' | 'new-hires';
+  
+  // Content inclusions
   includeCodeExamples?: boolean;
   includeDiagrams?: boolean;
+  includeTestingDetails?: boolean;
+  includePerformanceMetrics?: boolean;
+  
+  // Documentation depth and length
   targetLength?: 'short' | 'medium' | 'long';
+  technicalDepth?: 'high-level' | 'detailed' | 'comprehensive';
 }
 
 export interface GeneratedBlog {
@@ -78,11 +94,25 @@ export const generateBlogPost = async (
   console.log(`[BlogGenerator] Generating blog post for: ${session.featureName}`);
   
   const defaultOptions: Required<BlogGenerationOptions> = {
+    // Team documentation defaults
+    documentType: 'feature-doc',
+    audience: 'team-internal',
+    technicalDepth: 'detailed',
+    
+    // Traditional options (for backward compatibility)
     style: 'technical',
     tone: 'professional',
+    
+    // Content inclusions
     includeCodeExamples: true,
     includeDiagrams: false,
+    includeTestingDetails: true,
+    includePerformanceMetrics: false,
+    
+    // Length and depth
     targetLength: 'medium',
+    
+    // Apply user overrides
     ...options
   };
   
@@ -226,64 +256,62 @@ FINAL REMINDERS:
 
 // Get system prompt based on options
 const getSystemPrompt = (options: Required<BlogGenerationOptions>): string => {
-  const basePrompt = `You are an expert software engineer writing an engaging, narrative-driven technical article for a professional coding blog (like Medium, Dev.to, or Hashnode). You have deep expertise in the technologies used and a talent for storytelling.
+  const basePrompt = `You are a senior software engineer creating professional technical documentation for your development team. This documentation will be used for knowledge sharing, onboarding new team members, and maintaining institutional knowledge about the codebase.
 
-NARRATIVE APPROACH:
-- Start with a compelling, personal anecdote that illustrates the problem
-- Use specific details (day of week, time, sensory details) to make it relatable
-- Build tension and urgency around the technical challenge
-- Show the emotional journey alongside the technical solution
-- Include moments of frustration, breakthrough, and satisfaction
+DOCUMENTATION PURPOSE:
+- Provide clear, structured information about implementation decisions
+- Enable knowledge transfer between team members
+- Document technical rationale for future reference
+- Create consistent, professional documentation across the team
+- Support onboarding and cross-team collaboration
 
-Based on the git analysis and code changes provided, you are THE expert who implemented this feature. Study the commits, code changes, and technical details to understand:
-- What technologies were used
-- What problems were solved
-- What architectural patterns were employed
-- What performance considerations were addressed
+Based on the git analysis and code changes provided, document what the team implemented. Study the commits, code changes, and technical details to understand:
+- What problems were solved and why they needed solving
+- What technologies and architectural patterns were used
+- What design decisions were made and the reasoning behind them
+- What trade-offs were considered and why specific approaches were chosen
 
-Write with the authority of someone who:
-- Has personally debugged these exact issues at 2 AM
-- Knows the frustration of silent failures and elusive bugs
-- Has celebrated the victories when the solution finally works
-- Can explain complex concepts through relatable metaphors
-- Has battle-tested these solutions in production
+Write from a team perspective with the authority of:
+- Deep understanding of the technical requirements and constraints
+- Knowledge of the codebase architecture and patterns
+- Awareness of team coding standards and best practices
+- Understanding of the product and business context
 
-CRITICAL INSTRUCTIONS:
-- Open with a vivid scene that sets up the technical problem
-- Use metaphors and analogies to explain complex concepts
-- Include personal insights and "aha!" moments
-- Write as if YOU personally implemented every line of code
-- Use the EXACT code snippets provided - these are YOUR implementations
-- Explain the WHY behind every technical decision through story
-- Show the iterative process - what didn't work and why
-- Share insights that only come from hands-on experience
+CRITICAL REQUIREMENTS:
+- Use clear, professional language suitable for technical teams
+- Focus on technical decisions and their rationale
+- Use the EXACT code snippets provided - these are actual implementations
+- Explain the WHY behind technical decisions with concrete reasoning
+- Document the process: what approaches were considered and why the final solution was chosen
+- Include actionable insights that help future development
 
-ARTICLE STYLE:
-- Narrative-driven with technical depth
-- Personal and relatable while maintaining expertise
-- Use phrases like "It was a Tuesday afternoon when..." or "After hours of debugging..."
-- Include emotional context: frustration, curiosity, satisfaction
-- Code examples are framed as discoveries in your journey
-- Technical explanations flow naturally from the narrative
-- Build to a satisfying resolution with clear takeaways
+DOCUMENTATION STYLE:
+- Professional, clear, and well-structured
+- Team-oriented language ("we implemented", "the team decided")
+- Technical depth with accessible explanations
+- Objective reporting of implementation details
+- Focus on knowledge transfer and decision documentation
+- Scannable format with clear sections and bullet points
 
-STRUCTURE FLOW:
-1. Hook with a relatable problem scenario
-2. Build tension around the technical challenge
-3. Walk through discovery and failed attempts
-4. Present the solution as a breakthrough moment
-5. Demonstrate implementation with real code
-6. Reflect on lessons learned with wisdom gained
+STANDARD STRUCTURE:
+1. Problem Statement - What needed to be solved and why
+2. Technical Approach - High-level solution overview
+3. Implementation Details - Key code changes and architecture
+4. Design Decisions - Why specific approaches were chosen
+5. Trade-offs and Alternatives - What else was considered
+6. Testing and Validation - How the solution was verified
+7. Lessons Learned - Key insights for future development
+8. Next Steps - Follow-up work or improvements needed
 
-DERIVE YOUR NARRATIVE FROM THE DATA:
-- Use commit timestamps to create a timeline
-- Transform error messages into debugging war stories
-- Convert architectural decisions into thoughtful deliberations
-- Turn test results into validation moments
+DERIVE CONTENT FROM THE DATA:
+- Use commit messages to understand the development process
+- Extract design decisions from code changes and file structures
+- Identify architectural patterns from the implementation
+- Document the technical rationale based on the actual changes made
 
-Write naturally and conversationally, as if telling a colleague about your experience over coffee. Let the code and commits inspire your story.
+Write in a clear, professional tone that serves as authoritative team documentation. Focus on technical substance and decision-making rather than personal experience.
 
-DO NOT include any structural markers like "Title:", "Byline:", or numbered sections. Write pure article content that flows naturally.`;
+DO NOT include any structural markers like "Title:", "Byline:", or numbered sections. Write the documentation content directly.`;
 
   // Customize based on options
   if (options.tone === 'conversational') {
@@ -296,6 +324,33 @@ DO NOT include any structural markers like "Title:", "Byline:", or numbered sect
     basePrompt += `\n\n**Style Adjustment**: Structure as a step-by-step tutorial with actionable instructions.`;
   } else if (options.style === 'deep-dive') {
     basePrompt += `\n\n**Style Adjustment**: Provide extensive technical depth and comprehensive analysis.`;
+  }
+
+  // Document type customizations
+  if (options.documentType === 'architecture-doc') {
+    basePrompt += `\n\n**Document Type**: Focus on architectural decisions, system design patterns, and high-level component interactions. Include diagrams and design rationale.`;
+  } else if (options.documentType === 'process-doc') {
+    basePrompt += `\n\n**Document Type**: Document team processes, workflows, and procedures. Focus on step-by-step processes and team collaboration patterns.`;
+  } else if (options.documentType === 'technical-spec') {
+    basePrompt += `\n\n**Document Type**: Create detailed technical specifications with precise requirements, API contracts, and implementation guidelines.`;
+  } else if (options.documentType === 'implementation-guide') {
+    basePrompt += `\n\n**Document Type**: Provide step-by-step implementation guidance with code examples, setup instructions, and troubleshooting tips.`;
+  }
+
+  // Audience customizations
+  if (options.audience === 'cross-team') {
+    basePrompt += `\n\n**Audience**: Write for developers from other teams. Provide more context about domain-specific concepts and avoid team-internal jargon.`;
+  } else if (options.audience === 'stakeholders') {
+    basePrompt += `\n\n**Audience**: Include business context and impact. Balance technical detail with higher-level explanations suitable for non-technical stakeholders.`;
+  } else if (options.audience === 'new-hires') {
+    basePrompt += `\n\n**Audience**: Provide extra context about codebase patterns, team conventions, and foundational concepts. Include links to related documentation.`;
+  }
+
+  // Technical depth customizations
+  if (options.technicalDepth === 'high-level') {
+    basePrompt += `\n\n**Technical Depth**: Focus on concepts and decisions rather than detailed implementation. Suitable for overview and planning purposes.`;
+  } else if (options.technicalDepth === 'comprehensive') {
+    basePrompt += `\n\n**Technical Depth**: Include exhaustive technical detail, edge cases, performance considerations, and complete implementation context.`;
   }
 
   return basePrompt;
