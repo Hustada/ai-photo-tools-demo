@@ -171,29 +171,29 @@ async function completeBlogSession() {
           console.warn('⚠️  Blog publishing error:', error.message);
         }
         
+        // Complete the session only if AI generation succeeded
+        const completedSession = completeSession();
+        
+        console.log('\n✅ Documentation session completed!');
+        console.log(`   Blog ID: ${generatedBlog.metadata.title}`);
+        console.log(`   Content Length: ${generatedBlog.content.length} characters`);
+        
+        // Clean up the session file since it's completed successfully
+        const { cleanupSession } = await import('../src/utils/blogSession.js');
+        cleanupSession();
+        
       } catch (error) {
         console.error('❌ AI generation failed:', (error as Error).message);
         console.log('Blog analysis completed successfully, but AI generation encountered an error.');
+        console.log('\n⚠️  Session remains active. Fix the API key issue and run "npm run blog:complete" again.');
+        console.log('Or cancel with: npm run blog:cancel');
+        process.exit(1);
       }
+    } else {
+      console.log('\n⚠️  Session remains active. Set up your API key and run "npm run blog:complete" again.');
+      console.log('Or cancel with: npm run blog:cancel');
+      process.exit(1);
     }
-    
-    // Complete the session
-    const completedSession = completeSession();
-    
-    console.log('\n✅ Documentation session completed!');
-    console.log('\nNext steps (coming in Phase 3B-3C):');
-    console.log('  ✨ AI will analyze your git changes');
-    console.log('  📝 Generate comprehensive blog post');
-    console.log('  🖼️  Create hero image with DALL-E');
-    console.log('  📤 Publish to blog system');
-    
-    console.log('\nFor now, you can:');
-    console.log('  1. Start a new session: npm run blog:start "Next Feature"');
-    console.log('  2. Check session status: npm run blog:status');
-    
-    // Clean up the session file since it's completed
-    const { cleanupSession } = await import('../src/utils/blogSession.js');
-    cleanupSession();
     
   } catch (error) {
     console.error('❌ Failed to complete blog session:', (error as Error).message);
