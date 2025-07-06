@@ -126,6 +126,49 @@ Scout AI is a functional proof-of-concept demonstrating AI integration possibili
 - AI processing costs scale with usage
 - Sample images included for testing
 
+## CodeCraft Documentation System
+
+Scout AI includes **CodeCraft**, an intelligent automated documentation system that transforms your development work into comprehensive technical documentation.
+
+### How CodeCraft Works
+
+CodeCraft tracks your git commits and code changes, then uses AI to generate professional technical documentation automatically. Instead of manually writing documentation, CodeCraft watches your development session and creates detailed blog posts about what you built.
+
+### Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm run docs:start "Feature Name"` | Start documentation session |
+| `npm run docs:status` | Check current session status |
+| `npm run docs:complete` | Generate documentation and complete session |
+| `npm run docs:cancel` | Cancel current session |
+| `npm run docs:preview` | Preview generated content |
+| `npm run docs:publish` | Publish documentation |
+| `npm run docs:cleanup` | Clean up stale sessions |
+
+### Basic Workflow
+
+1. **Start Session**: `npm run docs:start "Your Feature Name"`
+2. **Develop Normally**: Make commits as usual
+3. **Generate Documentation**: `npm run docs:complete`
+
+CodeCraft analyzes your actual code changes and generates professional documentation with:
+- Technical overview and architecture decisions
+- Real code examples from your commits
+- Performance considerations and best practices
+- Comprehensive change analysis and rationale
+
+### AI-Powered Analysis
+
+CodeCraft uses advanced AI (Gemini 2.5 Pro or OpenAI GPT-4) to:
+- Analyze git diffs and commit history
+- Extract meaningful code snippets
+- Identify architectural patterns
+- Generate technical explanations
+- Create professional documentation
+
+Perfect for maintaining comprehensive project documentation without the manual effort.
+
 ## API Endpoints
 
 - `/api/suggest-ai-tags` - Full AI analysis pipeline
