@@ -17,6 +17,15 @@ interface VisualAnalysisRequest {
   }>;
 }
 
+interface PhotoQualityMetrics {
+  sharpness: number;      // 0-1: Focus quality, motion blur detection
+  composition: number;    // 0-1: Rule of thirds, framing, balance
+  lighting: number;       // 0-1: Exposure, contrast, dynamic range
+  subjectClarity: number; // 0-1: Main subject visibility and clarity
+  overallQuality: number; // 0-1: Combined quality score
+  qualityNotes: string;   // Specific observations about quality
+}
+
 interface VisualAnalysisResult {
   photoId: string;
   decision: 'duplicate' | 'burst_shot' | 'similar' | 'unique';
@@ -26,6 +35,7 @@ interface VisualAnalysisResult {
   technicalNotes: string;
   relatedPhotos: string[];
   patterns: string[];
+  qualityMetrics?: PhotoQualityMetrics; // Quality assessment for burst sequences
 }
 
 interface VisualAnalysisResponse {
@@ -37,6 +47,8 @@ interface VisualAnalysisResponse {
     reasoning: string;
     recommendation: string;
     confidence: number;
+    bestPhotoId?: string;        // ID of the highest quality photo in the group
+    qualityRanking?: string[];   // Photo IDs ordered by quality (best first)
   }>;
   metadata: {
     analysisTime: string;
@@ -127,7 +139,7 @@ async function performClaudeVisionAnalysis(
     ];
     
     // Create detailed analysis prompt for Claude Vision
-    const analysisPrompt = `You are analyzing construction/building photos for duplicate detection. Compare the FIRST photo with the other ${Math.min(comparisonPhotoUrls.length, 4)} photos.
+    const analysisPrompt = `You are analyzing construction/building photos for duplicate detection and quality assessment. Compare the FIRST photo with the other ${Math.min(comparisonPhotoUrls.length, 4)} photos.
 
 First photo (main): taken at ${new Date(mainMetadata.captured_at * 1000).toISOString()}
 Comparison photos: ${comparisonMetadata.slice(0, 4).map((meta, i) => `Photo ${i+2}: taken ${Math.abs(meta.captured_at - mainMetadata.captured_at)} seconds ${meta.captured_at > mainMetadata.captured_at ? 'later' : 'earlier'}`).join(', ')}
@@ -141,12 +153,20 @@ Analyze the FIRST photo and determine:
 
 IMPORTANT: Burst shots are typically taken within 1-10 seconds of each other, showing the same scene with slight variations.
 
+For burst shots or duplicates, also assess the QUALITY of the first photo:
+- **Sharpness** (0-1): Is the subject in focus? Any motion blur or camera shake?
+- **Composition** (0-1): Rule of thirds, framing, balance, professional appearance
+- **Lighting** (0-1): Proper exposure, good contrast, no harsh shadows or blown highlights
+- **Subject Clarity** (0-1): Is the main construction element clearly visible and unobstructed?
+- **Overall Quality** (0-1): Combined assessment for construction documentation purposes
+
 Focus on:
 - Visual composition and framing
 - Subject matter and scene content
 - Camera angle and perspective
 - Construction/building elements visible
 - Whether photos show the same work area or building feature
+- Photo quality for documentation purposes
 
 Provide your analysis in this JSON format:
 {
@@ -155,8 +175,18 @@ Provide your analysis in this JSON format:
   "reasoning": "Detailed explanation of why you classified it this way",
   "visualObservations": "What you observed in the photos visually",
   "relatedPhotoIndices": [2, 3],
-  "patterns": ["same_angle", "identical_framing"]
-}`;
+  "patterns": ["same_angle", "identical_framing"],
+  "qualityAssessment": {
+    "sharpness": 0.85,
+    "composition": 0.9,
+    "lighting": 0.8,
+    "subjectClarity": 0.95,
+    "overallQuality": 0.88,
+    "qualityNotes": "Sharp focus on main subject, well-composed with good lighting"
+  }
+}
+
+Note: Only include qualityAssessment if decision is "burst_shot" or "duplicate"`;
     
     // Make the actual Claude API call
     const response = await anthropic.messages.create({
@@ -213,6 +243,19 @@ Provide your analysis in this JSON format:
       })
       .filter(Boolean);
     
+    // Parse quality assessment if provided
+    let qualityMetrics: PhotoQualityMetrics | undefined;
+    if (analysisResult.qualityAssessment && (analysisResult.decision === 'burst_shot' || analysisResult.decision === 'duplicate')) {
+      qualityMetrics = {
+        sharpness: analysisResult.qualityAssessment.sharpness || 0.5,
+        composition: analysisResult.qualityAssessment.composition || 0.5,
+        lighting: analysisResult.qualityAssessment.lighting || 0.5,
+        subjectClarity: analysisResult.qualityAssessment.subjectClarity || 0.5,
+        overallQuality: analysisResult.qualityAssessment.overallQuality || 0.5,
+        qualityNotes: analysisResult.qualityAssessment.qualityNotes || 'Quality assessment completed'
+      };
+    }
+    
     const result: VisualAnalysisResult = {
       photoId: mainMetadata.id,
       decision: analysisResult.decision || 'unique',
@@ -221,7 +264,8 @@ Provide your analysis in this JSON format:
       visualObservations: analysisResult.visualObservations || 'Analyzed visual content using Claude Vision API',
       technicalNotes: `Claude Vision API analysis. Hash: ${mainMetadata.hash}, Captured: ${new Date(mainMetadata.captured_at * 1000).toISOString()}`,
       relatedPhotos: relatedPhotoIds,
-      patterns: analysisResult.patterns || []
+      patterns: analysisResult.patterns || [],
+      qualityMetrics
     };
     
     console.log(`[ClaudeVision] Analysis result:`, result);
@@ -319,6 +363,36 @@ async function simulateVisualAnalysis(
   };
 }
 
+// Generate fallback quality metrics based on available metadata
+function generateFallbackQualityMetrics(metadata: any): PhotoQualityMetrics {
+  // Basic heuristics for quality when we can't analyze the actual image
+  const baseQuality = 0.6; // Assume average quality as baseline
+  
+  // Adjust based on metadata signals
+  let qualityAdjustment = 0;
+  
+  // Hash can indicate uniqueness/quality (different hash = likely different content)
+  if (metadata.hash && metadata.hash.length > 20) {
+    qualityAdjustment += 0.05;
+  }
+  
+  // Photos with coordinates are often better documented
+  if (metadata.coordinates && metadata.coordinates.length > 0) {
+    qualityAdjustment += 0.05;
+  }
+  
+  const estimatedQuality = Math.min(1.0, baseQuality + qualityAdjustment);
+  
+  return {
+    sharpness: estimatedQuality,
+    composition: estimatedQuality,
+    lighting: estimatedQuality,
+    subjectClarity: estimatedQuality,
+    overallQuality: estimatedQuality,
+    qualityNotes: 'Quality estimated from metadata (visual analysis unavailable)'
+  };
+}
+
 // Fallback analysis when visual analysis fails
 function fallbackMetadataAnalysis(metadata: any, allMetadata: any[], allPhotoUrls: string[]): VisualAnalysisResult {
   return {
@@ -329,7 +403,8 @@ function fallbackMetadataAnalysis(metadata: any, allMetadata: any[], allPhotoUrl
     visualObservations: 'Could not perform detailed visual comparison',
     technicalNotes: `Hash: ${metadata.hash}, Captured: ${new Date(metadata.captured_at * 1000).toISOString()}`,
     relatedPhotos: [],
-    patterns: []
+    patterns: [],
+    qualityMetrics: generateFallbackQualityMetrics(metadata)
   };
 }
 
@@ -396,6 +471,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       reasoning: string;
       recommendation: string;
       confidence: number;
+      bestPhotoId?: string;
+      qualityRanking?: string[];
     }> = [];
 
     const processedPhotos = new Set<string>();
@@ -413,17 +490,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const groupType = analysis.decision === 'duplicate' ? 'exact_duplicate' :
                            analysis.decision === 'burst_shot' ? 'burst_sequence' : 'similar_composition';
 
+          // For burst sequences, determine the best photo based on quality scores
+          let bestPhotoId: string | undefined;
+          let qualityRanking: string[] | undefined;
+          
+          if (groupType === 'burst_sequence') {
+            // Collect quality scores for all photos in the group
+            const photoQualityScores = groupPhotos.map(photoId => {
+              const photoAnalysis = analysisResults.find(a => a.photoId === photoId);
+              const qualityScore = photoAnalysis?.qualityMetrics?.overallQuality || 0.5;
+              return { photoId, qualityScore, analysis: photoAnalysis };
+            });
+            
+            // Sort by quality score (highest first)
+            photoQualityScores.sort((a, b) => b.qualityScore - a.qualityScore);
+            
+            bestPhotoId = photoQualityScores[0].photoId;
+            qualityRanking = photoQualityScores.map(pq => pq.photoId);
+            
+            // Log quality ranking for debugging
+            console.log(`[ClaudeVision] Burst sequence quality ranking:`, 
+              photoQualityScores.map(pq => `${pq.photoId}: ${(pq.qualityScore * 100).toFixed(0)}%`).join(', ')
+            );
+          }
+
+          // Generate specific recommendation based on quality analysis
+          let recommendation = groupType === 'exact_duplicate' 
+            ? 'Keep the first photo and delete the rest - visual analysis detected near-identical content'
+            : groupType === 'burst_sequence' && bestPhotoId
+            ? `Keep photo ${bestPhotoId} (${((analysisResults.find(a => a.photoId === bestPhotoId)?.qualityMetrics?.overallQuality || 0) * 100).toFixed(0)}% quality score) - highest quality photo from burst sequence`
+            : 'Review photos for best composition - detected similar content patterns';
+            
+          // Add quality notes if available
+          if (groupType === 'burst_sequence' && bestPhotoId) {
+            const bestPhotoAnalysis = analysisResults.find(a => a.photoId === bestPhotoId);
+            if (bestPhotoAnalysis?.qualityMetrics?.qualityNotes) {
+              recommendation += `. Selected for: ${bestPhotoAnalysis.qualityMetrics.qualityNotes}`;
+            }
+          }
+
           duplicateGroups.push({
             id: `group_${groupId++}`,
             type: groupType,
             photoIds: groupPhotos,
             reasoning: analysis.reasoning,
-            recommendation: groupType === 'exact_duplicate' 
-              ? 'Keep the first photo and delete the rest - visual analysis detected near-identical content'
-              : groupType === 'burst_sequence'
-              ? 'Keep the best photo from the burst sequence - detected rapid sequence photography'
-              : 'Review photos for best composition - detected similar content patterns',
-            confidence: analysis.confidence
+            recommendation,
+            confidence: analysis.confidence,
+            bestPhotoId,
+            qualityRanking
           });
 
           groupPhotos.forEach(id => processedPhotos.add(id));

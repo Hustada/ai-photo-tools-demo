@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { AlertCircle, Eye, Clock, Camera, MapPin, Hash, User, Building } from 'lucide-react';
+import { AlertCircle, Eye, Clock, Camera, MapPin, Hash, User, Building, Crown, Star } from 'lucide-react';
 
 interface PhotoMetadata {
   id: string;
@@ -34,6 +34,15 @@ interface PhotoMetadata {
   internal: boolean;
 }
 
+interface PhotoQualityMetrics {
+  sharpness: number;      // 0-1: Focus quality, motion blur detection
+  composition: number;    // 0-1: Rule of thirds, framing, balance
+  lighting: number;       // 0-1: Exposure, contrast, dynamic range
+  subjectClarity: number; // 0-1: Main subject visibility and clarity
+  overallQuality: number; // 0-1: Combined quality score
+  qualityNotes: string;   // Specific observations about quality
+}
+
 interface AnalysisResult {
   photoId: string;
   decision: 'duplicate' | 'burst_shot' | 'similar' | 'unique';
@@ -43,6 +52,7 @@ interface AnalysisResult {
   technicalNotes: string;
   relatedPhotos: string[];
   patterns: string[];
+  qualityMetrics?: PhotoQualityMetrics; // Quality assessment for burst sequences
 }
 
 interface DuplicateGroup {
@@ -53,6 +63,8 @@ interface DuplicateGroup {
   reasoning: string;
   recommendation: string;
   confidence: number;
+  bestPhotoId?: string;        // ID of the highest quality photo in the group
+  qualityRanking?: string[];   // Photo IDs ordered by quality (best first)
 }
 
 interface AnalysisSession {
@@ -161,6 +173,24 @@ const DuplicateAnalysisPage: React.FC = () => {
           const groupType = analysis.decision === 'duplicate' ? 'exact_duplicate' :
                            analysis.decision === 'burst_shot' ? 'burst_sequence' : 'similar_composition';
           
+          // For burst sequences, find the best photo based on quality scores
+          let bestPhotoId: string | undefined;
+          let qualityRanking: string[] | undefined;
+          
+          if (groupType === 'burst_sequence') {
+            const groupAnalyses = groupPhotos.map(id => analysisResults.find(a => a.photoId === id)!).filter(Boolean);
+            
+            // Sort by quality score if available
+            const sortedByQuality = [...groupAnalyses].sort((a, b) => {
+              const qualityA = a.qualityMetrics?.overallQuality || 0.5;
+              const qualityB = b.qualityMetrics?.overallQuality || 0.5;
+              return qualityB - qualityA;
+            });
+            
+            bestPhotoId = sortedByQuality[0]?.photoId;
+            qualityRanking = sortedByQuality.map(a => a.photoId);
+          }
+
           duplicateGroups.push({
             id: `visual_group_${groupId++}`,
             type: groupType,
@@ -169,10 +199,12 @@ const DuplicateAnalysisPage: React.FC = () => {
             reasoning: analysis.reasoning,
             recommendation: groupType === 'exact_duplicate' 
               ? 'Keep the first photo and delete the rest - visual analysis detected near-identical content'
-              : groupType === 'burst_sequence'
-              ? 'Keep the best photo from the burst sequence - visual analysis detected rapid sequence photography'
+              : groupType === 'burst_sequence' && bestPhotoId
+              ? `Keep photo ${bestPhotoId.substring(0, 8)}... - highest quality (${Math.round((analysisResults.find(a => a.photoId === bestPhotoId)?.qualityMetrics?.overallQuality || 0) * 100)}%) from burst sequence`
               : 'Review photos for best composition - visual analysis detected similar content',
-            confidence: analysis.confidence
+            confidence: analysis.confidence,
+            bestPhotoId,
+            qualityRanking
           });
           
           groupPhotos.forEach(id => processedPhotos.add(id));
@@ -631,12 +663,22 @@ const DuplicateAnalysisPage: React.FC = () => {
                         unique: 'bg-green-100 border-green-300'
                       }[analysis.decision];
 
+                      // Check if this photo is marked as the best in any burst sequence
+                      const isBestInBurst = analysisSession.duplicateGroups.some(
+                        group => group.type === 'burst_sequence' && group.bestPhotoId === photo.id
+                      );
+
                       return (
                         <div
                           key={photo.id}
-                          className={`border-2 rounded-lg p-2 cursor-pointer hover:shadow-lg transition-shadow ${decisionColor}`}
+                          className={`border-2 rounded-lg p-2 cursor-pointer hover:shadow-lg transition-shadow relative ${decisionColor}`}
                           onClick={() => setSelectedPhoto(photo)}
                         >
+                          {isBestInBurst && (
+                            <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1 shadow-lg" title="Best quality in burst sequence">
+                              <Crown className="w-4 h-4" />
+                            </div>
+                          )}
                           <img
                             src={getPhotoThumbnail(photo)}
                             alt={`Photo ${photo.id}`}
@@ -655,6 +697,11 @@ const DuplicateAnalysisPage: React.FC = () => {
                             <div className="text-gray-500 truncate">
                               Confidence: {Math.round(analysis.confidence * 100)}%
                             </div>
+                            {analysis.qualityMetrics && (
+                              <div className="text-gray-500 truncate font-medium">
+                                Quality: {Math.round(analysis.qualityMetrics.overallQuality * 100)}%
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -700,15 +747,40 @@ const DuplicateAnalysisPage: React.FC = () => {
                                 <p className="text-gray-700">{group.recommendation}</p>
                               </div>
                               <div className="grid grid-cols-4 gap-2">
-                                {group.photos.map((photo) => (
-                                  <img
-                                    key={photo.id}
-                                    src={getPhotoThumbnail(photo)}
-                                    alt={`Group photo ${photo.id}`}
-                                    className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-80"
-                                    onClick={() => setSelectedPhoto(photo)}
-                                  />
-                                ))}
+                                {group.photos.map((photo) => {
+                                  const isBestPhoto = photo.id === group.bestPhotoId;
+                                  const analysis = group.analysis.find(a => a.photoId === photo.id);
+                                  const qualityScore = analysis?.qualityMetrics?.overallQuality;
+                                  const qualityRank = group.qualityRanking?.indexOf(photo.id) ?? -1;
+                                  
+                                  return (
+                                    <div key={photo.id} className="relative">
+                                      <img
+                                        src={getPhotoThumbnail(photo)}
+                                        alt={`Group photo ${photo.id}`}
+                                        className={`w-full h-20 object-cover rounded cursor-pointer hover:opacity-80 ${
+                                          isBestPhoto ? 'ring-2 ring-green-500' : ''
+                                        }`}
+                                        onClick={() => setSelectedPhoto(photo)}
+                                      />
+                                      {isBestPhoto && (
+                                        <div className="absolute top-1 left-1 bg-green-500 text-white rounded-full p-1" title="Best quality photo">
+                                          <Crown className="w-3 h-3" />
+                                        </div>
+                                      )}
+                                      {qualityScore !== undefined && (
+                                        <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 rounded">
+                                          {Math.round(qualityScore * 100)}%
+                                        </div>
+                                      )}
+                                      {qualityRank >= 0 && !isBestPhoto && (
+                                        <div className="absolute top-1 right-1 bg-gray-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                          {qualityRank + 1}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           </CardContent>
@@ -870,6 +942,41 @@ const DuplicateAnalysisPage: React.FC = () => {
                                         </Badge>
                                       ))}
                                     </div>
+                                  </div>
+                                )}
+                                {analysis.qualityMetrics && (
+                                  <div className="mt-3 p-3 bg-gray-50 rounded">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Star className="w-4 h-4 text-yellow-500" />
+                                      <span className="font-medium">Quality Assessment</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">Overall:</span>
+                                        <span className="font-medium">{Math.round(analysis.qualityMetrics.overallQuality * 100)}%</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">Sharpness:</span>
+                                        <span>{Math.round(analysis.qualityMetrics.sharpness * 100)}%</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">Composition:</span>
+                                        <span>{Math.round(analysis.qualityMetrics.composition * 100)}%</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">Lighting:</span>
+                                        <span>{Math.round(analysis.qualityMetrics.lighting * 100)}%</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">Clarity:</span>
+                                        <span>{Math.round(analysis.qualityMetrics.subjectClarity * 100)}%</span>
+                                      </div>
+                                    </div>
+                                    {analysis.qualityMetrics.qualityNotes && (
+                                      <p className="text-xs text-gray-600 mt-2 italic">
+                                        {analysis.qualityMetrics.qualityNotes}
+                                      </p>
+                                    )}
                                   </div>
                                 )}
                               </>
