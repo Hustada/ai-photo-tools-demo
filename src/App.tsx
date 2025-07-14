@@ -30,7 +30,8 @@ function App() {
           <Route path="/docs" element={<GettingStartedPage />} />
           <Route element={<ProtectedRoute />}>
             {/* Routes nested under ProtectedRoute require an API key */}
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<DuplicateAnalysisPage />} />
+            <Route path="/photos" element={<HomePage />} />
             <Route path="/test-similarity" element={<TestSimilarity />} />
             <Route path="/duplicate-analysis" element={<DuplicateAnalysisPage />} />
             {/* Add other protected routes here if needed */}

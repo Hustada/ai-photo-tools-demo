@@ -4,7 +4,7 @@
 import React from 'react';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'outline' | 'destructive';
+  variant?: 'default' | 'outline' | 'destructive' | 'accent';
   size?: 'sm' | 'md';
 }
 
@@ -18,9 +18,10 @@ export const Badge: React.FC<BadgeProps> = ({
   const baseClasses = 'inline-flex items-center rounded-full font-medium';
   
   const variantClasses = {
-    default: 'bg-blue-100 text-blue-800',
+    default: 'bg-gray-100 text-gray-800',
     outline: 'border border-gray-300 bg-white text-gray-700',
-    destructive: 'bg-red-100 text-red-800'
+    destructive: 'bg-red-100 text-red-800',
+    accent: 'bg-orange-100 text-orange-800'
   };
   
   const sizeClasses = {
