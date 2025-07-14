@@ -249,6 +249,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                           color: isAiTag ? '#1f2937' : '#374151',
                           borderColor: '#d1d5db'
                         }}
+                      >
                         {tag.display_value}{isAiTag ? ' (AI)' : ''}
                       </span>
                       {onRemoveTag && (
