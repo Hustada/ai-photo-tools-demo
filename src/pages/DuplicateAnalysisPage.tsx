@@ -138,6 +138,10 @@ const DuplicateAnalysisPageContent: React.FC = () => {
   // State for archived photos toggle
   const [showArchivedPhotos, setShowArchivedPhotos] = useState(false);
   
+  // Analysis state (moved from FilterBar)
+  const [analysisMode, setAnalysisMode] = useState<'new' | 'all' | 'force'>('new');
+  const [showAnalysisDropdown, setShowAnalysisDropdown] = useState(false);
+  
   // Calculate archived photo count
   const archivedCount = React.useMemo(() => {
     return photosQuery.photos.filter(photo => photo.archive_state === 'archived').length;
@@ -677,6 +681,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
   }
 
   const modalSelectedPhoto = photoModal.selectedPhoto;
+  const totalPhotos = photosQuery.allPhotos.length;
 
   return (
     <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
@@ -751,8 +756,6 @@ const DuplicateAnalysisPageContent: React.FC = () => {
             filteredCount={tagFiltering.filteredPhotos.length}
             onRefresh={handleRefreshPhotos}
             isRefreshing={photosQuery.isLoading}
-            onAnalyze={currentUser ? handleAnalyzePhotos : undefined}
-            isAnalyzing={currentUser ? scoutAi.isAnalyzing : false}
             showArchivedPhotos={showArchivedPhotos}
             onToggleArchivedPhotos={setShowArchivedPhotos}
             archivedCount={archivedCount}
@@ -837,19 +840,100 @@ const DuplicateAnalysisPageContent: React.FC = () => {
           )}
         </div>
 
-        {/* Claude Vision Analysis Section */}
+        {/* Scout AI Analysis Section */}
         <div className="max-w-7xl mx-auto mt-8">
 
-          {/* Claude Vision Controls */}
+          {/* Scout AI Controls */}
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Camera className="w-5 h-5" />
-                Claude Vision Duplicate Analysis
+                Scout AI
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-4 items-center">
+              <div className="flex flex-wrap gap-4 items-center">
+                {/* Scout AI Analysis Dropdown */}
+                {currentUser && totalPhotos >= 2 && (
+                  <div className="relative">
+                    <div className="flex items-center space-x-1">
+                      <Button
+                        onClick={() => handleAnalyzePhotos(analysisMode)}
+                        disabled={scoutAi.isAnalyzing}
+                        variant="accent"
+                        className="flex items-center gap-2"
+                      >
+                        <Eye className="w-4 h-4" />
+                        {scoutAi.isAnalyzing ? 'Analyzing...' : 'Scout AI Analysis'}
+                      </Button>
+                      <button
+                        onClick={() => setShowAnalysisDropdown(!showAnalysisDropdown)}
+                        disabled={scoutAi.isAnalyzing}
+                        className="p-2 border rounded-md transition-colors"
+                        style={{ 
+                          backgroundColor: '#ea580c',
+                          borderColor: '#ea580c',
+                          color: '#FFFFFF'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!scoutAi.isAnalyzing) {
+                            e.target.style.backgroundColor = '#c2410c';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!scoutAi.isAnalyzing) {
+                            e.target.style.backgroundColor = '#ea580c';
+                          }
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M7 10l5 5 5-5z"/>
+                        </svg>
+                      </button>
+                    </div>
+                    {showAnalysisDropdown && (
+                      <div className="absolute top-full mt-1 right-0 w-64 border shadow-lg z-10" style={{ backgroundColor: '#262626', borderColor: '#3f3f3f' }}>
+                        <div className="p-2">
+                          <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-600 min-h-[44px]">
+                            <input
+                              type="radio"
+                              name="analysisMode"
+                              value="new"
+                              checked={analysisMode === 'new'}
+                              onChange={() => setAnalysisMode('new')}
+                              style={{ accentColor: '#ea580c' }}
+                            />
+                            <span className="text-sm" style={{ color: '#C3C3C3' }}>New Photos Only (30 days)</span>
+                          </label>
+                          <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-600 min-h-[44px]">
+                            <input
+                              type="radio"
+                              name="analysisMode"
+                              value="all"
+                              checked={analysisMode === 'all'}
+                              onChange={() => setAnalysisMode('all')}
+                              style={{ accentColor: '#ea580c' }}
+                            />
+                            <span className="text-sm" style={{ color: '#C3C3C3' }}>All Photos (Skip Analyzed)</span>
+                          </label>
+                          <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-600 min-h-[44px]">
+                            <input
+                              type="radio"
+                              name="analysisMode"
+                              value="force"
+                              checked={analysisMode === 'force'}
+                              onChange={() => setAnalysisMode('force')}
+                              style={{ accentColor: '#ea580c' }}
+                            />
+                            <span className="text-sm" style={{ color: '#C3C3C3' }}>Force Re-analysis (Testing)</span>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Claude Vision Analysis Button */}
                 <Button 
                   onClick={() => fetchPhotos(50)} 
                   disabled={claudeLoading}
@@ -857,20 +941,30 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                   className="flex items-center gap-2"
                 >
                   <Eye className="w-4 h-4" />
-                  {claudeLoading ? 'Analyzing...' : 'Run Claude Vision Analysis'}
+                  {claudeLoading ? 'Analyzing...' : 'Claude Vision Duplicates'}
                 </Button>
                 
-                {analysisSession && (
-                  <div className="flex gap-2">
-                    <Badge variant="accent">
-                      {analysisSession.metadata.totalAnalyzed} photos analyzed
-                    </Badge>
-                    <Badge variant="destructive">
-                      {analysisSession.metadata.duplicatesFound} duplicates
-                    </Badge>
-                    <Badge variant="outline">
-                      {analysisSession.metadata.burstShotsFound} burst shots
-                    </Badge>
+                {/* Status Badges */}
+                {(analysisSession || (scoutAi.suggestions && scoutAi.suggestions.length > 0)) && (
+                  <div className="flex flex-wrap gap-2">
+                    {analysisSession && (
+                      <>
+                        <Badge variant="accent">
+                          {analysisSession.metadata.totalAnalyzed} photos analyzed
+                        </Badge>
+                        <Badge variant="destructive">
+                          {analysisSession.metadata.duplicatesFound} duplicates
+                        </Badge>
+                        <Badge variant="outline">
+                          {analysisSession.metadata.burstShotsFound} burst shots
+                        </Badge>
+                      </>
+                    )}
+                    {scoutAi.suggestions && scoutAi.suggestions.length > 0 && (
+                      <Badge variant="default">
+                        {scoutAi.suggestions.filter(s => s.status !== 'dismissed' && s.status !== 'rejected').length} Scout AI suggestions
+                      </Badge>
+                    )}
                   </div>
                 )}
               </div>

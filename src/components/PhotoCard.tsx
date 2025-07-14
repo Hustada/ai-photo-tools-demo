@@ -225,20 +225,57 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
               );
             })
           ) : (
-            <span className="text-xs italic" style={{ color: '#6b7280' }}>No tags</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                // This could trigger a tag input modal or inline editing in the future
+                console.log('Add tags clicked for photo:', photo.id);
+              }}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs border-2 border-dashed rounded-full transition-all duration-200 hover:scale-105"
+              style={{ 
+                color: '#6b7280', 
+                borderColor: '#d1d5db',
+                fontFamily: 'Inter, var(--font-body)'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.color = '#ea580c';
+                e.target.style.borderColor = '#ea580c';
+                e.target.style.backgroundColor = '#fef3f2';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.color = '#6b7280';
+                e.target.style.borderColor = '#d1d5db';
+                e.target.style.backgroundColor = 'transparent';
+              }}
+              title="Add tags to this photo"
+            >
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              </svg>
+              <span>Add Tags</span>
+            </button>
           )}
         </div>
 
         {/* AI Suggestions Section (for NEW, ephemeral suggestions) */}
         <div className="mt-3 pt-3 border-t" style={{ borderColor: '#d1d5db' }}>
-          {/* Loading State for New Suggestions */}
+          {/* Enhanced Loading State for New Suggestions */}
           {aiSuggestionData?.isSuggesting && (
-            <div className="mt-2 flex items-center justify-center py-1.5" style={{ color: '#374151' }}>
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span style={{ fontFamily: 'Inter, var(--font-body)' }}>Suggesting...</span>
+            <div className="flex justify-center">
+              <div className="mt-2 px-6 py-2.5 border text-sm shadow-sm flex items-center justify-center space-x-2 rounded-md" 
+                style={{ 
+                  backgroundColor: '#f9fafb', 
+                  color: '#374151', 
+                  borderColor: '#ea580c',
+                  fontFamily: 'Inter, var(--font-body)',
+                  boxShadow: '0 0 0 1px #ea580c, 0 0 8px rgba(234, 88, 12, 0.2)'
+                }}>
+                <svg className="animate-spin h-4 w-4" style={{ color: '#ea580c' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Analyzing...</span>
+              </div>
             </div>
           )}
 
@@ -247,38 +284,56 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             ((!aiSuggestionData?.suggestedDescription && !(aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0)) || aiSuggestionData?.suggestionError) && (
             <div className="flex justify-center">
               <button
-              onClick={handleSuggestAiTags}
-              className="mt-2 px-6 py-2.5 border text-sm shadow-sm flex items-center justify-center space-x-1.5 transition-all duration-200 ease-out group active:translate-y-0 active:shadow-sm"
-              style={{ 
-                backgroundColor: '#FFFFFF', 
-                color: '#374151', 
-                borderColor: '#d1d5db',
-                fontFamily: 'Inter, var(--font-body)'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#f9fafb';
-                e.target.style.borderColor = '#ea580c';
-                e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-                e.target.style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = '#FFFFFF';
-                e.target.style.borderColor = '#d1d5db';
-                e.target.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';
-                e.target.style.transform = 'translateY(0)';
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 transition-transform duration-200 group-hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 3.5a1.5 1.5 0 011.5 1.5v1a1.5 1.5 0 01-3 0v-1A1.5 1.5 0 0110 3.5zM3.188 8.044A5.5 5.5 0 0110 4.5h.008a5.5 5.5 0 016.804 3.544l.002.005.003.005a4.502 4.502 0 01-.82 4.44l-2.67 3.523a1.5 1.5 0 01-2.331.12l-2.67-3.523a4.502 4.502 0 01-.82-4.44l.002-.005.003-.005zM10 13a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
-              </svg>
-              <span>Suggest Tags</span>
-            </button>
+                onClick={handleSuggestAiTags}
+                className="mt-2 px-6 py-2.5 border text-sm shadow-sm flex items-center justify-center space-x-2 transition-all duration-300 ease-out group hover:scale-105 active:scale-95 rounded-md"
+                style={{ 
+                  backgroundColor: '#FFFFFF', 
+                  color: '#374151', 
+                  borderColor: '#d1d5db',
+                  fontFamily: 'Inter, var(--font-body)'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#f9fafb';
+                  e.target.style.borderColor = '#ea580c';
+                  e.target.style.boxShadow = '0 4px 12px -2px rgba(0, 0, 0, 0.1), 0 0 8px rgba(234, 88, 12, 0.15)';
+                  e.target.style.transform = 'translateY(-2px) scale(1.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#FFFFFF';
+                  e.target.style.borderColor = '#d1d5db';
+                  e.target.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';
+                  e.target.style.transform = 'translateY(0) scale(1)';
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-all duration-200 group-hover:scale-110" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#ea580c' }}>
+                  <path d="M10 3.5a1.5 1.5 0 011.5 1.5v1a1.5 1.5 0 01-3 0v-1A1.5 1.5 0 0110 3.5zM3.188 8.044A5.5 5.5 0 0110 4.5h.008a5.5 5.5 0 016.804 3.544l.002.005.003.005a4.502 4.502 0 01-.82 4.44l-2.67 3.523a1.5 1.5 0 01-2.331.12l-2.67-3.523a4.502 4.502 0 01-.82-4.44l.002-.005.003-.005zM10 13a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
+                </svg>
+                <span>Suggest Tags</span>
+              </button>
             </div>
           )}
 
           {/* Error for New Suggestions */}
           {aiSuggestionData?.suggestionError && !aiSuggestionData?.isSuggesting && (
             <p className="mt-2 text-xs" style={{ color: '#ef4444' }}>Error: {aiSuggestionData.suggestionError}</p>
+          )}
+
+          {/* Success State - Show after suggestions are loaded */}
+          {(aiSuggestionData?.suggestedDescription || (aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0)) && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
+            <div className="flex justify-center mb-2">
+              <div className="mt-2 px-4 py-2 border text-xs shadow-sm flex items-center justify-center space-x-2 rounded-md" 
+                style={{ 
+                  backgroundColor: '#f0fdf4', 
+                  color: '#166534', 
+                  borderColor: '#16a34a',
+                  fontFamily: 'Inter, var(--font-body)'
+                }}>
+                <svg className="h-4 w-4" style={{ color: '#16a34a' }} fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span>Tags Suggested ✅</span>
+              </div>
+            </div>
           )}
 
           {/* Display New Suggested Description */}

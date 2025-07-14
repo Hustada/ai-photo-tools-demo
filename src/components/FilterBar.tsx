@@ -10,8 +10,6 @@ interface FilterBarProps {
   filteredCount: number;
   onRefresh?: () => void;
   isRefreshing?: boolean;
-  onAnalyze?: (mode: 'new' | 'all' | 'force') => void;
-  isAnalyzing?: boolean;
   showArchivedPhotos?: boolean;
   onToggleArchivedPhotos?: (show: boolean) => void;
   archivedCount?: number;
@@ -27,15 +25,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   filteredCount,
   onRefresh,
   isRefreshing,
-  onAnalyze,
-  isAnalyzing,
   showArchivedPhotos = false,
   onToggleArchivedPhotos,
   archivedCount = 0
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [analysisMode, setAnalysisMode] = useState<'new' | 'all' | 'force'>('new');
-  const [showAnalysisDropdown, setShowAnalysisDropdown] = useState(false);
   const [isTagPanelExpanded, setIsTagPanelExpanded] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
 
@@ -54,174 +48,112 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
 
   return (
-    <div className="mb-6 p-3 sm:p-4 border shadow-lg -mx-5 -mt-5" style={{ borderColor: '#3f3f3f', backgroundColor: '#262626' }}>
-      {/* Header with photo count and refresh */}
-      <div className="flex flex-col mb-4 gap-3">
-        {/* Title centered on mobile, left-aligned on desktop */}
-        <div className="flex items-center justify-center sm:justify-start">
-          <h2 className="text-lg sm:text-xl font-medium" style={{ color: '#FFFFFF', fontFamily: 'Space Grotesk, var(--font-heading)' }}>Filter Photos</h2>
+    <div className="mb-4 p-3 border rounded-lg shadow-sm sticky top-0 z-10 backdrop-blur-sm transition-all duration-200" style={{ borderColor: '#d1d5db', backgroundColor: 'rgba(249, 250, 251, 0.95)' }}>
+      {/* Compact Horizontal Layout */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        {/* Photo Count */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium" style={{ color: '#374151' }}>Photos:</span>
+          <span className="text-sm" style={{ color: '#6b7280' }}>
+            <span className="font-medium" style={{ color: '#ea580c' }}>{filteredCount}</span> of {totalPhotos}
+          </span>
         </div>
-        
-        {/* Photo count and buttons - centered layout */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex justify-center sm:justify-start">
-            <div className="text-sm" style={{ color: '#C3C3C3', fontFamily: 'Inter, var(--font-body)' }}>
-              <span className="font-medium" style={{ color: '#ea580c' }}>{filteredCount}</span> of {totalPhotos} photos
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-center sm:justify-end gap-2">
-            {onRefresh && (
-              <button
-                onClick={onRefresh}
-                disabled={isRefreshing}
-                className="px-3 sm:px-4 py-2 sm:py-1.5 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 disabled:bg-gray-300 disabled:opacity-70 transition-colors text-sm min-h-[44px] sm:min-h-[auto]"
-              >
-                {isRefreshing ? 'Refreshing...' : 'Refresh'}
-              </button>
-            )}
-            {onAnalyze && totalPhotos >= 2 && (
-              <div className="relative">
-                <div className="flex items-center space-x-1">
-                  <button
-                    onClick={() => onAnalyze(analysisMode)}
-                    disabled={isAnalyzing}
-                    className="px-3 sm:px-4 py-2 sm:py-1.5 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 disabled:bg-gray-300 disabled:opacity-70 transition-colors text-sm min-h-[44px] sm:min-h-[auto]"
-                  >
-                    {isAnalyzing ? 'Analyzing...' : 'AI Analysis'}
-                  </button>
-                  <button
-                    onClick={() => setShowAnalysisDropdown(!showAnalysisDropdown)}
-                    disabled={isAnalyzing}
-                    className="p-2 sm:p-1.5 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 disabled:bg-gray-300 disabled:opacity-70 transition-colors min-h-[44px] sm:min-h-[auto]"
-                  >
-                    <svg className="w-4 h-4 sm:w-3 sm:h-3" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M7 10l5 5 5-5z"/>
-                    </svg>
-                  </button>
-                </div>
-                {showAnalysisDropdown && (
-                  <div className="absolute top-full mt-1 right-0 w-48 border shadow-lg z-10" style={{ backgroundColor: '#262626', borderColor: '#3f3f3f' }}>
-                    <div className="p-2">
-                      <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-600 min-h-[44px]">
-                        <input
-                          type="radio"
-                          name="analysisMode"
-                          value="new"
-                          checked={analysisMode === 'new'}
-                          onChange={() => setAnalysisMode('new')}
-                          style={{ accentColor: '#ea580c' }}
-                        />
-                        <span className="text-sm" style={{ color: '#C3C3C3' }}>New Photos Only (30 days)</span>
-                      </label>
-                      <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-600 min-h-[44px]">
-                        <input
-                          type="radio"
-                          name="analysisMode"
-                          value="all"
-                          checked={analysisMode === 'all'}
-                          onChange={() => setAnalysisMode('all')}
-                          style={{ accentColor: '#ea580c' }}
-                        />
-                        <span className="text-sm" style={{ color: '#C3C3C3' }}>All Photos (Skip Analyzed)</span>
-                      </label>
-                      <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-600 min-h-[44px]">
-                        <input
-                          type="radio"
-                          name="analysisMode"
-                          value="force"
-                          checked={analysisMode === 'force'}
-                          onChange={() => setAnalysisMode('force')}
-                          style={{ accentColor: '#ea580c' }}
-                        />
-                        <span className="text-sm" style={{ color: '#C3C3C3' }}>Force Re-analysis (Testing)</span>
-                      </label>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
 
-      {/* Search and Browse Tags Button */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="flex-1">
+        {/* Search Input */}
+        <div className="flex-1 min-w-0">
           <input
             type="text"
             placeholder="Search tags..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-3 sm:py-2 border text-white focus:outline-none transition-colors text-base sm:text-sm"
+            className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none transition-colors"
             style={{ 
-              backgroundColor: '#1a1a1a', 
-              borderColor: '#3f3f3f', 
-              color: '#FFFFFF',
-              '--placeholder-color': '#9CA3AF',
-              '--focus-border-color': '#ea580c'
+              backgroundColor: '#FFFFFF', 
+              borderColor: '#d1d5db', 
+              color: '#374151'
             }}
             onFocus={(e) => e.target.style.borderColor = '#ea580c'}
-            onBlur={(e) => e.target.style.borderColor = '#3f3f3f'}
+            onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
           />
         </div>
         
-        {/* Browse Tags Button */}
-        {!searchTerm && (
-          <button
-            onClick={() => setIsTagPanelExpanded(!isTagPanelExpanded)}
-            className="px-4 py-3 sm:py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px] sm:min-h-[auto] flex items-center justify-center gap-2"
-            onMouseEnter={(e) => e.target.style.borderColor = '#ea580c'}
-            onMouseLeave={(e) => e.target.style.borderColor = '#d1d5db'}
-          >
-            <span>Browse Tags</span>
-            <svg 
-              className={`w-4 h-4 transition-transform duration-200 ${isTagPanelExpanded ? 'rotate-180' : ''}`} 
-              fill="currentColor" 
-              viewBox="0 0 24 24"
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          {/* Browse Tags Button */}
+          {!searchTerm && (
+            <button
+              onClick={() => setIsTagPanelExpanded(!isTagPanelExpanded)}
+              className="px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors text-sm font-medium rounded-md flex items-center gap-2"
+              onMouseEnter={(e) => e.target.style.borderColor = '#ea580c'}
+              onMouseLeave={(e) => e.target.style.borderColor = '#d1d5db'}
             >
-              <path d="M7 10l5 5 5-5z"/>
-            </svg>
-          </button>
-        )}
-        
-        {/* Show Archived Photos Toggle */}
-        {archivedCount > 0 && onToggleArchivedPhotos && (
-          <button
-            onClick={() => onToggleArchivedPhotos(!showArchivedPhotos)}
-            className={`px-4 py-3 sm:py-2 border transition-colors text-sm font-medium min-h-[44px] sm:min-h-[auto] flex items-center justify-center gap-2`}
-            style={{
-              backgroundColor: showArchivedPhotos ? '#ea580c' : '#FFFFFF',
-              color: showArchivedPhotos ? '#FFFFFF' : '#374151',
-              borderColor: showArchivedPhotos ? '#ea580c' : '#d1d5db'
-            }}
-            onMouseEnter={(e) => {
-              if (!showArchivedPhotos) {
-                e.target.style.backgroundColor = '#f9fafb';
-                e.target.style.borderColor = '#ea580c';
-              } else {
-                e.target.style.backgroundColor = '#c2410c';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!showArchivedPhotos) {
-                e.target.style.backgroundColor = '#FFFFFF';
-                e.target.style.borderColor = '#d1d5db';
-              } else {
-                e.target.style.backgroundColor = '#ea580c';
-              }
-            }}
-          >
-            <span>{showArchivedPhotos ? 'Hide' : 'Show'} Archived Photos</span>
-            <span className="text-xs opacity-75">({archivedCount})</span>
-          </button>
-        )}
+              <span>Browse</span>
+              <svg 
+                className={`w-4 h-4 transition-transform duration-200 ${isTagPanelExpanded ? 'rotate-180' : ''}`} 
+                fill="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path d="M7 10l5 5 5-5z"/>
+              </svg>
+            </button>
+          )}
+          
+          {/* Refresh Button */}
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 disabled:bg-gray-300 disabled:opacity-70 transition-colors text-sm rounded-md"
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          )}
+          
+          {/* Show Archived Photos Toggle Switch */}
+          {archivedCount > 0 && onToggleArchivedPhotos && (
+            <div className="flex items-center gap-3 px-3 py-2 bg-white border rounded-md" style={{ borderColor: '#d1d5db' }}>
+              <span className="text-sm font-medium" style={{ color: '#374151' }}>
+                Show Archived ({archivedCount})
+              </span>
+              <button
+                onClick={() => onToggleArchivedPhotos(!showArchivedPhotos)}
+                className={`relative inline-flex w-11 h-6 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+                  showArchivedPhotos ? 'bg-blue-600' : 'bg-gray-300'
+                }`}
+                style={{
+                  backgroundColor: showArchivedPhotos ? '#2563eb' : '#d1d5db'
+                }}
+                onMouseEnter={(e) => {
+                  if (showArchivedPhotos) {
+                    e.target.style.backgroundColor = '#1d4ed8';
+                  } else {
+                    e.target.style.backgroundColor = '#9ca3af';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (showArchivedPhotos) {
+                    e.target.style.backgroundColor = '#2563eb';
+                  } else {
+                    e.target.style.backgroundColor = '#d1d5db';
+                  }
+                }}
+              >
+                <span
+                  className={`inline-block w-4 h-4 transform rounded-full bg-white transition-transform duration-200 ${
+                    showArchivedPhotos ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                  style={{ boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)' }}
+                />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
 
       {/* Tag buttons - only show when searching or panel is expanded */}
       {shouldShowTags && (
-        <div className="mb-4">
+        <div className="mt-3 pt-3 border-t" style={{ borderColor: '#e5e7eb' }}>
           {/* Mobile view - with limited tags */}
           <div className="sm:hidden">
             <div className="flex flex-wrap gap-2 mb-3">
@@ -316,7 +248,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
       {/* Active filters and clear */}
       {activeTags.length > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 border-t gap-3" style={{ borderColor: '#3f3f3f' }}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 mt-3 border-t gap-3" style={{ borderColor: '#e5e7eb' }}>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <span className="text-sm" style={{ color: '#9CA3AF' }}>Active:</span>
             <div className="flex flex-wrap gap-2">
