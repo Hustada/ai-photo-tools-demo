@@ -54,19 +54,19 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
 
   return (
-    <div className="mb-6 p-3 sm:p-4 border border-gray-600 bg-gray-800 shadow-lg -mx-5 -mt-5">
+    <div className="mb-6 p-3 sm:p-4 border shadow-lg -mx-5 -mt-5" style={{ borderColor: '#3f3f3f', backgroundColor: '#262626' }}>
       {/* Header with photo count and refresh */}
       <div className="flex flex-col mb-4 gap-3">
         {/* Title centered on mobile, left-aligned on desktop */}
         <div className="flex items-center justify-center sm:justify-start">
-          <h2 className="text-lg sm:text-xl font-medium text-white">Filter Photos</h2>
+          <h2 className="text-lg sm:text-xl font-medium" style={{ color: '#FFFFFF', fontFamily: 'Space Grotesk, var(--font-heading)' }}>Filter Photos</h2>
         </div>
         
         {/* Photo count and buttons - centered layout */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex justify-center sm:justify-start">
-            <div className="text-sm text-gray-300">
-              <span className="font-medium text-orange-400">{filteredCount}</span> of {totalPhotos} photos
+            <div className="text-sm" style={{ color: '#C3C3C3', fontFamily: 'Inter, var(--font-body)' }}>
+              <span className="font-medium" style={{ color: '#ea580c' }}>{filteredCount}</span> of {totalPhotos} photos
             </div>
           </div>
           
@@ -75,7 +75,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               <button
                 onClick={onRefresh}
                 disabled={isRefreshing}
-                className="px-3 sm:px-4 py-2 sm:py-1.5 bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 hover:border-orange-500 disabled:bg-gray-300 disabled:opacity-70 transition-colors text-sm min-h-[44px] sm:min-h-[auto]"
+                className="px-3 sm:px-4 py-2 sm:py-1.5 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 disabled:bg-gray-300 disabled:opacity-70 transition-colors text-sm min-h-[44px] sm:min-h-[auto]"
               >
                 {isRefreshing ? 'Refreshing...' : 'Refresh'}
               </button>
@@ -86,14 +86,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   <button
                     onClick={() => onAnalyze(analysisMode)}
                     disabled={isAnalyzing}
-                    className="px-3 sm:px-4 py-2 sm:py-1.5 bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 hover:border-orange-500 disabled:bg-gray-300 disabled:opacity-70 transition-colors text-sm min-h-[44px] sm:min-h-[auto]"
+                    className="px-3 sm:px-4 py-2 sm:py-1.5 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 disabled:bg-gray-300 disabled:opacity-70 transition-colors text-sm min-h-[44px] sm:min-h-[auto]"
                   >
                     {isAnalyzing ? 'Analyzing...' : 'AI Analysis'}
                   </button>
                   <button
                     onClick={() => setShowAnalysisDropdown(!showAnalysisDropdown)}
                     disabled={isAnalyzing}
-                    className="p-2 sm:p-1.5 bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 hover:border-orange-500 disabled:bg-gray-300 disabled:opacity-70 transition-colors min-h-[44px] sm:min-h-[auto]"
+                    className="p-2 sm:p-1.5 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 disabled:bg-gray-300 disabled:opacity-70 transition-colors min-h-[44px] sm:min-h-[auto]"
                   >
                     <svg className="w-4 h-4 sm:w-3 sm:h-3" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M7 10l5 5 5-5z"/>
@@ -101,40 +101,40 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   </button>
                 </div>
                 {showAnalysisDropdown && (
-                  <div className="absolute top-full mt-1 right-0 w-48 bg-gray-800 border border-gray-600 shadow-lg z-10">
+                  <div className="absolute top-full mt-1 right-0 w-48 border shadow-lg z-10" style={{ backgroundColor: '#262626', borderColor: '#3f3f3f' }}>
                     <div className="p-2">
-                      <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-700 min-h-[44px]">
+                      <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-600 min-h-[44px]">
                         <input
                           type="radio"
                           name="analysisMode"
                           value="new"
                           checked={analysisMode === 'new'}
                           onChange={() => setAnalysisMode('new')}
-                          className="text-orange-600"
+                          style={{ accentColor: '#ea580c' }}
                         />
-                        <span className="text-sm text-gray-300">New Photos Only (30 days)</span>
+                        <span className="text-sm" style={{ color: '#C3C3C3' }}>New Photos Only (30 days)</span>
                       </label>
-                      <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-700 min-h-[44px]">
+                      <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-600 min-h-[44px]">
                         <input
                           type="radio"
                           name="analysisMode"
                           value="all"
                           checked={analysisMode === 'all'}
                           onChange={() => setAnalysisMode('all')}
-                          className="text-orange-600"
+                          style={{ accentColor: '#ea580c' }}
                         />
-                        <span className="text-sm text-gray-300">All Photos (Skip Analyzed)</span>
+                        <span className="text-sm" style={{ color: '#C3C3C3' }}>All Photos (Skip Analyzed)</span>
                       </label>
-                      <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-700 min-h-[44px]">
+                      <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-600 min-h-[44px]">
                         <input
                           type="radio"
                           name="analysisMode"
                           value="force"
                           checked={analysisMode === 'force'}
                           onChange={() => setAnalysisMode('force')}
-                          className="text-orange-600"
+                          style={{ accentColor: '#ea580c' }}
                         />
-                        <span className="text-sm text-gray-300">Force Re-analysis (Testing)</span>
+                        <span className="text-sm" style={{ color: '#C3C3C3' }}>Force Re-analysis (Testing)</span>
                       </label>
                     </div>
                   </div>
@@ -153,7 +153,16 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             placeholder="Search tags..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-3 sm:py-2 bg-gray-900 border border-gray-600 text-white placeholder-gray-400 focus:border-orange-500 focus:outline-none transition-colors text-base sm:text-sm"
+            className="w-full px-3 py-3 sm:py-2 border text-white focus:outline-none transition-colors text-base sm:text-sm"
+            style={{ 
+              backgroundColor: '#1a1a1a', 
+              borderColor: '#3f3f3f', 
+              color: '#FFFFFF',
+              '--placeholder-color': '#9CA3AF',
+              '--focus-border-color': '#ea580c'
+            }}
+            onFocus={(e) => e.target.style.borderColor = '#ea580c'}
+            onBlur={(e) => e.target.style.borderColor = '#3f3f3f'}
           />
         </div>
         
@@ -161,7 +170,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         {!searchTerm && (
           <button
             onClick={() => setIsTagPanelExpanded(!isTagPanelExpanded)}
-            className="px-4 py-3 sm:py-2 bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 hover:border-orange-500 transition-colors text-sm font-medium min-h-[44px] sm:min-h-[auto] flex items-center justify-center gap-2"
+            className="px-4 py-3 sm:py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors text-sm font-medium min-h-[44px] sm:min-h-[auto] flex items-center justify-center gap-2"
+            onMouseEnter={(e) => e.target.style.borderColor = '#ea580c'}
+            onMouseLeave={(e) => e.target.style.borderColor = '#d1d5db'}
           >
             <span>Browse Tags</span>
             <svg 
@@ -178,11 +189,28 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         {archivedCount > 0 && onToggleArchivedPhotos && (
           <button
             onClick={() => onToggleArchivedPhotos(!showArchivedPhotos)}
-            className={`px-4 py-3 sm:py-2 border transition-colors text-sm font-medium min-h-[44px] sm:min-h-[auto] flex items-center justify-center gap-2 ${
-              showArchivedPhotos 
-                ? 'bg-orange-600 text-white border-orange-600 hover:bg-orange-700' 
-                : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 hover:border-orange-500'
-            }`}
+            className={`px-4 py-3 sm:py-2 border transition-colors text-sm font-medium min-h-[44px] sm:min-h-[auto] flex items-center justify-center gap-2`}
+            style={{
+              backgroundColor: showArchivedPhotos ? '#ea580c' : '#FFFFFF',
+              color: showArchivedPhotos ? '#FFFFFF' : '#374151',
+              borderColor: showArchivedPhotos ? '#ea580c' : '#d1d5db'
+            }}
+            onMouseEnter={(e) => {
+              if (!showArchivedPhotos) {
+                e.target.style.backgroundColor = '#f9fafb';
+                e.target.style.borderColor = '#ea580c';
+              } else {
+                e.target.style.backgroundColor = '#c2410c';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!showArchivedPhotos) {
+                e.target.style.backgroundColor = '#FFFFFF';
+                e.target.style.borderColor = '#d1d5db';
+              } else {
+                e.target.style.backgroundColor = '#ea580c';
+              }
+            }}
           >
             <span>{showArchivedPhotos ? 'Hide' : 'Show'} Archived Photos</span>
             <span className="text-xs opacity-75">({archivedCount})</span>
@@ -201,11 +229,24 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 <button
                   key={tag.id}
                   onClick={() => onToggleTag(tag.id)}
-                  className={`px-3 py-3 text-sm font-medium border transition-all duration-200 min-h-[44px] ${
-                    activeTags.includes(tag.display_value.toLowerCase())
-                      ? 'bg-gray-800 text-white border-gray-700 shadow-md'
-                      : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 hover:border-orange-500'
-                  }`}
+                  className="px-3 py-3 text-sm font-medium border transition-all duration-200 min-h-[44px]"
+                  style={{
+                    backgroundColor: activeTags.includes(tag.display_value.toLowerCase()) ? '#262626' : '#FFFFFF',
+                    color: activeTags.includes(tag.display_value.toLowerCase()) ? '#FFFFFF' : '#374151',
+                    borderColor: activeTags.includes(tag.display_value.toLowerCase()) ? '#3f3f3f' : '#d1d5db'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!activeTags.includes(tag.display_value.toLowerCase())) {
+                      e.target.style.backgroundColor = '#f9fafb';
+                      e.target.style.borderColor = '#ea580c';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!activeTags.includes(tag.display_value.toLowerCase())) {
+                      e.target.style.backgroundColor = '#FFFFFF';
+                      e.target.style.borderColor = '#d1d5db';
+                    }
+                  }}
                 >
                   {tag.display_value}
                 </button>
@@ -217,7 +258,21 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               <div className="flex justify-center">
                 <button
                   onClick={() => setShowAllTags(!showAllTags)}
-                  className="px-4 py-2 text-sm text-gray-400 hover:text-gray-300 border border-gray-600 hover:border-gray-500 transition-colors"
+                  className="px-4 py-2 text-sm border transition-colors"
+                  style={{ 
+                    color: '#9CA3AF', 
+                    borderColor: '#3f3f3f',
+                    '--hover-color': '#C3C3C3',
+                    '--hover-border': '#6B7280'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.color = '#C3C3C3';
+                    e.target.style.borderColor = '#6B7280';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.color = '#9CA3AF';
+                    e.target.style.borderColor = '#3f3f3f';
+                  }}
                 >
                   {showAllTags ? 'Show Less' : `Show ${filteredTags.length - MAX_INITIAL_TAGS} More Tags`}
                 </button>
@@ -232,11 +287,24 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 <button
                   key={tag.id}
                   onClick={() => onToggleTag(tag.id)}
-                  className={`px-3 py-2 text-sm font-medium border transition-all duration-200 ${
-                    activeTags.includes(tag.display_value.toLowerCase())
-                      ? 'bg-gray-800 text-white border-gray-700 shadow-md'
-                      : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 hover:border-orange-500'
-                  }`}
+                  className="px-3 py-2 text-sm font-medium border transition-all duration-200"
+                  style={{
+                    backgroundColor: activeTags.includes(tag.display_value.toLowerCase()) ? '#262626' : '#FFFFFF',
+                    color: activeTags.includes(tag.display_value.toLowerCase()) ? '#FFFFFF' : '#374151',
+                    borderColor: activeTags.includes(tag.display_value.toLowerCase()) ? '#3f3f3f' : '#d1d5db'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!activeTags.includes(tag.display_value.toLowerCase())) {
+                      e.target.style.backgroundColor = '#f9fafb';
+                      e.target.style.borderColor = '#ea580c';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!activeTags.includes(tag.display_value.toLowerCase())) {
+                      e.target.style.backgroundColor = '#FFFFFF';
+                      e.target.style.borderColor = '#d1d5db';
+                    }
+                  }}
                 >
                   {tag.display_value}
                 </button>
@@ -248,16 +316,17 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
       {/* Active filters and clear */}
       {activeTags.length > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 border-t border-gray-700 gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 border-t gap-3" style={{ borderColor: '#3f3f3f' }}>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <span className="text-sm text-gray-400">Active:</span>
+            <span className="text-sm" style={{ color: '#9CA3AF' }}>Active:</span>
             <div className="flex flex-wrap gap-2">
               {activeTags.map(activeDisplayValue => {
                 const tag = availableTags.find(t => t.display_value.toLowerCase() === activeDisplayValue.toLowerCase());
                 return (
                   <span
                     key={activeDisplayValue}
-                    className="inline-flex items-center gap-2 bg-orange-700 text-white px-3 py-2 text-sm border border-orange-600 group min-h-[36px]"
+                    className="inline-flex items-center gap-2 text-white px-3 py-2 text-sm border group min-h-[36px]"
+                    style={{ backgroundColor: '#ea580c', borderColor: '#c2410c' }}
                   >
                     <span>{tag ? tag.display_value : activeDisplayValue}</span>
                     <button
@@ -268,7 +337,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                           onToggleTag(tag.id);
                         }
                       }}
-                      className="text-orange-200 hover:text-white transition-colors p-1"
+                      className="hover:text-white transition-colors p-1"
+                      style={{ color: '#fed7aa' }}
                       title="Remove tag"
                     >
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
@@ -282,7 +352,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           </div>
           <button
             onClick={onClearAll}
-            className="text-sm text-red-400 hover:text-red-300 border border-red-500 px-4 py-2 hover:bg-red-500 hover:text-white transition-all duration-200 min-h-[44px] sm:min-h-[auto]"
+            className="text-sm text-red-600 hover:text-white border border-red-500 px-4 py-2 hover:bg-red-500 transition-all duration-200 min-h-[44px] sm:min-h-[auto]"
           >
             Clear All
           </button>

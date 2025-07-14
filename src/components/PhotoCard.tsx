@@ -77,17 +77,19 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
   return (
     <div
-      className={`border p-4 rounded-lg cursor-pointer shadow-md hover:shadow-xl transition-all duration-200 ease-in-out flex flex-col relative ${
-        isArchived 
-          ? 'bg-gray-100 border-gray-400 opacity-60' 
-          : 'bg-white border-gray-700 text-gray-800'
-      }`}
+      className="border p-4 rounded-lg cursor-pointer shadow-md hover:shadow-xl transition-all duration-200 ease-in-out flex flex-col relative"
+      style={{
+        backgroundColor: isArchived ? '#f3f4f6' : '#FFFFFF',
+        borderColor: isArchived ? '#9ca3af' : '#d1d5db',
+        opacity: isArchived ? 0.6 : 1,
+        color: '#1f2937'
+      }}
       onClick={() => onPhotoClick(photo)}
     >
       {/* Archived Badge with Unarchive Button */}
       {isArchived && (
         <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
-          <div className="bg-red-600 text-white px-2 py-1 text-xs font-bold rounded">
+          <div className="text-white px-2 py-1 text-xs font-bold rounded" style={{ backgroundColor: '#dc2626' }}>
             ARCHIVED
           </div>
           {onUnarchivePhoto && (
@@ -96,7 +98,10 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                 e.stopPropagation();
                 onUnarchivePhoto(photo.id);
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 text-xs font-bold rounded transition-colors"
+              className="text-white px-2 py-1 text-xs font-bold rounded transition-colors"
+              style={{ backgroundColor: '#2563eb' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#1d4ed8'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#2563eb'}
               title="Unarchive this photo"
             >
               UNARCHIVE
@@ -130,16 +135,16 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
       </div>
 
       <div className="flex flex-col flex-grow">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1 mt-2 truncate" title={`Photo ID: ${photo.id}`}>
+        <h3 className="text-lg font-semibold mb-1 mt-2 truncate" style={{ color: '#111827', fontFamily: 'Space Grotesk, var(--font-heading)' }} title={`Photo ID: ${photo.id}`}>
           {`Photo ID: ${photo.id}`}
         </h3>
-        <p className="text-sm text-gray-600 mb-1 truncate">
+        <p className="text-sm mb-1 truncate" style={{ color: '#4b5563', fontFamily: 'Inter, var(--font-body)' }}>
           By: {photo.creator_name || 'Unknown Creator'}
         </p>
 
 
         {photo.description && (
-          <p className="text-sm text-gray-700 mt-1 mb-2 line-clamp-2" title={photo.description}>
+          <p className="text-sm mt-1 mb-2 line-clamp-2" style={{ color: '#374151', fontFamily: 'Inter, var(--font-body)' }} title={photo.description}>
             {photo.description}
           </p>
         )}
@@ -161,18 +166,38 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                         onTagClick(tag.id);
                       }
                     }}
-                    className={`px-2 py-1 rounded-full text-xs transition-colors duration-150 ease-in-out inline-block
-                      ${onTagClick ? 'cursor-pointer' : 'cursor-default'}
-                      ${tag.isAiEnhanced
-                        ? isActive
-                          ? 'bg-gray-700 text-white hover:bg-gray-600' // AI tag + Active filter
-                          : 'bg-gray-200 text-gray-800 hover:bg-gray-300' // AI tag (not active filter)
-                        : isActive
-                          ? 'bg-gray-800 text-white hover:bg-gray-700' // Normal tag + Active filter
-                          : onTagClick
-                            ? 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200' // Normal tag (not active filter, clickable)
-                            : 'bg-gray-50 text-gray-500' // Normal tag (not active filter, not clickable)
-                      }`}
+                    className={`px-2 py-1 rounded-full text-xs transition-colors duration-150 ease-in-out inline-block ${
+                      onTagClick ? 'cursor-pointer' : 'cursor-default'
+                    }`}
+                    style={{
+                      backgroundColor: tag.isAiEnhanced
+                        ? isActive ? '#374151' : '#e5e7eb'
+                        : isActive ? '#262626' : onTagClick ? '#FFFFFF' : '#f9fafb',
+                      color: tag.isAiEnhanced
+                        ? isActive ? '#FFFFFF' : '#1f2937'
+                        : isActive ? '#FFFFFF' : onTagClick ? '#374151' : '#6b7280',
+                      border: (!tag.isAiEnhanced && !isActive && onTagClick) ? '1px solid #d1d5db' : 'none'
+                    }}
+                    onMouseEnter={onTagClick ? (e) => {
+                      if (tag.isAiEnhanced && !isActive) {
+                        e.target.style.backgroundColor = '#d1d5db';
+                      } else if (!tag.isAiEnhanced && isActive) {
+                        e.target.style.backgroundColor = '#3f3f3f';
+                      } else if (!tag.isAiEnhanced && !isActive && onTagClick) {
+                        e.target.style.backgroundColor = '#f3f4f6';
+                      } else if (!tag.isAiEnhanced && isActive) {
+                        e.target.style.backgroundColor = '#3f3f3f';
+                      }
+                    } : undefined}
+                    onMouseLeave={onTagClick ? (e) => {
+                      if (tag.isAiEnhanced && !isActive) {
+                        e.target.style.backgroundColor = '#e5e7eb';
+                      } else if (!tag.isAiEnhanced && isActive) {
+                        e.target.style.backgroundColor = '#262626';
+                      } else if (!tag.isAiEnhanced && !isActive && onTagClick) {
+                        e.target.style.backgroundColor = '#FFFFFF';
+                      }
+                    } : undefined}
                     title={onTagClick ? `Filter by: ${tag.display_value}${tag.isAiEnhanced ? ' (AI)' : ''}` : `${tag.display_value}${tag.isAiEnhanced ? ' (AI)' : ''}`}
                   >
                     {tag.display_value}
@@ -187,7 +212,10 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                           console.error(`[PhotoCard] Error removing tag '${tag.display_value}':`, err);
                         }
                       }}
-                      className="absolute -top-1 -right-1 w-4 h-4 bg-gray-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-xs hover:bg-red-500"
+                      className="absolute -top-1 -right-1 w-4 h-4 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-xs"
+                      style={{ backgroundColor: '#6b7280' }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#ef4444'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#6b7280'}
                       title="Remove tag"
                     >
                       ×
@@ -197,20 +225,20 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
               );
             })
           ) : (
-            <span className="text-xs text-gray-500 italic">No tags</span>
+            <span className="text-xs italic" style={{ color: '#6b7280' }}>No tags</span>
           )}
         </div>
 
         {/* AI Suggestions Section (for NEW, ephemeral suggestions) */}
-        <div className="mt-3 pt-3 border-t border-gray-300">
+        <div className="mt-3 pt-3 border-t" style={{ borderColor: '#d1d5db' }}>
           {/* Loading State for New Suggestions */}
           {aiSuggestionData?.isSuggesting && (
-            <div className="mt-2 flex items-center justify-center text-gray-700 py-1.5">
+            <div className="mt-2 flex items-center justify-center py-1.5" style={{ color: '#374151' }}>
               <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <span>Suggesting...</span>
+              <span style={{ fontFamily: 'Inter, var(--font-body)' }}>Suggesting...</span>
             </div>
           )}
 
@@ -220,7 +248,25 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             <div className="flex justify-center">
               <button
               onClick={handleSuggestAiTags}
-              className="mt-2 px-6 py-2.5 bg-gray-100 text-gray-700 border border-gray-300 text-sm shadow-sm hover:bg-gray-200 hover:border-orange-500 hover:shadow-md hover:-translate-y-0.5 flex items-center justify-center space-x-1.5 transition-all duration-200 ease-out group active:translate-y-0 active:shadow-sm"
+              className="mt-2 px-6 py-2.5 border text-sm shadow-sm flex items-center justify-center space-x-1.5 transition-all duration-200 ease-out group active:translate-y-0 active:shadow-sm"
+              style={{ 
+                backgroundColor: '#FFFFFF', 
+                color: '#374151', 
+                borderColor: '#d1d5db',
+                fontFamily: 'Inter, var(--font-body)'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#f9fafb';
+                e.target.style.borderColor = '#ea580c';
+                e.target.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+                e.target.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#FFFFFF';
+                e.target.style.borderColor = '#d1d5db';
+                e.target.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';
+                e.target.style.transform = 'translateY(0)';
+              }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 transition-transform duration-200 group-hover:scale-110" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10 3.5a1.5 1.5 0 011.5 1.5v1a1.5 1.5 0 01-3 0v-1A1.5 1.5 0 0110 3.5zM3.188 8.044A5.5 5.5 0 0110 4.5h.008a5.5 5.5 0 016.804 3.544l.002.005.003.005a4.502 4.502 0 01-.82 4.44l-2.67 3.523a1.5 1.5 0 01-2.331.12l-2.67-3.523a4.502 4.502 0 01-.82-4.44l.002-.005.003-.005zM10 13a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
@@ -232,15 +278,15 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
           {/* Error for New Suggestions */}
           {aiSuggestionData?.suggestionError && !aiSuggestionData?.isSuggesting && (
-            <p className="mt-2 text-xs text-red-500">Error: {aiSuggestionData.suggestionError}</p>
+            <p className="mt-2 text-xs" style={{ color: '#ef4444' }}>Error: {aiSuggestionData.suggestionError}</p>
           )}
 
           {/* Display New Suggested Description */}
           {aiSuggestionData?.suggestedDescription && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
             <div className="mt-2 py-2"> {/* Added py-2 for vertical padding */}
-              <p className="text-xs text-gray-700">
-              <span className="font-semibold text-gray-800 mr-1">AI Suggested Description:
-              <span className="text-gray-600 ml-1">
+              <p className="text-xs" style={{ color: '#374151' }}>
+              <span className="font-semibold mr-1" style={{ color: '#1f2937' }}>AI Suggested Description:
+              <span className="ml-1" style={{ color: '#4b5563' }}>
                   {aiSuggestionData.suggestedDescription}
               </span>
               </span>
@@ -250,13 +296,13 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
           {/* Divider between New description and New tags */}
           {aiSuggestionData?.suggestedDescription && aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData.isSuggesting && !aiSuggestionData.suggestionError && (
-            <hr className="my-3 border-gray-300" />
+            <hr className="my-3" style={{ borderColor: '#d1d5db' }} />
           )}
 
           {/* Display New Suggested Tags */}
           {aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
             <div className="mt-2 py-2"> {/* Added py-2 for vertical padding */}
-              <p className="text-xs font-semibold text-gray-800 mb-1">AI Suggested Tags:</p>
+              <p className="text-xs font-semibold mb-1" style={{ color: '#1f2937' }}>AI Suggested Tags:</p>
               <div className="flex flex-wrap gap-1">
                 {aiSuggestionData.suggestedTags.map((tag: string, index: number) => (
                   <button
@@ -269,7 +315,20 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                         console.error(`[PhotoCard] Error calling onAddAiTag for tag '${tag}':`, err);
                       }
                     }}
-                    className="px-2.5 py-1 bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 text-xs rounded-full transition-colors duration-150"
+                    className="px-2.5 py-1 border text-xs rounded-full transition-colors duration-150"
+                    style={{ 
+                      backgroundColor: '#FFFFFF', 
+                      color: '#374151', 
+                      borderColor: '#d1d5db' 
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#f9fafb';
+                      e.target.style.borderColor = '#ea580c';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#FFFFFF';
+                      e.target.style.borderColor = '#d1d5db';
+                    }}
                   >
                     {tag}
                   </button>

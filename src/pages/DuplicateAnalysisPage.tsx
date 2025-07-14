@@ -2,11 +2,33 @@
 // Claude's Visual Duplicate Detection Analysis Page
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { AlertCircle, Eye, Clock, Camera, MapPin, Hash, User, Building, Crown, Star } from 'lucide-react';
+import { useUserContext } from '../contexts/UserContext';
+import type { Photo, Tag } from '../types';
+
+// Import photo management hooks
+import { usePhotosQuery } from '../hooks/usePhotosQuery';
+import { useAiEnhancements } from '../hooks/useAiEnhancements';
+import { useTagManagement } from '../hooks/useTagManagement';
+import { usePhotoModal } from '../hooks/usePhotoModal';
+import { useTagFiltering } from '../hooks/useTagFiltering';
+import { useNotificationManager } from '../hooks/useNotificationManager';
+import { FilterBar } from '../components/FilterBar';
+import { useScoutAi } from '../contexts/ScoutAiContext';
+
+// Import Scout AI
+import { ScoutAiProvider } from '../contexts/ScoutAiContext';
+
+// Import components
+import PhotoModal from '../components/PhotoModal';
+import PhotoCard from '../components/PhotoCard';
+import { ScoutAiDemo } from '../components/ScoutAiDemo';
+import { NotificationsPanel } from '../components/NotificationsPanel';
 
 interface PhotoMetadata {
   id: string;
@@ -81,21 +103,154 @@ interface AnalysisSession {
   };
 }
 
-const DuplicateAnalysisPage: React.FC = () => {
-  const [photos, setPhotos] = useState<PhotoMetadata[]>([]);
+const DuplicateAnalysisPageContent: React.FC = () => {
+  const navigate = useNavigate();
+  const {
+    currentUser,
+    companyDetails,
+    projects: userProjects,
+    loading: userLoading,
+    error: userError,
+    userSettings,
+  } = useUserContext();
+
+  // Claude Vision Analysis State (preserved from original)
+  const [claudePhotos, setClaudePhotos] = useState<PhotoMetadata[]>([]);
   const [analysisSession, setAnalysisSession] = useState<AnalysisSession | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [claudeLoading, setClaudeLoading] = useState(false);
+  const [claudeError, setClaudeError] = useState<string | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoMetadata | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<DuplicateGroup | null>(null);
   const [analysisFilter, setAnalysisFilter] = useState<'all' | 'duplicates' | 'burst_shots' | 'unique'>('all');
   const [visualAnalysisMode, setVisualAnalysisMode] = useState<'metadata' | 'visual_review' | 'claude_analysis'>('metadata');
   const [currentlyAnalyzing, setCurrentlyAnalyzing] = useState<PhotoMetadata | null>(null);
 
-  // Fetch photos from CompanyCam API
+  // Photo Management Hooks (from HomePage)
+  const photosQuery = usePhotosQuery({
+    enabled: !!localStorage.getItem('companyCamApiKey')
+  });
+  
+  const aiEnhancements = useAiEnhancements(currentUser, {
+    onPhotoUpdate: photosQuery.updatePhotoInCache,
+    currentPhoto: undefined,
+  });
+  
+  // State for archived photos toggle
+  const [showArchivedPhotos, setShowArchivedPhotos] = useState(false);
+  
+  // Calculate archived photo count
+  const archivedCount = React.useMemo(() => {
+    return photosQuery.photos.filter(photo => photo.archive_state === 'archived').length;
+  }, [photosQuery.photos]);
+  
+  const tagFiltering = useTagFiltering(photosQuery.photos, { showArchivedPhotos });
+  const tagManagement = useTagManagement(tagFiltering.filteredPhotos, currentUser, {
+    onPhotoUpdate: (photoId: string, newTag: Tag, _isFromAiSuggestion: boolean) => {
+      const photoToUpdate = photosQuery.allPhotos.find(p => p.id === photoId);
+      if (photoToUpdate) {
+        const updatedPhoto = {
+          ...photoToUpdate,
+          tags: [...(photoToUpdate.tags || []), newTag],
+        };
+        photosQuery.updatePhotoInCache(updatedPhoto);
+      }
+    },
+    onPhotoTagRemoved: (photoId: string, removedTag: Tag) => {
+      const photoToUpdate = photosQuery.allPhotos.find(p => p.id === photoId);
+      if (photoToUpdate) {
+        const updatedPhoto = {
+          ...photoToUpdate,
+          tags: (photoToUpdate.tags || []).filter(tag => tag.id !== removedTag.id),
+        };
+        photosQuery.updatePhotoInCache(updatedPhoto);
+      }
+    },
+    removeAiTag: aiEnhancements.removeAiTag,
+  });
+  
+  const photoModal = usePhotoModal(tagFiltering.filteredPhotos);
+  const notificationManager = useNotificationManager();
+  const scoutAi = useScoutAi();
+
+  // Check for API key and redirect if missing
+  useEffect(() => {
+    const apiKey = localStorage.getItem('companyCamApiKey');
+    if (!apiKey) {
+      console.warn('[DuplicateAnalysisPage] No API key found, redirecting to login');
+      navigate('/login');
+      return;
+    }
+  }, [navigate]);
+
+  // Infinite scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop >=
+        document.documentElement.offsetHeight - 1000
+      ) {
+        if (photosQuery.hasMorePhotos && !photosQuery.isFetching) {
+          photosQuery.loadMore();
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [photosQuery.hasMorePhotos, photosQuery.isFetching, photosQuery.loadMore]);
+
+  const handleLogout = () => {
+    console.log('DuplicateAnalysisPage: Logging out.');
+    localStorage.removeItem('companyCamApiKey');
+    navigate('/login');
+  };
+
+  const handleRefreshPhotos = () => {
+    photosQuery.refresh();
+  };
+
+  const handleUnarchivePhoto = (photoId: string) => {
+    console.log('[DuplicateAnalysisPage] Unarchiving photo:', photoId);
+    const photo = photosQuery.allPhotos.find(p => p.id === photoId);
+    if (!photo) {
+      console.error('[DuplicateAnalysisPage] Photo not found for unarchiving:', photoId);
+      return;
+    }
+
+    const updatedPhoto: Photo = {
+      ...photo,
+      archive_state: undefined,
+      archived_at: undefined,
+      archive_reason: undefined
+    };
+
+    photosQuery.updatePhotoInCache(updatedPhoto);
+  };
+
+  const handleAnalyzePhotos = (mode: 'new' | 'all' | 'force') => {
+    if (!currentUser) return;
+    
+    let filterOptions;
+    switch (mode) {
+      case 'new':
+        filterOptions = { mode: 'smart' as const, newPhotoDays: 30, forceReanalysis: false, includeArchived: false };
+        break;
+      case 'all':
+        filterOptions = { mode: 'all' as const, forceReanalysis: false, includeArchived: false };
+        break;
+      case 'force':
+        filterOptions = { mode: 'all' as const, forceReanalysis: true, includeArchived: true };
+        break;
+    }
+    
+    console.log('[DuplicateAnalysisPage] Triggering analysis with mode:', mode, 'options:', filterOptions);
+    scoutAi.analyzeSimilarPhotos(photosQuery.allPhotos, true, filterOptions);
+  };
+
+  // Claude Vision Analysis - Fetch photos from CompanyCam API
   const fetchPhotos = async (maxPhotos: number = 50) => {
-    setLoading(true);
-    setError(null);
+    setClaudeLoading(true);
+    setClaudeError(null);
     
     try {
       console.log('[DuplicateAnalysis] Fetching photos from CompanyCam API...');
@@ -119,7 +274,7 @@ const DuplicateAnalysisPage: React.FC = () => {
       const data = await response.json();
       console.log('[DuplicateAnalysis] Fetched photos:', data);
       
-      setPhotos(data.photos || []);
+      setClaudePhotos(data.photos || []);
       
       if (data.photos && data.photos.length > 0) {
         // Auto-start analysis
@@ -128,9 +283,9 @@ const DuplicateAnalysisPage: React.FC = () => {
 
     } catch (err: any) {
       console.error('[DuplicateAnalysis] Error fetching photos:', err);
-      setError(err.message || 'Failed to fetch photos');
+      setClaudeError(err.message || 'Failed to fetch photos');
     } finally {
-      setLoading(false);
+      setClaudeLoading(false);
     }
   };
 
@@ -451,85 +606,289 @@ const DuplicateAnalysisPage: React.FC = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="py-6 shadow-lg" style={{ backgroundColor: '#262626' }}>
-        <div className="max-w-7xl mx-auto px-4">
-          <div>
+  // Handle user context loading and errors
+  if (userLoading) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+        <div className="py-6 shadow-lg" style={{ backgroundColor: '#262626' }}>
+          <div className="max-w-7xl mx-auto px-4">
             <h1 
-              className="text-2xl md:text-4xl font-bold mb-2" 
+              className="text-2xl md:text-4xl font-bold mb-2 text-white" 
               style={{ 
-                fontFamily: 'var(--font-heading)', 
+                fontFamily: 'Space Grotesk, var(--font-heading)', 
                 color: '#FFFFFF' 
               }}
             >
               Scout AI
             </h1>
-            <p 
-              className="leading-relaxed font-medium" 
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-gray-700 text-lg">Loading user context...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (userError) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+        <div className="py-6 shadow-lg" style={{ backgroundColor: '#262626' }}>
+          <div className="max-w-7xl mx-auto px-4">
+            <h1 
+              className="text-2xl md:text-4xl font-bold mb-2 text-white" 
               style={{ 
-                fontFamily: 'var(--font-body)', 
-                color: '#C3C3C3' 
+                fontFamily: 'Space Grotesk, var(--font-heading)', 
+                color: '#FFFFFF' 
               }}
             >
-              Visual analysis and duplicate detection powered by Claude Vision
-            </p>
+              Scout AI
+            </h1>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-red-600 text-lg">Error: {userError}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+        <div className="py-6 shadow-lg" style={{ backgroundColor: '#262626' }}>
+          <div className="max-w-7xl mx-auto px-4">
+            <h1 
+              className="text-2xl md:text-4xl font-bold mb-2 text-white" 
+              style={{ 
+                fontFamily: 'Space Grotesk, var(--font-heading)', 
+                color: '#FFFFFF' 
+              }}
+            >
+              Scout AI
+            </h1>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-gray-700 text-lg">No user found. Please log in.</div>
+        </div>
+      </div>
+    );
+  }
+
+  const modalSelectedPhoto = photoModal.selectedPhoto;
+
+  return (
+    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+      {/* Header with User Info */}
+      <div className="py-6 shadow-lg" style={{ backgroundColor: '#262626' }}>
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center space-y-4 md:space-y-0">
+            <div>
+              <h1 
+                className="text-2xl md:text-4xl font-bold mb-2 text-white" 
+                style={{ 
+                  fontFamily: 'Space Grotesk, var(--font-heading)', 
+                  color: '#FFFFFF' 
+                }}
+              >
+                Scout AI
+              </h1>
+              <p 
+                className="leading-relaxed font-medium" 
+                style={{ 
+                  fontFamily: 'Inter, var(--font-body)', 
+                  color: '#C3C3C3' 
+                }}
+              >
+                Photo management with AI analysis and Claude Vision duplicate detection
+              </p>
+            </div>
+            
+            {/* User Info */}
+            <div className="text-center md:text-right">
+              {currentUser && (
+                <div>
+                  <h2 className="text-base sm:text-lg font-light text-white">
+                    Welcome, <span className="font-semibold">{currentUser.first_name || currentUser.email_address}</span>!
+                  </h2>
+                  {companyDetails && (
+                    <p className="text-sm" style={{ color: '#C3C3C3' }}>
+                      {companyDetails.name}
+                    </p>
+                  )}
+                  {userProjects.length > 0 && (
+                    <p className="text-xs" style={{ color: '#A3A3A3' }}>
+                      {userProjects.length} project{userProjects.length === 1 ? '' : 's'}
+                    </p>
+                  )}
+                  <div className="mt-2 flex flex-col sm:flex-row items-center justify-center md:justify-end space-y-1 sm:space-y-0 sm:space-x-3">
+                    <button
+                      onClick={handleLogout}
+                      className="text-xs hover:text-white transition-colors"
+                      style={{ color: '#ea580c' }}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
       
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="p-5 font-sans">
+        {/* Photo Management Section */}
+        <div className="max-w-7xl mx-auto">
+          {/* Filter Section */}
+          <FilterBar
+            availableTags={tagFiltering.availableFilterTags}
+            activeTags={tagFiltering.activeTagIds}
+            onToggleTag={tagFiltering.toggleTag}
+            onClearAll={tagFiltering.clearAllFilters}
+            totalPhotos={photosQuery.allPhotos.length}
+            filteredCount={tagFiltering.filteredPhotos.length}
+            onRefresh={handleRefreshPhotos}
+            isRefreshing={photosQuery.isLoading}
+            onAnalyze={currentUser ? handleAnalyzePhotos : undefined}
+            isAnalyzing={currentUser ? scoutAi.isAnalyzing : false}
+            showArchivedPhotos={showArchivedPhotos}
+            onToggleArchivedPhotos={setShowArchivedPhotos}
+            archivedCount={archivedCount}
+          />
 
-        {/* Controls */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Camera className="w-5 h-5" />
-              Photo Analysis Controls
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 items-center">
-              <Button 
-                onClick={() => fetchPhotos(50)} 
-                disabled={loading}
-                variant="accent"
-                className="flex items-center gap-2"
-              >
-                <Eye className="w-4 h-4" />
-                {loading ? 'Analyzing...' : 'Fetch & Analyze Photos'}
-              </Button>
-              
-              {analysisSession && (
-                <div className="flex gap-2">
-                  <Badge variant="accent">
-                    {analysisSession.metadata.totalAnalyzed} photos analyzed
-                  </Badge>
-                  <Badge variant="destructive">
-                    {analysisSession.metadata.duplicatesFound} duplicates
-                  </Badge>
-                  <Badge variant="outline">
-                    {analysisSession.metadata.burstShotsFound} burst shots
-                  </Badge>
-                </div>
-              )}
+          {/* Error Messages */}
+          {photosQuery.error && (
+            <p className="text-red-600 text-center mb-4 p-3 bg-red-100 border border-red-300 rounded-md">
+              Error: {photosQuery.error.message}
+            </p>
+          )}
+
+          {tagManagement.tagError && (
+            <div className="mb-6 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-md">
+              <p>{tagManagement.tagError}</p>
             </div>
-          </CardContent>
-        </Card>
+          )}
 
-        {/* Error Display */}
-        {error && (
-          <Card className="mb-6 border-red-200 bg-red-50">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-red-700">
-                <AlertCircle className="w-5 h-5" />
-                <span className="font-medium">Error:</span>
-                <span>{error}</span>
+          {/* Scout AI Analysis Interface */}
+          {currentUser && tagFiltering.filteredPhotos.length >= 2 && (scoutAi.isAnalyzing || scoutAi.suggestions.filter(s => s.status !== 'dismissed' && s.status !== 'rejected').length > 0) && (
+            <div className="mb-6">
+              <ScoutAiDemo
+                photos={photosQuery.allPhotos}
+                visible={true}
+                onPhotoUpdate={(updatedPhoto: Photo) => {
+                  photosQuery.updatePhotoInCache(updatedPhoto);
+                }}
+              />
+            </div>
+          )}
+
+          {/* Notifications Panel */}
+          {notificationManager.hasActiveNotifications && (
+            <div className="mb-6">
+              <NotificationsPanel
+                photos={photosQuery.photos}
+                onPhotosUpdate={(updatedPhotos: Photo[]) => {
+                  updatedPhotos.forEach(photo => {
+                    photosQuery.updatePhotoInCache(photo);
+                  });
+                }}
+              />
+            </div>
+          )}
+
+          {/* Loading State */}
+          {photosQuery.isLoading && photosQuery.photos.length === 0 && (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#ea580c' }}></div>
+              <p className="mt-4 text-gray-600">Loading photos...</p>
+            </div>
+          )}
+
+          {/* Photo Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-6">
+            {tagFiltering.filteredPhotos.map((photo) => {
+              const aiData = aiEnhancements.getAiDataForPhoto(photo.id);
+              return (
+                <PhotoCard
+                  key={photo.id}
+                  photo={photo}
+                  onAddTagToCompanyCam={tagManagement.handleAddTagRequest}
+                  onAddAiTag={aiEnhancements.addAiTag}
+                  onRemoveTag={tagManagement.handleRemoveTagRequest}
+                  onTagClick={tagFiltering.toggleTag}
+                  onPhotoClick={() => photoModal.openModal(photo)}
+                  mockTagsData={[]}
+                  aiSuggestionData={aiData}
+                  onFetchAiSuggestions={aiEnhancements.fetchAiSuggestions}
+                  onUnarchivePhoto={handleUnarchivePhoto}
+                />
+              );
+            })}
+          </div>
+
+          {/* Load More Indicator */}
+          {tagFiltering.filteredPhotos.length > 0 && photosQuery.isLoadingMore && (
+            <div className="text-center mt-8">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2" style={{ borderColor: '#ea580c' }}></div>
+              <p className="mt-2 text-gray-600">Loading more photos...</p>
+            </div>
+          )}
+        </div>
+
+        {/* Claude Vision Analysis Section */}
+        <div className="max-w-7xl mx-auto mt-8">
+
+          {/* Claude Vision Controls */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Camera className="w-5 h-5" />
+                Claude Vision Duplicate Analysis
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-4 items-center">
+                <Button 
+                  onClick={() => fetchPhotos(50)} 
+                  disabled={claudeLoading}
+                  variant="accent"
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  {claudeLoading ? 'Analyzing...' : 'Run Claude Vision Analysis'}
+                </Button>
+                
+                {analysisSession && (
+                  <div className="flex gap-2">
+                    <Badge variant="accent">
+                      {analysisSession.metadata.totalAnalyzed} photos analyzed
+                    </Badge>
+                    <Badge variant="destructive">
+                      {analysisSession.metadata.duplicatesFound} duplicates
+                    </Badge>
+                    <Badge variant="outline">
+                      {analysisSession.metadata.burstShotsFound} burst shots
+                    </Badge>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
-        )}
+
+          {/* Claude Error Display */}
+          {claudeError && (
+            <Card className="mb-6 border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 text-red-700">
+                  <AlertCircle className="w-5 h-5" />
+                  <span className="font-medium">Claude Vision Error:</span>
+                  <span>{claudeError}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
         {/* Analysis Results */}
         {analysisSession && (
@@ -1009,8 +1368,41 @@ const DuplicateAnalysisPage: React.FC = () => {
             </Card>
           </div>
         )}
+        </div>
       </div>
+
+      {/* Photo Modal */}
+      {photoModal.isModalOpen && modalSelectedPhoto && (
+        <PhotoModal
+          photo={modalSelectedPhoto}
+          onClose={photoModal.closeModal}
+          apiKey={localStorage.getItem('companyCamApiKey') || ''}
+          onAddTagToCompanyCam={tagManagement.handleAddTagRequest}
+          onAddAiTag={aiEnhancements.addAiTag}
+          onRemoveTag={tagManagement.handleRemoveTagRequest}
+          aiSuggestionData={aiEnhancements.getAiDataForPhoto(modalSelectedPhoto.id)}
+          onFetchAiSuggestions={aiEnhancements.fetchAiSuggestions}
+          onSaveAiDescription={aiEnhancements.saveAiDescription}
+          onShowNextPhoto={photoModal.showNextPhoto}
+          onShowPreviousPhoto={photoModal.showPreviousPhoto}
+          canNavigateNext={photoModal.canNavigateNext}
+          canNavigatePrevious={photoModal.canNavigatePrevious}
+          currentIndex={photoModal.currentIndex}
+          totalPhotos={photoModal.totalPhotos}
+        />
+      )}
     </div>
+  );
+};
+
+// Wrapper component with ScoutAiProvider
+const DuplicateAnalysisPage: React.FC = () => {
+  const { currentUser } = useUserContext();
+  
+  return (
+    <ScoutAiProvider userId={currentUser?.id || null}>
+      <DuplicateAnalysisPageContent />
+    </ScoutAiProvider>
   );
 };
 

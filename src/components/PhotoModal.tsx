@@ -148,15 +148,16 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
       onClick={onClose} // Click on backdrop to close
     >
       <div 
-        className="bg-light-gray rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-xl sm:rounded-lg sm:max-h-[90vh] max-sm:h-screen max-sm:max-w-full max-sm:rounded-none"
+        className="rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-xl sm:rounded-lg sm:max-h-[90vh] max-sm:h-screen max-sm:max-w-full max-sm:rounded-none"
+        style={{ backgroundColor: '#f5f5f5' }}
         onClick={(e) => e.stopPropagation()} // Prevent backdrop click from triggering when clicking on modal content
       >
         {/* Header / Counter / Close Button */}
-        <div className="flex justify-between items-center p-3 border-b border-gray-200 bg-gray-50">
+        <div className="flex justify-between items-center p-3 border-b" style={{ borderColor: '#d1d5db', backgroundColor: '#FFFFFF' }}>
           {/* Counter */}
           <div className="flex items-center">
             {totalPhotos > 0 && (
-              <span className="text-sm text-gray-600">
+              <span className="text-sm" style={{ color: '#4b5563', fontFamily: 'Inter, var(--font-body)' }}>
                 {currentIndex + 1} / {totalPhotos}
               </span>
             )}
@@ -168,7 +169,16 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           {/* Close Button */}
           <button 
             onClick={onClose} 
-            className="p-2 rounded-full hover:bg-gray-200 text-gray-600 hover:text-gray-800 transition-colors"
+            className="p-2 rounded-full transition-colors"
+            style={{ color: '#4b5563' }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#f3f4f6';
+              e.target.style.color = '#1f2937';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'transparent';
+              e.target.style.color = '#4b5563';
+            }}
             aria-label="Close"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -176,11 +186,11 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         </div>
 
         {/* Image Container with Navigation Arrows */}
-        <div className="relative w-full aspect-video overflow-hidden bg-gray-100 group">
+        <div className="relative w-full aspect-video overflow-hidden group" style={{ backgroundColor: '#f3f4f6' }}>
           {mainImageUri ? (
             <img src={mainImageUri} alt={photo.description || 'Photo'} className="w-full h-full object-contain" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-500">No image available</div>
+            <div className="w-full h-full flex items-center justify-center" style={{ color: '#6b7280' }}>No image available</div>
           )}
 
           {/* Previous Button */}
@@ -207,35 +217,38 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
         {/* Scrollable Info Section */}
         <div className="flex-1 p-4 overflow-y-auto space-y-4">
           <div>
-            <p className="text-sm text-gray-600 mb-1">
+            <p className="text-sm mb-1" style={{ color: '#4b5563', fontFamily: 'Inter, var(--font-body)' }}>
               <span className="font-medium">Captured By:</span> {photo.creator_name}
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm" style={{ color: '#4b5563', fontFamily: 'Inter, var(--font-body)' }}>
               <span className="font-medium">Captured On:</span> {formatDate(photo.captured_at)}
             </p>
           </div>
 
           <div>
-            <h3 className="text-md font-semibold text-gray-700 mb-1">Description:</h3>
+            <h3 className="text-md font-semibold mb-1" style={{ color: '#374151', fontFamily: 'Space Grotesk, var(--font-heading)' }}>Description:</h3>
             {photo.description ? (
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{photo.description}</p>
+              <p className="text-sm whitespace-pre-wrap" style={{ color: '#4b5563', fontFamily: 'Inter, var(--font-body)' }}>{photo.description}</p>
             ) : (
-              <p className="text-sm text-gray-500 italic">No description provided.</p>
+              <p className="text-sm italic" style={{ color: '#6b7280', fontFamily: 'Inter, var(--font-body)' }}>No description provided.</p>
             )}
           </div>
 
           <div>
-            <h3 className="text-md font-semibold text-gray-700 mb-2">Tags:</h3>
+            <h3 className="text-md font-semibold mb-2" style={{ color: '#374151', fontFamily: 'Space Grotesk, var(--font-heading)' }}>Tags:</h3>
             {photo.tags && photo.tags.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {photo.tags.map((tag) => {
                   const isAiTag = tag.isAiEnhanced;
-                  const tagStyle = isAiTag
-                    ? 'bg-gray-200 text-gray-800 border border-gray-300'
-                    : 'bg-gray-100 text-gray-700 border border-gray-300';
                   return (
                     <span key={tag.id} className="relative inline-block group">
-                      <span className={`px-3 py-1 rounded-full text-sm ${tagStyle} cursor-default inline-block`}>
+                      <span 
+                        className="px-3 py-1 rounded-full text-sm border cursor-default inline-block"
+                        style={{
+                          backgroundColor: isAiTag ? '#e5e7eb' : '#FFFFFF',
+                          color: isAiTag ? '#1f2937' : '#374151',
+                          borderColor: '#d1d5db'
+                        }}
                         {tag.display_value}{isAiTag ? ' (AI)' : ''}
                       </span>
                       {onRemoveTag && (
@@ -248,7 +261,10 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                               console.error(`[PhotoModal] Error removing tag '${tag.display_value}':`, err);
                             }
                           }}
-                          className="absolute -top-1 -right-1 w-4 h-4 bg-gray-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-xs hover:bg-red-500"
+                          className="absolute -top-1 -right-1 w-4 h-4 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-xs"
+                          style={{ backgroundColor: '#6b7280' }}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = '#ef4444'}
+                          onMouseLeave={(e) => e.target.style.backgroundColor = '#6b7280'}
                           title="Remove tag"
                         >
                           ×
@@ -259,7 +275,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 })}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 italic">No tags yet.</p>
+              <p className="text-sm italic" style={{ color: '#6b7280', fontFamily: 'Inter, var(--font-body)' }}>No tags yet.</p>
             )}
           </div>
           
@@ -268,8 +284,8 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           <div>
             {/* Loading State for New AI Suggestions (Ephemeral) */}
             {aiSuggestionData?.isSuggesting && (
-              <div className="mt-2 flex items-center justify-center text-gray-500 py-1.5">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <div className="mt-2 flex items-center justify-center py-1.5" style={{ color: '#6b7280' }}>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4" style={{ color: '#6b7280' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -283,7 +299,21 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               ) && (
               <button 
                 onClick={handleFetchAiSuggestionsFromProp} 
-                className="w-full sm:w-auto mt-1 px-5 py-2.5 bg-gray-100 text-gray-700 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-200 hover:border-orange-500 transition-colors flex items-center justify-center space-x-2"
+                className="w-full sm:w-auto mt-1 px-5 py-2.5 border rounded-md cursor-pointer transition-colors flex items-center justify-center space-x-2"
+                style={{ 
+                  backgroundColor: '#FFFFFF', 
+                  color: '#374151', 
+                  borderColor: '#d1d5db',
+                  fontFamily: 'Inter, var(--font-body)'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#f9fafb';
+                  e.target.style.borderColor = '#ea580c';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#FFFFFF';
+                  e.target.style.borderColor = '#d1d5db';
+                }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v6h6a1 1 0 110 2h-6v6a1 1 0 11-2 0v-6H3a1 1 0 110-2h6V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
                 <span>Get AI Suggestions</span>
@@ -292,22 +322,37 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
             {/* Display error from fetching new suggestions */}
             {aiSuggestionData?.suggestionError && !aiSuggestionData?.isSuggesting && (
-              <p className="text-red-500 text-sm mt-2">Error fetching suggestions: {aiSuggestionData.suggestionError}</p>
+              <p className="text-sm mt-2" style={{ color: '#ef4444' }}>Error fetching suggestions: {aiSuggestionData.suggestionError}</p>
             )}
             
             {/* Display error from adding a tag (modal specific) */}
-            {modalAiError && <p className="text-red-500 text-sm mt-2">Error: {modalAiError}</p>}
+            {modalAiError && <p className="text-sm mt-2" style={{ color: '#ef4444' }}>Error: {modalAiError}</p>}
 
             {/* Editable Description Section (Unified) */}
             {!aiSuggestionData?.isSuggesting && (
               <div className="mt-3">
-                <h4 className="text-md font-semibold text-gray-700 mb-1">
+                <h4 className="text-md font-semibold mb-1" style={{ color: '#374151', fontFamily: 'Space Grotesk, var(--font-heading)' }}>
                   Edit Description:
                 </h4>
                 <textarea
                   value={editableDescription}
                   onChange={(e) => setEditableDescription(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md text-sm text-gray-700 focus:ring-orange-500 focus:border-orange-500 min-h-[80px] bg-light-gray"
+                  className="w-full p-2 border rounded-md text-sm min-h-[80px]"
+                  style={{ 
+                    borderColor: '#d1d5db',
+                    color: '#374151',
+                    backgroundColor: '#f5f5f5',
+                    fontFamily: 'Inter, var(--font-body)'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#ea580c';
+                    e.target.style.outline = 'none';
+                    e.target.style.boxShadow = '0 0 0 1px #ea580c';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#d1d5db';
+                    e.target.style.boxShadow = 'none';
+                  }}
                   placeholder="Enter or edit description..."
                   rows={3}
                 />
@@ -323,7 +368,25 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     setIsSavingDescription(false);
                   }}
                   disabled={isSavingDescription || editableDescription === (photo.description || '')}
-                  className="mt-2 px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-200 hover:border-orange-500 disabled:bg-gray-300 disabled:text-gray-500 transition-colors text-sm"
+                  className="mt-2 px-4 py-2 border rounded-md transition-colors text-sm"
+                  style={{ 
+                    backgroundColor: isSavingDescription ? '#f3f4f6' : '#FFFFFF',
+                    color: isSavingDescription ? '#6b7280' : '#374151',
+                    borderColor: '#d1d5db',
+                    fontFamily: 'Inter, var(--font-body)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSavingDescription) {
+                      e.target.style.backgroundColor = '#f9fafb';
+                      e.target.style.borderColor = '#ea580c';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSavingDescription) {
+                      e.target.style.backgroundColor = '#FFFFFF';
+                      e.target.style.borderColor = '#d1d5db';
+                    }
+                  }}
                 >
                   {isSavingDescription ? 'Saving...' : 'Save Description'}
                 </button>
@@ -333,14 +396,31 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             {/* Display Filtered New AI Suggested Tags */}
             {filteredAiSuggestedTags.length > 0 && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
               <div className="mt-3">
-                <h4 className="text-md font-semibold text-gray-700 mb-1">AI Suggested Tags (click to add):</h4>
+                <h4 className="text-md font-semibold mb-1" style={{ color: '#374151', fontFamily: 'Space Grotesk, var(--font-heading)' }}>AI Suggested Tags (click to add):</h4>
                 <div className="flex flex-wrap gap-2">
                   {filteredAiSuggestedTags.map((tag, index) => (
                     <button
                       key={`ai-modal-tag-${index}`}
                       onClick={() => handleAddAiTag(tag)}
                       disabled={addingTag === tag}
-                      className="px-3 py-1 bg-gray-100 text-gray-700 border border-gray-300 rounded-full text-sm hover:bg-gray-200 hover:border-orange-500 disabled:bg-gray-300 disabled:text-gray-500 transition-colors"
+                      className="px-3 py-1 border rounded-full text-sm transition-colors"
+                      style={{ 
+                        backgroundColor: addingTag === tag ? '#f3f4f6' : '#FFFFFF',
+                        color: addingTag === tag ? '#6b7280' : '#374151',
+                        borderColor: '#d1d5db'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (addingTag !== tag) {
+                          e.target.style.backgroundColor = '#f9fafb';
+                          e.target.style.borderColor = '#ea580c';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (addingTag !== tag) {
+                          e.target.style.backgroundColor = '#FFFFFF';
+                          e.target.style.borderColor = '#d1d5db';
+                        }
+                      }}
                     >
                       {addingTag === tag ? 'Adding...' : tag}
                     </button>
