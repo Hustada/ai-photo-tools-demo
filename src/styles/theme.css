@@ -7,7 +7,7 @@
   --font-body: 'Inter', sans-serif;
   
   /* Color Palette */
-  /* Primary - Charcoal */
+  /* Primary - Charcoal (Norse-inspired) */
   --color-charcoal-50: #f9fafb;
   --color-charcoal-100: #f3f4f6;
   --color-charcoal-200: #e5e7eb;
@@ -16,8 +16,8 @@
   --color-charcoal-500: #6b7280;
   --color-charcoal-600: #4b5563;
   --color-charcoal-700: #374151;
-  --color-charcoal-800: #1f2937;
-  --color-charcoal-900: #111827;
+  --color-charcoal-800: #262626;
+  --color-charcoal-900: #1f1f1f;
   
   /* Secondary - White/Light */
   --color-white: #ffffff;

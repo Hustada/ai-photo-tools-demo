@@ -454,22 +454,27 @@ const DuplicateAnalysisPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gray-800 text-white p-6 shadow-lg">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
-                Scout AI
-              </h1>
-              <p className="text-gray-300" style={{ fontFamily: 'var(--font-body)' }}>
-                Visual analysis and duplicate detection powered by Claude Vision
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="accent" className="text-sm">
-                Claude Vision
-              </Badge>
-            </div>
+      <div className="py-6 shadow-lg" style={{ backgroundColor: '#262626' }}>
+        <div className="max-w-7xl mx-auto px-4">
+          <div>
+            <h1 
+              className="text-2xl md:text-4xl font-bold mb-2" 
+              style={{ 
+                fontFamily: 'var(--font-heading)', 
+                color: '#FFFFFF' 
+              }}
+            >
+              Scout AI
+            </h1>
+            <p 
+              className="leading-relaxed font-medium" 
+              style={{ 
+                fontFamily: 'var(--font-body)', 
+                color: '#C3C3C3' 
+              }}
+            >
+              Visual analysis and duplicate detection powered by Claude Vision
+            </p>
           </div>
         </div>
       </div>
