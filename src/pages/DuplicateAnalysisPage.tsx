@@ -452,17 +452,29 @@ const DuplicateAnalysisPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Claude's Duplicate Detection Analysis
-          </h1>
-          <p className="text-gray-600">
-            Visual analysis of CompanyCam photos for duplicates, burst shots, and similar compositions
-          </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-gray-800 text-white p-6 shadow-lg">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
+                Scout AI
+              </h1>
+              <p className="text-gray-300" style={{ fontFamily: 'var(--font-body)' }}>
+                Visual analysis and duplicate detection powered by Claude Vision
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Badge variant="accent" className="text-sm">
+                Claude Vision
+              </Badge>
+            </div>
+          </div>
         </div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto p-6">
 
         {/* Controls */}
         <Card className="mb-6">
@@ -477,6 +489,7 @@ const DuplicateAnalysisPage: React.FC = () => {
               <Button 
                 onClick={() => fetchPhotos(50)} 
                 disabled={loading}
+                variant="accent"
                 className="flex items-center gap-2"
               >
                 <Eye className="w-4 h-4" />
@@ -485,10 +498,10 @@ const DuplicateAnalysisPage: React.FC = () => {
               
               {analysisSession && (
                 <div className="flex gap-2">
-                  <Badge variant="outline">
+                  <Badge variant="accent">
                     {analysisSession.metadata.totalAnalyzed} photos analyzed
                   </Badge>
-                  <Badge variant="outline">
+                  <Badge variant="destructive">
                     {analysisSession.metadata.duplicatesFound} duplicates
                   </Badge>
                   <Badge variant="outline">
@@ -599,7 +612,7 @@ const DuplicateAnalysisPage: React.FC = () => {
                         View Burst Shots
                       </Button>
                       <Button 
-                        variant="outline" 
+                        variant="accent" 
                         size="sm" 
                         className="w-full"
                         onClick={() => fetchPhotos(100)}
@@ -620,28 +633,28 @@ const DuplicateAnalysisPage: React.FC = () => {
                     <span>Photo Analysis Grid</span>
                     <div className="flex gap-2">
                       <Button
-                        variant={analysisFilter === 'all' ? 'default' : 'outline'}
+                        variant={analysisFilter === 'all' ? 'accent' : 'outline'}
                         size="sm"
                         onClick={() => setAnalysisFilter('all')}
                       >
                         All ({analysisSession.analysisResults.length})
                       </Button>
                       <Button
-                        variant={analysisFilter === 'duplicates' ? 'default' : 'outline'}
+                        variant={analysisFilter === 'duplicates' ? 'accent' : 'outline'}
                         size="sm"
                         onClick={() => setAnalysisFilter('duplicates')}
                       >
                         Duplicates ({analysisSession.metadata.duplicatesFound})
                       </Button>
                       <Button
-                        variant={analysisFilter === 'burst_shots' ? 'default' : 'outline'}
+                        variant={analysisFilter === 'burst_shots' ? 'accent' : 'outline'}
                         size="sm"
                         onClick={() => setAnalysisFilter('burst_shots')}
                       >
                         Burst Shots ({analysisSession.metadata.burstShotsFound})
                       </Button>
                       <Button
-                        variant={analysisFilter === 'unique' ? 'default' : 'outline'}
+                        variant={analysisFilter === 'unique' ? 'accent' : 'outline'}
                         size="sm"
                         onClick={() => setAnalysisFilter('unique')}
                       >
