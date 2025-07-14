@@ -1,0 +1,122 @@
+/* Scout AI Theme Configuration */
+/* © 2025 Mark Hustad — MIT License */
+
+:root {
+  /* Typography */
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  
+  /* Color Palette */
+  /* Primary - Charcoal */
+  --color-charcoal-50: #f9fafb;
+  --color-charcoal-100: #f3f4f6;
+  --color-charcoal-200: #e5e7eb;
+  --color-charcoal-300: #d1d5db;
+  --color-charcoal-400: #9ca3af;
+  --color-charcoal-500: #6b7280;
+  --color-charcoal-600: #4b5563;
+  --color-charcoal-700: #374151;
+  --color-charcoal-800: #1f2937;
+  --color-charcoal-900: #111827;
+  
+  /* Secondary - White/Light */
+  --color-white: #ffffff;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  
+  /* Accent - Burnt Orange */
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-200: #fed7aa;
+  --color-orange-300: #fdba74;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  --color-orange-700: #c2410c;
+  --color-orange-800: #9a3412;
+  --color-orange-900: #7c2d12;
+  
+  /* Semantic Colors */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  
+  /* Component-specific variables */
+  --color-primary: var(--color-charcoal-700);
+  --color-primary-hover: var(--color-charcoal-800);
+  --color-secondary: var(--color-white);
+  --color-accent: var(--color-orange-600);
+  --color-accent-hover: var(--color-orange-700);
+  
+  /* Text colors */
+  --color-text-primary: var(--color-charcoal-900);
+  --color-text-secondary: var(--color-charcoal-600);
+  --color-text-muted: var(--color-charcoal-500);
+  --color-text-white: var(--color-white);
+  
+  /* Border colors */
+  --color-border: var(--color-charcoal-200);
+  --color-border-focus: var(--color-orange-500);
+  
+  /* Background colors */
+  --color-bg-primary: var(--color-white);
+  --color-bg-secondary: var(--color-gray-50);
+  --color-bg-tertiary: var(--color-gray-100);
+}
+
+/* Typography System */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+body, p, span, li, div, button, input, textarea, select {
+  font-family: var(--font-body);
+}
+
+/* Global text color adjustments */
+body {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-secondary);
+}
+
+/* Utility classes for the new theme */
+.text-charcoal {
+  color: var(--color-charcoal-700);
+}
+
+.text-orange {
+  color: var(--color-orange-600);
+}
+
+.bg-charcoal {
+  background-color: var(--color-charcoal-700);
+}
+
+.bg-orange {
+  background-color: var(--color-orange-600);
+}
+
+.border-charcoal {
+  border-color: var(--color-charcoal-300);
+}
+
+.border-orange {
+  border-color: var(--color-orange-300);
+}
+
+/* Hover states */
+.hover\:bg-charcoal:hover {
+  background-color: var(--color-charcoal-800);
+}
+
+.hover\:bg-orange:hover {
+  background-color: var(--color-orange-700);
+}
+
+.hover\:text-orange:hover {
+  color: var(--color-orange-600);
+}

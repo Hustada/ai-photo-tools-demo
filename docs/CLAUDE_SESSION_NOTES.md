@@ -51,7 +51,7 @@ Claude Vision API is analyzing real CompanyCam photos with excellent results:
 
 ## 🚀 **Next Steps**
 1. **Restart terminal** to fix environment variables
-2. **Optional**: Run CodeCraft documentation with `npm run blog:start "Claude Vision API"`
+2. **Optional**: Run CodeCraft documentation with `npm run docs:start "Claude Vision API"`
 3. **Optional**: Push branch to remote
 4. **Ready for production**: Feature is complete and tested
 

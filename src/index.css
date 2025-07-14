@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Scout AI Theme */
+@import './styles/theme.css';
+
 @layer utilities {
   .bg-light-gray {
     background-color: #f5f5f7;
