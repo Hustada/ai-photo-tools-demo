@@ -1,9 +1,9 @@
+/* Import Scout AI Theme */
+@import './styles/theme.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import Scout AI Theme */
-@import './styles/theme.css';
 
 @layer utilities {
   .bg-light-gray {
