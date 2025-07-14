@@ -13,7 +13,7 @@ async function cancelBlogSession() {
     if (!activeSession) {
       console.error('❌ No active documentation session found');
       console.log('\nNothing to cancel. Start a new session:');
-      console.log('  npm run blog:start "Your Feature Name"');
+      console.log('  npm run docs:start "Your Feature Name"');
       process.exit(1);
     }
 
@@ -36,8 +36,8 @@ async function cancelBlogSession() {
     
     console.log('\n✅ Session cancelled and cleaned up');
     console.log('\nYou can now:');
-    console.log('  1. Start a new session: npm run blog:start "New Feature Name"');
-    console.log('  2. Check status: npm run blog:status');
+    console.log('  1. Start a new session: npm run docs:start "New Feature Name"');
+    console.log('  2. Check status: npm run docs:status');
     
   } catch (error) {
     console.error('❌ Failed to cancel blog session:', (error as Error).message);

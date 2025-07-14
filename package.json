@@ -16,13 +16,13 @@
     "clean:api": "find api -name '*.js' -delete && find api -name '*.js.map' -delete",
     "vercel:dev": "npm run clean:api && vercel dev",
     "dev:full": "npm run clean:api && vercel dev --listen 3000 & npm run dev",
-    "blog:start": "tsx ./scripts/blog-start.ts",
-    "blog:complete": "tsx ./scripts/blog-complete.ts",
-    "blog:status": "tsx ./scripts/blog-status.ts",
-    "blog:cancel": "tsx ./scripts/blog-cancel.ts",
-    "blog:cleanup": "tsx ./scripts/blog-cleanup.ts",
-    "blog:preview": "tsx ./scripts/blog-preview.ts",
-    "blog:publish": "tsx ./scripts/blog-publish.ts"
+    "docs:start": "tsx ./scripts/blog-start.ts",
+    "docs:complete": "tsx ./scripts/blog-complete.ts",
+    "docs:status": "tsx ./scripts/blog-status.ts",
+    "docs:cancel": "tsx ./scripts/blog-cancel.ts",
+    "docs:cleanup": "tsx ./scripts/blog-cleanup.ts",
+    "docs:preview": "tsx ./scripts/blog-preview.ts",
+    "docs:publish": "tsx ./scripts/blog-publish.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.56.0",

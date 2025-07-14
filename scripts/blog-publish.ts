@@ -15,7 +15,7 @@ async function publishBlog() {
     // Load active session
     const session = getActiveSession();
     if (!session) {
-      console.error('❌ No active blog session found. Start one with: npm run blog:start');
+      console.error('❌ No active blog session found. Start one with: npm run docs:start');
       process.exit(1);
     }
 
@@ -24,7 +24,7 @@ async function publishBlog() {
     const markdownPath = join(DRAFTS_DIR, `${session.id}.md`);
     
     if (!existsSync(draftPath)) {
-      console.error('❌ No draft found. Generate one with: npm run blog:preview');
+      console.error('❌ No draft found. Generate one with: npm run docs:preview');
       process.exit(1);
     }
 

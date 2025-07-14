@@ -75,6 +75,9 @@ async function completeBlogSession() {
     if (!process.env.OPENAI_API_KEY) {
       console.warn('⚠️  OpenAI API key not found. Skipping AI generation.');
       console.log('Set OPENAI_API_KEY environment variable to enable AI blog generation.');
+      console.log('\n⚠️  Session remains active. Set up your API key and run "npm run docs:complete" again.');
+      console.log('Or cancel with: npm run docs:cancel');
+      process.exit(1);
     } else {
       try {
         const { generateBlogPost } = await import('../src/utils/blogGenerator.js');
@@ -189,10 +192,6 @@ async function completeBlogSession() {
         console.log('Or cancel with: npm run blog:cancel');
         process.exit(1);
       }
-    } else {
-      console.log('\n⚠️  Session remains active. Set up your API key and run "npm run blog:complete" again.');
-      console.log('Or cancel with: npm run blog:cancel');
-      process.exit(1);
     }
     
   } catch (error) {

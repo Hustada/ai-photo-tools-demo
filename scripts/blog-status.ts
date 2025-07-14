@@ -13,7 +13,7 @@ async function checkBlogStatus() {
     if (!hasActiveSession) {
       console.log('❌ No active documentation session');
       console.log('\nStart a new session:');
-      console.log('  npm run blog:start "Your Feature Name"');
+      console.log('  npm run docs:start "Your Feature Name"');
       return;
     }
     
@@ -157,9 +157,9 @@ async function checkBlogStatus() {
     }
     
     console.log('\n🎛️  Available Commands:');
-    console.log('  npm run blog:complete  # Complete session and generate blog');
-    console.log('  npm run blog:cancel    # Cancel current session');
-    console.log('  npm run blog:status    # Show this status (current command)');
+    console.log('  npm run docs:complete  # Complete session and generate blog');
+    console.log('  npm run docs:cancel    # Cancel current session');
+    console.log('  npm run docs:status    # Show this status (current command)');
     
   } catch (error) {
     console.error('❌ Failed to check blog status:', (error as Error).message);

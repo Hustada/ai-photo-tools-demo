@@ -39,19 +39,19 @@ async function cleanupBlogSession() {
       cleanupSession();
       console.log('✅ Stale session cleaned up successfully');
       console.log('\nYou can now start a fresh session:');
-      console.log('  npm run blog:start "Your Feature Name"');
+      console.log('  npm run docs:start "Your Feature Name"');
     } else if (durationDays >= 3) {
       console.log('\n⚠️  Session is getting old (3+ days)');
       console.log('🤔 Consider completing or canceling this session:');
-      console.log('  npm run blog:complete  # Generate blog and finish');
-      console.log('  npm run blog:cancel    # Cancel without generating blog');
+      console.log('  npm run docs:complete  # Generate blog and finish');
+      console.log('  npm run docs:cancel    # Cancel without generating blog');
       console.log('\nOr force cleanup:');
       console.log('  rm .blog-session.json  # Manual cleanup (not recommended)');
     } else {
       console.log('\n✅ Session age is reasonable');
       console.log('💡 No cleanup needed - continue working or complete when ready:');
-      console.log('  npm run blog:status    # Check session progress');
-      console.log('  npm run blog:complete  # Complete and generate blog');
+      console.log('  npm run docs:status    # Check session progress');
+      console.log('  npm run docs:complete  # Complete and generate blog');
     }
     
   } catch (error) {

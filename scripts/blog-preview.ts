@@ -17,7 +17,7 @@ async function previewBlog() {
     // Load active session
     const session = getActiveSession();
     if (!session) {
-      console.error('❌ No active blog session found. Start one with: npm run blog:start');
+      console.error('❌ No active blog session found. Start one with: npm run docs:start');
       process.exit(1);
     }
 
@@ -99,8 +99,8 @@ ${draft.rawContent}`;
     
     console.log('🎯 Next Steps:');
     console.log('   1. Review the markdown file to edit content');
-    console.log('   2. Run "npm run blog:publish" to publish the blog post');
-    console.log('   3. Or run "npm run blog:preview" again to regenerate');
+    console.log('   2. Run "npm run docs:publish" to publish the blog post');
+    console.log('   3. Or run "npm run docs:preview" again to regenerate');
 
   } catch (error) {
     console.error('❌ Error generating blog preview:', error instanceof Error ? error.message : error);

@@ -10,11 +10,11 @@ const args = process.argv.slice(2);
 if (args.length === 0) {
   console.error('❌ Error: Feature name is required');
   console.log('\nUsage:');
-  console.log('  npm run blog:start "Feature Name"');
-  console.log('  npm run blog:start "Feature Name" --description "Optional description"');
-  console.log('  npm run blog:start "Feature Name" --tags "tag1,tag2,tag3"');
+  console.log('  npm run docs:start "Feature Name"');
+  console.log('  npm run docs:start "Feature Name" --description "Optional description"');
+  console.log('  npm run docs:start "Feature Name" --tags "tag1,tag2,tag3"');
   console.log('\nExample:');
-  console.log('  npm run blog:start "Mobile-First FilterBar" --description "Responsive design improvements" --tags "UI,Mobile,Performance"');
+  console.log('  npm run docs:start "Mobile-First FilterBar" --description "Responsive design improvements" --tags "UI,Mobile,Performance"');
   process.exit(1);
 }
 
@@ -42,8 +42,8 @@ async function startBlogSession() {
     if (hasActiveSession && session) {
       console.error(`❌ Active session already exists: "${session.featureName}"`);
       console.log('Complete or cancel the current session before starting a new one:');
-      console.log('  npm run blog:complete  # Complete and generate blog');
-      console.log('  npm run blog:cancel    # Cancel current session');
+      console.log('  npm run docs:complete  # Complete and generate blog');
+      console.log('  npm run docs:cancel    # Cancel current session');
       process.exit(1);
     }
 
@@ -60,7 +60,7 @@ async function startBlogSession() {
       
       console.log('💡 Suggested workflow:');
       console.log(`   git checkout -b ${suggestedBranchName}`);
-      console.log(`   npm run blog:start "${featureName}"`);
+      console.log(`   npm run docs:start "${featureName}"`);
       console.log('');
       console.log('⚡ Or continue on main branch (not recommended for features)');
       console.log('   Press Ctrl+C to cancel and create a branch');
@@ -90,12 +90,12 @@ async function startBlogSession() {
     console.log('\n✅ Documentation session started!');
     console.log('\nNow you can:');
     console.log('  1. Work on your feature normally (git add, commit, etc.)');
-    console.log('  2. When ready, run: npm run blog:complete');
+    console.log('  2. When ready, run: npm run docs:complete');
     console.log('  3. CodeCraft will analyze your changes and generate a blog post');
     
     console.log('\nOther commands:');
-    console.log('  npm run blog:status    # Check current session status');
-    console.log('  npm run blog:cancel    # Cancel current session');
+    console.log('  npm run docs:status    # Check current session status');
+    console.log('  npm run docs:cancel    # Cancel current session');
     
   } catch (error) {
     console.error('❌ Failed to start blog session:', (error as Error).message);

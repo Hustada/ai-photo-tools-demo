@@ -45,7 +45,7 @@ The automated documentation system:
 When you're about to work on a new feature, tell the system to start watching:
 
 \`\`\`bash
-npm run blog:start "Mobile Navigation Improvements"
+npm run docs:start "Mobile Navigation Improvements"
 \`\`\`
 
 **What happens:**
@@ -65,7 +65,7 @@ npm run blog:start "Mobile Navigation Improvements"
 **Pro tip:** Add description and tags for better AI output:
 
 \`\`\`bash
-npm run blog:start "Mobile Navigation" --description "Responsive nav improvements" --tags "UI,Mobile,React"
+npm run docs:start "Mobile Navigation" --description "Responsive nav improvements" --tags "UI,Mobile,React"
 \`\`\`
 
 ### Step 2: Work Normally
@@ -93,7 +93,7 @@ The system isn't watching your keystrokes - it analyzes your git history when yo
 Want to see what the system has tracked so far?
 
 \`\`\`bash
-npm run blog:status
+npm run docs:status
 \`\`\`
 
 **You'll see:**
@@ -111,7 +111,7 @@ npm run blog:status
 First, generate a preview to review the content:
 
 \`\`\`bash
-npm run blog:preview
+npm run docs:preview
 \`\`\`
 
 **What happens behind the scenes:**
@@ -155,7 +155,7 @@ You can refine:
 When satisfied, publish the final post:
 
 \`\`\`bash
-npm run blog:publish
+npm run docs:publish
 \`\`\`
 
 This completes the session and publishes to your blog!
@@ -166,24 +166,24 @@ This completes the session and publishes to your blog!
 
 | Command | Description | Example |
 |---------|-------------|---------|
-| \`npm run blog:start\` | Start documentation session | \`npm run blog:start "Feature Name"\` |
-| \`npm run blog:preview\` | Generate draft for review | \`npm run blog:preview\` |
-| \`npm run blog:publish\` | Publish reviewed blog post | \`npm run blog:publish\` |
-| \`npm run blog:status\` | Check current session status | \`npm run blog:status\` |
-| \`npm run blog:cancel\` | Cancel active session | \`npm run blog:cancel\` |
-| \`npm run blog:cleanup\` | Clean up stale sessions | \`npm run blog:cleanup\` |
+| \`npm run docs:start\` | Start documentation session | \`npm run docs:start "Feature Name"\` |
+| \`npm run docs:preview\` | Generate draft for review | \`npm run docs:preview\` |
+| \`npm run docs:publish\` | Publish reviewed blog post | \`npm run docs:publish\` |
+| \`npm run docs:status\` | Check current session status | \`npm run docs:status\` |
+| \`npm run docs:cancel\` | Cancel active session | \`npm run docs:cancel\` |
+| \`npm run docs:cleanup\` | Clean up stale sessions | \`npm run docs:cleanup\` |
 
 ### Advanced Usage
 
 \`\`\`bash
 # Start with description and tags
-npm run blog:start "Feature Name" --description "What this does" --tags "React,Testing,API"
+npm run docs:start "Feature Name" --description "What this does" --tags "React,Testing,API"
 
 # Check what changes will be analyzed
-npm run blog:status
+npm run docs:status
 
 # Generate the blog post
-npm run blog:complete
+npm run docs:complete
 \`\`\`
 
 ---
@@ -261,7 +261,7 @@ git commit -m "style: implement responsive breakpoints for mobile nav"
 Help the AI understand your work:
 \`\`\`bash
 # Include relevant technologies and concepts
-npm run blog:start "Image Optimization" --tags "Performance,React,WebP,Lazy Loading"
+npm run docs:start "Image Optimization" --tags "Performance,React,WebP,Lazy Loading"
 \`\`\`
 
 ### ⏰ Session Management
@@ -276,15 +276,15 @@ npm run blog:start "Image Optimization" --tags "Performance,React,WebP,Lazy Load
 
 ### "No active documentation session found"
 **Problem**: Trying to complete or check status without starting a session.
-**Solution**: Run \`npm run blog:start "Feature Name"\` first.
+**Solution**: Run \`npm run docs:start "Feature Name"\` first.
 
 ### "Active session already exists"
 **Problem**: Trying to start a new session when one is already active.
-**Solution**: Complete the current session with \`npm run blog:complete\` or cancel it with \`npm run blog:cancel\`.
+**Solution**: Complete the current session with \`npm run docs:complete\` or cancel it with \`npm run docs:cancel\`.
 
 ### "No commits found since session start"
 **Problem**: No git commits made since starting the session.
-**Solution**: Make some commits, then try \`npm run blog:complete\` again.
+**Solution**: Make some commits, then try \`npm run docs:complete\` again.
 
 ### AI Generation Fails
 **Problem**: Blog generation encounters an error.
@@ -332,7 +332,7 @@ npm run blog:start "Image Optimization" --tags "Performance,React,WebP,Lazy Load
 Ready to start documenting your development work automatically? 
 
 1. **[View the Blog →](/blog)** - See examples of generated posts
-2. **Start Your First Session** - Try \`npm run blog:start "My Feature"\`
+2. **Start Your First Session** - Try \`npm run docs:start "My Feature"\`
 3. **Need Help?** - Check this guide or ask the team
 
 Happy coding and documenting! 🎉
@@ -407,7 +407,7 @@ Happy coding and documenting! 🎉
             </h3>
             <p className="text-gray-600 mb-4">Ready to document your first feature?</p>
             <div className="bg-gray-50 rounded-md p-3 font-mono text-sm">
-              npm run blog:start "My Feature"
+              npm run docs:start "My Feature"
             </div>
           </div>
 

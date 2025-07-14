@@ -104,8 +104,8 @@ export const DraftReview: React.FC<DraftReviewProps> = ({
         <div className="text-sm text-gray-600">
           <p>Use the CLI commands to work with drafts:</p>
           <ul className="list-disc list-inside mt-2 space-y-1">
-            <li><code className="bg-gray-100 px-2 py-1 rounded">npm run blog:preview</code> - Generate draft</li>
-            <li><code className="bg-gray-100 px-2 py-1 rounded">npm run blog:publish</code> - Publish draft</li>
+            <li><code className="bg-gray-100 px-2 py-1 rounded">npm run docs:preview</code> - Generate draft</li>
+            <li><code className="bg-gray-100 px-2 py-1 rounded">npm run docs:publish</code> - Publish draft</li>
           </ul>
         </div>
       </div>
