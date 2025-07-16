@@ -868,7 +868,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                     <button
                       onClick={() => setShowAnalysisDropdown(!showAnalysisDropdown)}
                       disabled={scoutAi.isAnalyzing || claudeLoading}
-                      className="inline-flex items-center justify-center px-4 py-2 border rounded-md font-medium transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none gap-2"
+                      className="inline-flex items-center justify-center px-6 py-3 border-2 rounded-lg font-semibold transition-all text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none gap-3 shadow-lg hover:shadow-xl"
                       style={{ 
                         backgroundColor: '#ea580c',
                         borderColor: '#ea580c',
@@ -890,13 +890,13 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                          claudeLoading ? 'Claude Analyzing...' : 
                          'Analyze Photos'}
                       </span>
-                      <svg className={`w-4 h-4 transition-transform ${showAnalysisDropdown ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
+                      <svg className={`w-6 h-6 transition-transform ${showAnalysisDropdown ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
                         <path d="M7 10l5 5 5-5z"/>
                       </svg>
                     </button>
                     
                     {showAnalysisDropdown && (
-                      <div className="absolute top-full mt-2 left-0 w-80 border shadow-xl z-20 rounded-md" style={{ backgroundColor: '#FFFFFF', borderColor: '#e5e7eb' }}>
+                      <div className="absolute top-full mt-3 left-0 w-[28rem] border-2 shadow-2xl z-20 rounded-lg" style={{ backgroundColor: '#FFFFFF', borderColor: '#e5e7eb' }}>
                         {/* Scout AI Analysis Option */}
                         <div className="border-b" style={{ borderColor: '#e5e7eb' }}>
                           <button
@@ -905,22 +905,22 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                               setShowAnalysisDropdown(false);
                             }}
                             disabled={scoutAi.isAnalyzing}
-                            className="w-full text-left px-6 py-4 hover:bg-gray-50 transition-colors flex items-center gap-4 rounded-t-md"
+                            className="w-full text-left px-8 py-5 hover:bg-gray-50 transition-colors flex items-center gap-5 rounded-t-lg"
                           >
                             <div className="flex-shrink-0">
-                              <Eye className="w-5 h-5" style={{ color: '#ea580c' }} />
+                              <Eye className="w-7 h-7" style={{ color: '#ea580c' }} />
                             </div>
                             <div className="flex-1">
-                              <div className="font-semibold text-base" style={{ color: '#111827' }}>Scout AI Analysis</div>
-                              <div className="text-sm mt-0.5" style={{ color: '#6b7280' }}>
+                              <div className="font-semibold text-lg" style={{ color: '#111827' }}>Scout AI Analysis</div>
+                              <div className="text-base mt-1" style={{ color: '#6b7280' }}>
                                 Smart photo organization & tagging
                               </div>
                             </div>
                           </button>
                           
                           {/* Analysis Mode Options */}
-                          <div className="px-6 pb-4 pt-3 space-y-2" style={{ backgroundColor: '#f9fafb' }}>
-                            <label className="flex items-center space-x-3 cursor-pointer py-1.5 px-2 rounded hover:bg-gray-100">
+                          <div className="px-8 pb-5 pt-4 space-y-3" style={{ backgroundColor: '#f9fafb' }}>
+                            <label className="flex items-center space-x-4 cursor-pointer py-2 px-3 rounded hover:bg-gray-100">
                               <input
                                 type="radio"
                                 name="analysisMode"
@@ -928,11 +928,11 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                                 checked={analysisMode === 'new'}
                                 onChange={() => setAnalysisMode('new')}
                                 style={{ accentColor: '#ea580c' }}
-                                className="w-4 h-4"
+                                className="w-5 h-5"
                               />
-                              <span className="text-sm" style={{ color: '#374151' }}>New Photos Only (30 days)</span>
+                              <span className="text-base" style={{ color: '#374151' }}>New Photos Only (30 days)</span>
                             </label>
-                            <label className="flex items-center space-x-3 cursor-pointer py-1.5 px-2 rounded hover:bg-gray-100">
+                            <label className="flex items-center space-x-4 cursor-pointer py-2 px-3 rounded hover:bg-gray-100">
                               <input
                                 type="radio"
                                 name="analysisMode"
@@ -940,11 +940,11 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                                 checked={analysisMode === 'all'}
                                 onChange={() => setAnalysisMode('all')}
                                 style={{ accentColor: '#ea580c' }}
-                                className="w-4 h-4"
+                                className="w-5 h-5"
                               />
-                              <span className="text-sm" style={{ color: '#374151' }}>All Photos (Skip Analyzed)</span>
+                              <span className="text-base" style={{ color: '#374151' }}>All Photos (Skip Analyzed)</span>
                             </label>
-                            <label className="flex items-center space-x-3 cursor-pointer py-1.5 px-2 rounded hover:bg-gray-100">
+                            <label className="flex items-center space-x-4 cursor-pointer py-2 px-3 rounded hover:bg-gray-100">
                               <input
                                 type="radio"
                                 name="analysisMode"
@@ -952,9 +952,9 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                                 checked={analysisMode === 'force'}
                                 onChange={() => setAnalysisMode('force')}
                                 style={{ accentColor: '#ea580c' }}
-                                className="w-4 h-4"
+                                className="w-5 h-5"
                               />
-                              <span className="text-sm" style={{ color: '#374151' }}>Force Re-analysis (Testing)</span>
+                              <span className="text-base" style={{ color: '#374151' }}>Force Re-analysis (Testing)</span>
                             </label>
                           </div>
                         </div>
@@ -966,14 +966,14 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                             setShowAnalysisDropdown(false);
                           }}
                           disabled={claudeLoading}
-                          className="w-full text-left px-6 py-4 hover:bg-gray-50 transition-colors flex items-center gap-4 rounded-b-md"
+                          className="w-full text-left px-8 py-5 hover:bg-gray-50 transition-colors flex items-center gap-5 rounded-b-lg"
                         >
                           <div className="flex-shrink-0">
-                            <Eye className="w-5 h-5" style={{ color: '#ea580c' }} />
+                            <Eye className="w-7 h-7" style={{ color: '#ea580c' }} />
                           </div>
                           <div className="flex-1">
-                            <div className="font-semibold text-base" style={{ color: '#111827' }}>Claude Vision Duplicates</div>
-                            <div className="text-sm mt-0.5" style={{ color: '#6b7280' }}>
+                            <div className="font-semibold text-lg" style={{ color: '#111827' }}>Claude Vision Duplicates</div>
+                            <div className="text-base mt-1" style={{ color: '#6b7280' }}>
                               Find & manage duplicate photos
                             </div>
                           </div>
