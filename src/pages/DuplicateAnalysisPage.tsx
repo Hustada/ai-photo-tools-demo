@@ -757,96 +757,127 @@ const DuplicateAnalysisPageContent: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-4 items-center">
-                {/* Scout AI Analysis Dropdown */}
+                {/* Scout AI Dropdown Menu */}
                 {currentUser && totalPhotos >= 2 && (
                   <div className="relative">
-                    <div className="flex items-center space-x-1">
-                      <Button
-                        onClick={() => handleAnalyzePhotos(analysisMode)}
-                        disabled={scoutAi.isAnalyzing}
-                        variant="accent"
-                        className="flex items-center gap-2"
-                      >
-                        <Eye className="w-4 h-4" />
-                        {scoutAi.isAnalyzing ? 'Analyzing...' : 'Scout AI Analysis'}
-                      </Button>
-                      <button
-                        onClick={() => setShowAnalysisDropdown(!showAnalysisDropdown)}
-                        disabled={scoutAi.isAnalyzing}
-                        className="inline-flex items-center justify-center px-4 py-2 border rounded-md font-medium transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
-                        style={{ 
-                          backgroundColor: '#ea580c',
-                          borderColor: '#ea580c',
-                          color: '#FFFFFF'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!scoutAi.isAnalyzing) {
-                            e.target.style.backgroundColor = '#c2410c';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!scoutAi.isAnalyzing) {
-                            e.target.style.backgroundColor = '#ea580c';
-                          }
-                        }}
-                      >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M7 10l5 5 5-5z"/>
-                        </svg>
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setShowAnalysisDropdown(!showAnalysisDropdown)}
+                      disabled={scoutAi.isAnalyzing || claudeLoading}
+                      className="inline-flex items-center justify-center px-4 py-2 border rounded-md font-medium transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none gap-2"
+                      style={{ 
+                        backgroundColor: '#ea580c',
+                        borderColor: '#ea580c',
+                        color: '#FFFFFF'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!scoutAi.isAnalyzing && !claudeLoading) {
+                          e.target.style.backgroundColor = '#c2410c';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!scoutAi.isAnalyzing && !claudeLoading) {
+                          e.target.style.backgroundColor = '#ea580c';
+                        }
+                      }}
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>
+                        {scoutAi.isAnalyzing ? 'Scout AI Analyzing...' : 
+                         claudeLoading ? 'Claude Analyzing...' : 
+                         'Scout AI'}
+                      </span>
+                      <svg className={`w-4 h-4 transition-transform ${showAnalysisDropdown ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M7 10l5 5 5-5z"/>
+                      </svg>
+                    </button>
+                    
                     {showAnalysisDropdown && (
-                      <div className="absolute top-full mt-1 right-0 w-64 border shadow-lg z-10" style={{ backgroundColor: '#262626', borderColor: '#3f3f3f' }}>
-                        <div className="p-2">
-                          <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-600 min-h-[44px]">
-                            <input
-                              type="radio"
-                              name="analysisMode"
-                              value="new"
-                              checked={analysisMode === 'new'}
-                              onChange={() => setAnalysisMode('new')}
-                              style={{ accentColor: '#ea580c' }}
-                            />
-                            <span className="text-sm" style={{ color: '#C3C3C3' }}>New Photos Only (30 days)</span>
-                          </label>
-                          <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-600 min-h-[44px]">
-                            <input
-                              type="radio"
-                              name="analysisMode"
-                              value="all"
-                              checked={analysisMode === 'all'}
-                              onChange={() => setAnalysisMode('all')}
-                              style={{ accentColor: '#ea580c' }}
-                            />
-                            <span className="text-sm" style={{ color: '#C3C3C3' }}>All Photos (Skip Analyzed)</span>
-                          </label>
-                          <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-gray-600 min-h-[44px]">
-                            <input
-                              type="radio"
-                              name="analysisMode"
-                              value="force"
-                              checked={analysisMode === 'force'}
-                              onChange={() => setAnalysisMode('force')}
-                              style={{ accentColor: '#ea580c' }}
-                            />
-                            <span className="text-sm" style={{ color: '#C3C3C3' }}>Force Re-analysis (Testing)</span>
-                          </label>
+                      <div className="absolute top-full mt-2 left-0 w-80 border shadow-xl z-20 rounded-md" style={{ backgroundColor: '#FFFFFF', borderColor: '#e5e7eb' }}>
+                        {/* Scout AI Analysis Option */}
+                        <div className="border-b" style={{ borderColor: '#e5e7eb' }}>
+                          <button
+                            onClick={() => {
+                              handleAnalyzePhotos(analysisMode);
+                              setShowAnalysisDropdown(false);
+                            }}
+                            disabled={scoutAi.isAnalyzing}
+                            className="w-full text-left px-6 py-4 hover:bg-gray-50 transition-colors flex items-center gap-4 rounded-t-md"
+                          >
+                            <div className="flex-shrink-0">
+                              <Eye className="w-5 h-5" style={{ color: '#ea580c' }} />
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-semibold text-base" style={{ color: '#111827' }}>Scout AI Analysis</div>
+                              <div className="text-sm mt-0.5" style={{ color: '#6b7280' }}>
+                                Smart photo organization & tagging
+                              </div>
+                            </div>
+                          </button>
+                          
+                          {/* Analysis Mode Options */}
+                          <div className="px-6 pb-4 pt-3 space-y-2" style={{ backgroundColor: '#f9fafb' }}>
+                            <label className="flex items-center space-x-3 cursor-pointer py-1.5 px-2 rounded hover:bg-gray-100">
+                              <input
+                                type="radio"
+                                name="analysisMode"
+                                value="new"
+                                checked={analysisMode === 'new'}
+                                onChange={() => setAnalysisMode('new')}
+                                style={{ accentColor: '#ea580c' }}
+                                className="w-4 h-4"
+                              />
+                              <span className="text-sm" style={{ color: '#374151' }}>New Photos Only (30 days)</span>
+                            </label>
+                            <label className="flex items-center space-x-3 cursor-pointer py-1.5 px-2 rounded hover:bg-gray-100">
+                              <input
+                                type="radio"
+                                name="analysisMode"
+                                value="all"
+                                checked={analysisMode === 'all'}
+                                onChange={() => setAnalysisMode('all')}
+                                style={{ accentColor: '#ea580c' }}
+                                className="w-4 h-4"
+                              />
+                              <span className="text-sm" style={{ color: '#374151' }}>All Photos (Skip Analyzed)</span>
+                            </label>
+                            <label className="flex items-center space-x-3 cursor-pointer py-1.5 px-2 rounded hover:bg-gray-100">
+                              <input
+                                type="radio"
+                                name="analysisMode"
+                                value="force"
+                                checked={analysisMode === 'force'}
+                                onChange={() => setAnalysisMode('force')}
+                                style={{ accentColor: '#ea580c' }}
+                                className="w-4 h-4"
+                              />
+                              <span className="text-sm" style={{ color: '#374151' }}>Force Re-analysis (Testing)</span>
+                            </label>
+                          </div>
                         </div>
+                        
+                        {/* Claude Vision Analysis Option */}
+                        <button
+                          onClick={() => {
+                            fetchPhotos(50);
+                            setShowAnalysisDropdown(false);
+                          }}
+                          disabled={claudeLoading}
+                          className="w-full text-left px-6 py-4 hover:bg-gray-50 transition-colors flex items-center gap-4 rounded-b-md"
+                        >
+                          <div className="flex-shrink-0">
+                            <Eye className="w-5 h-5" style={{ color: '#ea580c' }} />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-semibold text-base" style={{ color: '#111827' }}>Claude Vision Duplicates</div>
+                            <div className="text-sm mt-0.5" style={{ color: '#6b7280' }}>
+                              Find & manage duplicate photos
+                            </div>
+                          </div>
+                        </button>
                       </div>
                     )}
                   </div>
                 )}
-                
-                {/* Claude Vision Analysis Button */}
-                <Button 
-                  onClick={() => fetchPhotos(50)} 
-                  disabled={claudeLoading}
-                  variant="accent"
-                  className="flex items-center gap-2"
-                >
-                  <Eye className="w-4 h-4" />
-                  {claudeLoading ? 'Analyzing...' : 'Claude Vision Duplicates'}
-                </Button>
                 
                 {/* Status Badges */}
                 {(analysisSession || (scoutAi.suggestions && scoutAi.suggestions.length > 0)) && (
