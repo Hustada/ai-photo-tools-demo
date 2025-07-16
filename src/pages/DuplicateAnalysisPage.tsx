@@ -703,151 +703,140 @@ const DuplicateAnalysisPageContent: React.FC = () => {
         
         <div className="max-w-7xl mx-auto px-4 relative">
           {/* Main Header Row */}
-          <div className="flex items-center justify-between py-4">
-            {/* Logo/Brand Section */}
-            <div className="flex items-center gap-3">
-              <img 
-                src={aiCameraLens} 
-                alt="AI Camera Lens"
-                className="w-8 h-8 hover:scale-110 transition-transform duration-300 cursor-pointer"
-                style={{ filter: 'brightness(1.2) drop-shadow(0 2px 8px rgba(234, 88, 12, 0.3))' }}
-              />
-              <h1 
-                className="text-2xl md:text-3xl font-black bg-gradient-to-r from-teal-400 via-amber-500 to-purple-500 text-transparent bg-clip-text" 
-                style={{ 
-                  fontFamily: 'Space Grotesk, var(--font-heading)',
-                  backgroundSize: '200% 200%',
-                  animation: 'gradient-shift 4s ease-in-out infinite',
-                  textShadow: '0 0 40px rgba(234, 88, 12, 0.5)'
-                }}
-              >
-                Scout AI
-              </h1>
-              {/* Progress Indicator (if analyzing) */}
-              {(scoutAi.isAnalyzing || claudeLoading) && (
-                <div className="relative w-8 h-8 ml-2">
-                  <svg className="transform -rotate-90 w-8 h-8">
-                    <circle
-                      cx="16"
-                      cy="16"
-                      r="14"
-                      stroke="rgba(255, 255, 255, 0.1)"
-                      strokeWidth="3"
-                      fill="none"
-                    />
-                    <circle
-                      cx="16"
-                      cy="16"
-                      r="14"
-                      stroke="#ea580c"
-                      strokeWidth="3"
-                      fill="none"
-                      strokeDasharray={`${2 * Math.PI * 14}`}
-                      strokeDashoffset={`${2 * Math.PI * 14 * 0.25}`}
-                      className="transition-all duration-500"
-                      style={{ filter: 'drop-shadow(0 0 8px rgba(234, 88, 12, 0.6))' }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="animate-pulse">
-                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M13 7H7v6h6V7z"/>
-                      </svg>
+          <div className="flex items-start justify-between py-4">
+            {/* Logo/Brand Section - Left */}
+            <div>
+              <div className="flex items-center gap-3">
+                <img 
+                  src={aiCameraLens} 
+                  alt="AI Camera Lens"
+                  className="w-8 h-8 hover:scale-110 transition-transform duration-300 cursor-pointer"
+                  style={{ filter: 'brightness(1.2) drop-shadow(0 2px 8px rgba(234, 88, 12, 0.3))' }}
+                />
+                <h1 
+                  className="text-2xl md:text-3xl font-black bg-gradient-to-r from-teal-400 via-amber-500 to-purple-500 text-transparent bg-clip-text" 
+                  style={{ 
+                    fontFamily: 'Space Grotesk, var(--font-heading)',
+                    backgroundSize: '200% 200%',
+                    animation: 'gradient-shift 4s ease-in-out infinite',
+                    textShadow: '0 0 40px rgba(234, 88, 12, 0.5)'
+                  }}
+                >
+                  Scout AI
+                </h1>
+                {/* Progress Indicator (if analyzing) */}
+                {(scoutAi.isAnalyzing || claudeLoading) && (
+                  <div className="relative w-8 h-8 ml-2">
+                    <svg className="transform -rotate-90 w-8 h-8">
+                      <circle
+                        cx="16"
+                        cy="16"
+                        r="14"
+                        stroke="rgba(255, 255, 255, 0.1)"
+                        strokeWidth="3"
+                        fill="none"
+                      />
+                      <circle
+                        cx="16"
+                        cy="16"
+                        r="14"
+                        stroke="#ea580c"
+                        strokeWidth="3"
+                        fill="none"
+                        strokeDasharray={`${2 * Math.PI * 14}`}
+                        strokeDashoffset={`${2 * Math.PI * 14 * 0.25}`}
+                        className="transition-all duration-500"
+                        style={{ filter: 'drop-shadow(0 0 8px rgba(234, 88, 12, 0.6))' }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="animate-pulse">
+                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M13 7H7v6h6V7z"/>
+                        </svg>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+              {/* Tagline - Below logo */}
+              <p 
+                className="text-sm font-medium mt-2" 
+                style={{ 
+                  fontFamily: 'Inter, var(--font-body)', 
+                  color: '#C3C3C3',
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+                }}
+              >
+                Photo management with AI analysis and duplicate detection
+              </p>
             </div>
             
-            {/* Navigation Links - Center */}
-            <nav className="hidden md:flex items-center gap-8">
-              <Link 
-                to="/" 
-                className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link 
-                to="/photos" 
-                className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
-              >
-                Photos
-              </Link>
-              <Link 
-                to="/blog" 
-                className="flex items-center gap-1.5 text-sm font-medium transition-all duration-200"
-                style={{ 
-                  color: '#ea580c',
-                  textDecoration: 'none'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#FFFFFF';
-                  e.currentTarget.style.textShadow = '0 0 10px rgba(234, 88, 12, 0.8)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#ea580c';
-                  e.currentTarget.style.textShadow = 'none';
-                }}
-              >
-                <FileText className="w-4 h-4" />
-                <span>Blog</span>
-              </Link>
-              <Link 
-                to="/docs" 
-                className="flex items-center gap-1.5 text-sm font-medium transition-all duration-200"
-                style={{ 
-                  color: '#ea580c',
-                  textDecoration: 'none'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#FFFFFF';
-                  e.currentTarget.style.textShadow = '0 0 10px rgba(234, 88, 12, 0.8)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#ea580c';
-                  e.currentTarget.style.textShadow = 'none';
-                }}
-              >
-                <Book className="w-4 h-4" />
-                <span>Documentation</span>
-              </Link>
-            </nav>
-            
-            {/* User Info - Right */}
-            <div className="flex items-center gap-4">
+            {/* User Info and Navigation - Right */}
+            <div className="text-right">
               {currentUser && (
-                <div className="text-right">
-                  <p className="text-sm text-white">
-                    {currentUser.first_name || currentUser.email_address}
-                  </p>
-                  {companyDetails && (
-                    <p className="text-xs text-gray-400">
-                      {companyDetails.name}
+                <div className="flex items-center gap-4 mb-3">
+                  <div>
+                    <p className="text-sm text-white">
+                      {currentUser.first_name || currentUser.email_address}
                     </p>
-                  )}
+                    {companyDetails && (
+                      <p className="text-xs text-gray-400">
+                        {companyDetails.name}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="px-3 py-1.5 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-md transition-colors"
+                  >
+                    Logout
+                  </button>
                 </div>
               )}
-              <button
-                onClick={handleLogout}
-                className="px-3 py-1.5 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-md transition-colors"
-              >
-                Logout
-              </button>
+              
+              {/* Navigation Links - Below user info */}
+              <nav className="flex items-center justify-end gap-6">
+                <Link 
+                  to="/blog" 
+                  className="flex items-center gap-1.5 text-sm font-medium transition-all duration-200"
+                  style={{ 
+                    color: '#ea580c',
+                    textDecoration: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#FFFFFF';
+                    e.currentTarget.style.textShadow = '0 0 10px rgba(234, 88, 12, 0.8)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#ea580c';
+                    e.currentTarget.style.textShadow = 'none';
+                  }}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Blog</span>
+                </Link>
+                <Link 
+                  to="/docs" 
+                  className="flex items-center gap-1.5 text-sm font-medium transition-all duration-200"
+                  style={{ 
+                    color: '#ea580c',
+                    textDecoration: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#FFFFFF';
+                    e.currentTarget.style.textShadow = '0 0 10px rgba(234, 88, 12, 0.8)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#ea580c';
+                    e.currentTarget.style.textShadow = 'none';
+                  }}
+                >
+                  <Book className="w-4 h-4" />
+                  <span>Documentation</span>
+                </Link>
+              </nav>
             </div>
-          </div>
-          
-          {/* Tagline - Below main header */}
-          <div className="pb-4 text-center md:text-left">
-            <p 
-              className="text-sm font-medium" 
-              style={{ 
-                fontFamily: 'Inter, var(--font-body)', 
-                color: '#C3C3C3',
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-              }}
-            >
-              Photo management with AI analysis and duplicate detection
-            </p>
           </div>
           
           <style jsx>{`
