@@ -77,12 +77,12 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
   return (
     <div
-      className="border p-4 rounded-lg cursor-pointer shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 ease-in-out flex flex-col relative"
+      className="p-5 rounded-xl cursor-pointer shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 ease-out flex flex-col relative overflow-hidden"
       style={{
-        backgroundColor: isArchived ? '#f3f4f6' : '#FFFFFF',
-        borderColor: isArchived ? '#9ca3af' : '#d1d5db',
-        opacity: isArchived ? 0.6 : 1,
-        color: '#1f2937'
+        background: isArchived ? 'linear-gradient(to bottom, #f3f4f6, #e5e7eb)' : 'linear-gradient(to bottom, #ffffff, #f9fafb)',
+        opacity: isArchived ? 0.7 : 1,
+        color: '#1f2937',
+        minHeight: '480px'
       }}
       onClick={() => onPhotoClick(photo)}
     >
@@ -110,14 +110,14 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         </div>
       )}
       
-      <div className={`w-full aspect-[4/3] rounded-md mb-3 bg-gray-100 flex items-center justify-center overflow-hidden ${
+      <div className={`w-full aspect-[4/3] rounded-lg mb-4 bg-gray-100 flex items-center justify-center overflow-hidden ${
         isArchived ? 'grayscale' : ''
       }`}>
         {thumbnailUrl ? (
           <LazyImage
             src={thumbnailUrl}
             alt={photo.description || `Photo by ${photo.creator_name}`}
-            className="w-full h-full object-cover rounded-md"
+            className="w-full h-full object-cover"
             width={300}
             height={192}
             loadingThreshold={100}
@@ -134,24 +134,28 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         )}
       </div>
 
-      <div className="flex flex-col flex-grow space-y-3">
-        <div className="space-y-1">
-          <h3 className="text-lg font-semibold truncate" style={{ color: '#111827', fontFamily: 'Space Grotesk, var(--font-heading)' }} title={`Photo ID: ${photo.id}`}>
-            {`Photo ID: ${photo.id}`}
+      <div className="flex flex-col flex-grow">
+        {/* Header Section */}
+        <div className="mb-3">
+          <h3 className="text-lg font-bold mb-1" style={{ color: '#111827', fontFamily: 'Space Grotesk, var(--font-heading)' }}>
+            Photo ID: {photo.id}
           </h3>
-          <p className="text-sm truncate" style={{ color: '#4b5563', fontFamily: 'Inter, var(--font-body)' }}>
+          <p className="text-sm font-medium" style={{ color: '#6b7280', fontFamily: 'Inter, var(--font-body)' }}>
             By: {photo.creator_name || 'Unknown Creator'}
           </p>
           {photo.description && (
-            <p className="text-sm line-clamp-2" style={{ color: '#374151', fontFamily: 'Inter, var(--font-body)' }} title={photo.description}>
+            <p className="text-sm mt-2 line-clamp-2" style={{ color: '#374151', fontFamily: 'Inter, var(--font-body)', lineHeight: '1.5' }} title={photo.description}>
               {photo.description}
             </p>
           )}
         </div>
 
-        <div className="mt-auto flex flex-wrap gap-2">
-          {photo.tags && Array.isArray(photo.tags) && photo.tags.length > 0 ? (
-            photo.tags.map((tag: CompanyCamTag) => {
+        {/* Tags Section - Fixed Height */}
+        <div className="flex-grow flex items-end mb-3">
+          <div className="w-full" style={{ minHeight: '60px' }}>
+            {photo.tags && Array.isArray(photo.tags) && photo.tags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {photo.tags.map((tag: CompanyCamTag) => {
               if (!tag || typeof tag.id !== 'string') return null;
               const isActive = activeTagIds?.includes(tag.id);
               return (
@@ -166,17 +170,17 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                         onTagClick(tag.id);
                       }
                     }}
-                    className={`px-2 py-1 rounded-full text-xs transition-colors duration-150 ease-in-out inline-block ${
-                      onTagClick ? 'cursor-pointer' : 'cursor-default'
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ease-in-out inline-block ${
+                      onTagClick ? 'cursor-pointer hover:scale-105' : 'cursor-default'
                     }`}
                     style={{
                       backgroundColor: tag.isAiEnhanced
                         ? isActive ? '#374151' : '#e5e7eb'
-                        : isActive ? '#262626' : onTagClick ? '#FFFFFF' : '#f9fafb',
+                        : isActive ? '#262626' : '#f3f4f6',
                       color: tag.isAiEnhanced
                         ? isActive ? '#FFFFFF' : '#1f2937'
-                        : isActive ? '#FFFFFF' : onTagClick ? '#374151' : '#6b7280',
-                      border: (!tag.isAiEnhanced && !isActive && onTagClick) ? '1px solid #d1d5db' : 'none'
+                        : isActive ? '#FFFFFF' : '#374151',
+                      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
                     }}
                     onMouseEnter={onTagClick ? (e) => {
                       if (tag.isAiEnhanced && !isActive) {
@@ -194,8 +198,8 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                         e.target.style.backgroundColor = '#e5e7eb';
                       } else if (!tag.isAiEnhanced && isActive) {
                         e.target.style.backgroundColor = '#262626';
-                      } else if (!tag.isAiEnhanced && !isActive && onTagClick) {
-                        e.target.style.backgroundColor = '#FFFFFF';
+                      } else if (!tag.isAiEnhanced && !isActive) {
+                        e.target.style.backgroundColor = '#f3f4f6';
                       }
                     } : undefined}
                     title={onTagClick ? `Filter by: ${tag.display_value}${tag.isAiEnhanced ? ' (AI)' : ''}` : `${tag.display_value}${tag.isAiEnhanced ? ' (AI)' : ''}`}
@@ -223,30 +227,44 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                   )}
                 </span>
               );
-            })
-          ) : (
-            <span className="text-xs italic" style={{ color: '#6b7280' }}>No tags</span>
-          )}
+            })}
+              </div>
+            ) : (
+              <div className="flex items-center" style={{ minHeight: '36px' }}>
+                <span className="text-sm" style={{ color: '#9ca3af', fontFamily: 'Inter, var(--font-body)' }}>No tags</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* AI Suggestions Section (for NEW, ephemeral suggestions) */}
-        <div className="mt-3 pt-3 border-t" style={{ borderColor: '#d1d5db' }}>
+        {/* AI Suggestions Section - Fixed at Bottom */}
+        <div className="pt-3 border-t" style={{ borderColor: '#e5e7eb' }}>
           {/* Enhanced Loading State for New Suggestions */}
           {aiSuggestionData?.isSuggesting && (
             <div className="flex justify-center">
-              <div className="mt-2 px-6 py-2.5 border text-sm shadow-sm flex items-center justify-center space-x-2 rounded-md" 
+              <div className="relative mt-2 px-8 py-3 text-sm font-bold italic flex items-center justify-center gap-2.5 rounded-full overflow-hidden" 
                 style={{ 
-                  backgroundColor: '#f9fafb', 
-                  color: '#374151', 
-                  borderColor: '#ea580c',
+                  background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #262626 100%)',
+                  color: '#FFFFFF',
+                  boxShadow: '0 4px 15px 0 rgba(234, 88, 12, 0.3), 0 1px 3px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
                   fontFamily: 'Inter, var(--font-body)',
-                  boxShadow: '0 0 0 1px #ea580c, 0 0 8px rgba(234, 88, 12, 0.2)'
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
                 }}>
-                <svg className="animate-spin h-4 w-4" style={{ color: '#ea580c' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                {/* Animated gradient overlay */}
+                <div 
+                  className="absolute inset-0"
+                  style={{
+                    background: 'linear-gradient(135deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%)',
+                    animation: 'shimmer 1.5s infinite'
+                  }}
+                />
+                
+                <svg className="animate-spin h-5 w-5 relative z-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span>Analyzing...</span>
+                <span className="relative z-10">Analyzing...</span>
               </div>
             </div>
           )}
@@ -257,31 +275,64 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             <div className="flex justify-center">
               <button
                 onClick={handleSuggestAiTags}
-                className="mt-2 px-6 py-2.5 border text-sm shadow-sm flex items-center justify-center space-x-2 transition-all duration-300 ease-out group hover:scale-105 active:scale-95 rounded-md"
+                className="relative mt-2 px-8 py-3 text-sm font-bold italic flex items-center justify-center gap-2.5 transition-all duration-300 ease-out group hover:scale-105 active:scale-95 rounded-full overflow-hidden"
                 style={{ 
-                  backgroundColor: '#FFFFFF', 
-                  color: '#374151', 
-                  borderColor: '#d1d5db',
-                  fontFamily: 'Inter, var(--font-body)'
+                  background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #262626 100%)',
+                  color: '#FFFFFF', 
+                  boxShadow: '0 4px 15px 0 rgba(234, 88, 12, 0.3), 0 1px 3px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
+                  fontFamily: 'Inter, var(--font-body)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#f9fafb';
-                  e.target.style.borderColor = '#ea580c';
-                  e.target.style.boxShadow = '0 4px 12px -2px rgba(0, 0, 0, 0.1), 0 0 8px rgba(234, 88, 12, 0.15)';
-                  e.target.style.transform = 'translateY(-2px) scale(1.02)';
+                  e.target.style.boxShadow = '0 6px 20px 0 rgba(234, 88, 12, 0.4), 0 2px 4px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 30px rgba(234, 88, 12, 0.3)';
+                  e.target.style.transform = 'translateY(-2px) scale(1.05)';
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = '#FFFFFF';
-                  e.target.style.borderColor = '#d1d5db';
-                  e.target.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)';
+                  e.target.style.boxShadow = '0 4px 15px 0 rgba(234, 88, 12, 0.3), 0 1px 3px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
                   e.target.style.transform = 'translateY(0) scale(1)';
                 }}
+                onMouseDown={(e) => {
+                  e.target.style.transform = 'translateY(0) scale(0.95)';
+                }}
+                onMouseUp={(e) => {
+                  e.target.style.transform = 'translateY(-2px) scale(1.05)';
+                }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-all duration-200 group-hover:scale-110" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#ea580c' }}>
-                  <path d="M10 3.5a1.5 1.5 0 011.5 1.5v1a1.5 1.5 0 01-3 0v-1A1.5 1.5 0 0110 3.5zM3.188 8.044A5.5 5.5 0 0110 4.5h.008a5.5 5.5 0 016.804 3.544l.002.005.003.005a4.502 4.502 0 01-.82 4.44l-2.67 3.523a1.5 1.5 0 01-2.331.12l-2.67-3.523a4.502 4.502 0 01-.82-4.44l.002-.005.003-.005zM10 13a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
+                {/* Animated gradient overlay */}
+                <div 
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{
+                    background: 'linear-gradient(135deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%)',
+                    animation: 'shimmer 1.5s infinite'
+                  }}
+                />
+                
+                {/* Enhanced tag icon with sparkle */}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transition-all duration-200 group-hover:scale-110 group-hover:rotate-12" viewBox="0 0 24 24" fill="none">
+                  {/* Main tag shape */}
+                  <path d="M12 2L2 7V12C2 17 6.5 21.16 12 22C17.5 21.16 22 17 22 12V7L12 2Z" fill="currentColor" fillOpacity="0.9"/>
+                  
+                  {/* Sparkle elements */}
+                  <g className="animate-pulse">
+                    <circle cx="8" cy="10" r="1" fill="white" fillOpacity="0.8"/>
+                    <circle cx="16" cy="10" r="1" fill="white" fillOpacity="0.8"/>
+                    <circle cx="12" cy="14" r="1.5" fill="white" fillOpacity="0.9"/>
+                  </g>
+                  
+                  {/* Plus sign */}
+                  <path d="M12 8V16M8 12H16" stroke="white" strokeWidth="2" strokeLinecap="round" className="drop-shadow-sm"/>
                 </svg>
-                <span>Suggest Tags</span>
+                
+                <span className="relative z-10">Suggest Tags</span>
               </button>
+              
+              <style jsx>{`
+                @keyframes shimmer {
+                  0% { transform: translateX(-100%); }
+                  100% { transform: translateX(100%); }
+                }
+              `}</style>
             </div>
           )}
 
@@ -290,23 +341,6 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             <p className="mt-2 text-xs" style={{ color: '#ef4444' }}>Error: {aiSuggestionData.suggestionError}</p>
           )}
 
-          {/* Success State - Show after suggestions are loaded */}
-          {(aiSuggestionData?.suggestedDescription || (aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0)) && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
-            <div className="flex justify-center mb-2">
-              <div className="mt-2 px-4 py-2 border text-xs shadow-sm flex items-center justify-center space-x-2 rounded-md" 
-                style={{ 
-                  backgroundColor: '#f0fdf4', 
-                  color: '#166534', 
-                  borderColor: '#16a34a',
-                  fontFamily: 'Inter, var(--font-body)'
-                }}>
-                <svg className="h-4 w-4" style={{ color: '#16a34a' }} fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                <span>Tags Suggested ✅</span>
-              </div>
-            </div>
-          )}
 
           {/* Display New Suggested Description */}
           {aiSuggestionData?.suggestedDescription && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
