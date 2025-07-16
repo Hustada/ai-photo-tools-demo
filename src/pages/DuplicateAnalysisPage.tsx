@@ -896,7 +896,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                     </button>
                     
                     {showAnalysisDropdown && (
-                      <div className="absolute top-full mt-3 left-0 w-[28rem] border-2 shadow-2xl z-20 rounded-lg" style={{ backgroundColor: '#FFFFFF', borderColor: '#e5e7eb' }}>
+                      <div className="absolute top-full mt-3 left-1/2 transform -translate-x-1/2 w-[28rem] border-2 shadow-2xl z-20 rounded-lg" style={{ backgroundColor: '#FFFFFF', borderColor: '#e5e7eb' }}>
                         {/* Scout AI Analysis Option */}
                         <div className="border-b" style={{ borderColor: '#e5e7eb' }}>
                           <button
