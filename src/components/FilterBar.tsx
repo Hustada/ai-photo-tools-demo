@@ -122,38 +122,15 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               <span className="text-xs sm:text-sm font-medium whitespace-nowrap" style={{ color: '#374151' }}>
                 Relaxed
               </span>
-              <button
-                onClick={() => onToggleRelaxedView(!isRelaxedView)}
-                className={`relative inline-flex w-11 h-6 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                  isRelaxedView 
-                    ? 'bg-orange-600 focus:ring-orange-500' 
-                    : 'bg-gray-200 focus:ring-gray-500'
-                }`}
-                style={{
-                  backgroundColor: isRelaxedView ? '#ea580c' : '#e5e7eb'
-                }}
-                onMouseEnter={(e) => {
-                  if (isRelaxedView) {
-                    e.target.style.backgroundColor = '#c2410c';
-                  } else {
-                    e.target.style.backgroundColor = '#d1d5db';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (isRelaxedView) {
-                    e.target.style.backgroundColor = '#ea580c';
-                  } else {
-                    e.target.style.backgroundColor = '#e5e7eb';
-                  }
-                }}
-              >
-                <span
-                  className={`inline-block w-4 h-4 transform rounded-full bg-white transition-transform duration-300 ease-in-out ${
-                    isRelaxedView ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                  style={{ boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.2)' }}
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={isRelaxedView}
+                  onChange={(e) => onToggleRelaxedView(e.target.checked)}
                 />
-              </button>
+                <div className="w-14 h-7 bg-gray-400 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-orange-600"></div>
+              </label>
             </div>
           )}
 
@@ -163,38 +140,15 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               <span className="text-xs sm:text-sm font-medium whitespace-nowrap" style={{ color: '#374151' }}>
                 Archived ({archivedCount})
               </span>
-              <button
-                onClick={() => onToggleArchivedPhotos(!showArchivedPhotos)}
-                className={`relative inline-flex w-11 h-6 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                  showArchivedPhotos 
-                    ? 'bg-blue-600 focus:ring-blue-500' 
-                    : 'bg-gray-200 focus:ring-gray-500'
-                }`}
-                style={{
-                  backgroundColor: showArchivedPhotos ? '#2563eb' : '#e5e7eb'
-                }}
-                onMouseEnter={(e) => {
-                  if (showArchivedPhotos) {
-                    e.target.style.backgroundColor = '#1d4ed8';
-                  } else {
-                    e.target.style.backgroundColor = '#d1d5db';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (showArchivedPhotos) {
-                    e.target.style.backgroundColor = '#2563eb';
-                  } else {
-                    e.target.style.backgroundColor = '#e5e7eb';
-                  }
-                }}
-              >
-                <span
-                  className={`inline-block w-4 h-4 transform rounded-full bg-white transition-transform duration-300 ease-in-out ${
-                    showArchivedPhotos ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                  style={{ boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.2)' }}
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={showArchivedPhotos}
+                  onChange={(e) => onToggleArchivedPhotos(e.target.checked)}
                 />
-              </button>
+                <div className="w-14 h-7 bg-gray-400 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
             </div>
           )}
         </div>
