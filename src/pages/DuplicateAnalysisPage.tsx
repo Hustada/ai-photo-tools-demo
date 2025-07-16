@@ -868,7 +868,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                       <span>
                         {scoutAi.isAnalyzing ? 'Scout AI Analyzing...' : 
                          claudeLoading ? 'Claude Analyzing...' : 
-                         'Scout AI'}
+                         'Analyze Photos'}
                       </span>
                       <svg className={`w-4 h-4 transition-transform ${showAnalysisDropdown ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
                         <path d="M7 10l5 5 5-5z"/>
