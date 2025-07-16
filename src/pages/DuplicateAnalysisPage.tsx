@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { AlertCircle, Eye, Clock, Camera, MapPin, Hash, User, Building, Crown, Star } from 'lucide-react';
 import { useUserContext } from '../contexts/UserContext';
 import type { Photo, Tag } from '../types';
+import aiCameraLens from '../assets/aicameralens1.png';
 
 // Import photo management hooks
 import { usePhotosQuery } from '../hooks/usePhotosQuery';
@@ -687,29 +688,113 @@ const DuplicateAnalysisPageContent: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
       {/* Header with User Info */}
-      <div className="py-6 shadow-lg" style={{ backgroundColor: '#262626' }}>
-        <div className="max-w-7xl mx-auto px-4">
+      <div className="py-6 shadow-lg relative overflow-hidden" style={{ backgroundColor: '#262626' }}>
+        {/* Subtle Background Overlay */}
+        <div className="absolute inset-0 pointer-events-none" style={{ opacity: 0.03 }}>
+          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="header-hexagons" width="50" height="43.4" patternUnits="userSpaceOnUse" patternTransform="scale(1.5) rotate(15)">
+                <polygon points="25,8 44,18.7 44,38.3 25,49 6,38.3 6,18.7" fill="none" stroke="#ea580c" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#header-hexagons)"/>
+          </svg>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 relative">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center space-y-4 md:space-y-0">
             <div className="text-center md:text-left">
-              <h1 
-                className="text-2xl md:text-4xl font-bold mb-2 text-white" 
-                style={{ 
-                  fontFamily: 'Space Grotesk, var(--font-heading)', 
-                  color: '#FFFFFF' 
-                }}
-              >
-                Scout AI
-              </h1>
+              {/* Badge Container */}
+              <div className="inline-block mb-3">
+                <div className="flex items-center gap-4 px-6 py-3 rounded-full" 
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
+                    boxShadow: '0 0 30px rgba(234, 88, 12, 0.2), 0 0 60px rgba(234, 88, 12, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(234, 88, 12, 0.2)'
+                  }}>
+                  {/* AI Camera Lens Icon */}
+                  <div className="relative group">
+                    <img 
+                      src={aiCameraLens} 
+                      alt="AI Camera Lens"
+                      className="w-10 h-10 hover:scale-110 transition-transform duration-300 cursor-pointer"
+                      style={{ filter: 'brightness(1.2) drop-shadow(0 2px 8px rgba(234, 88, 12, 0.3))' }}
+                    />
+                    <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
+                      AI-Powered Analysis
+                    </div>
+                  </div>
+                  
+                  {/* Gradient Animated Title */}
+                  <h1 
+                    className="text-3xl md:text-5xl font-black bg-gradient-to-r from-teal-400 via-amber-500 to-purple-500 text-transparent bg-clip-text" 
+                    style={{ 
+                      fontFamily: 'Space Grotesk, var(--font-heading)',
+                      backgroundSize: '200% 200%',
+                      animation: 'gradient-shift 4s ease-in-out infinite',
+                      textShadow: '0 0 40px rgba(234, 88, 12, 0.5)'
+                    }}
+                  >
+                    Scout AI
+                  </h1>
+                  
+                  {/* Progress Indicator (if analyzing) */}
+                  {(scoutAi.isAnalyzing || claudeLoading) && (
+                    <div className="relative w-12 h-12 ml-3">
+                      <svg className="transform -rotate-90 w-12 h-12">
+                        <circle
+                          cx="24"
+                          cy="24"
+                          r="20"
+                          stroke="rgba(255, 255, 255, 0.1)"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <circle
+                          cx="24"
+                          cy="24"
+                          r="20"
+                          stroke="#ea580c"
+                          strokeWidth="4"
+                          fill="none"
+                          strokeDasharray={`${2 * Math.PI * 20}`}
+                          strokeDashoffset={`${2 * Math.PI * 20 * 0.25}`}
+                          className="transition-all duration-500"
+                          style={{ filter: 'drop-shadow(0 0 8px rgba(234, 88, 12, 0.6))' }}
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="animate-pulse">
+                          <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13 7H7v6h6V7z"/>
+                            <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2z" clipRule="evenodd"/>
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
               <p 
-                className="leading-relaxed font-medium" 
+                className="leading-relaxed font-medium text-lg" 
                 style={{ 
                   fontFamily: 'Inter, var(--font-body)', 
-                  color: '#C3C3C3' 
+                  color: '#C3C3C3',
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
                 }}
               >
                 Photo management with AI analysis and duplicate detection
               </p>
             </div>
+            
+            <style jsx>{`
+              @keyframes gradient-shift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+              }
+            `}</style>
             
             {/* User Info */}
             <div className="text-center md:text-right">
@@ -780,7 +865,6 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                         }
                       }}
                     >
-                      <Camera className="w-4 h-4" />
                       <span>
                         {scoutAi.isAnalyzing ? 'Scout AI Analyzing...' : 
                          claudeLoading ? 'Claude Analyzing...' : 
