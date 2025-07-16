@@ -2,12 +2,12 @@
 // Claude's Visual Duplicate Detection Analysis Page
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { AlertCircle, Eye, Clock, Camera, MapPin, Hash, User, Building, Crown, Star } from 'lucide-react';
+import { AlertCircle, Eye, Clock, Camera, MapPin, Hash, User, Building, Crown, Star, Book, FileText } from 'lucide-react';
 import { useUserContext } from '../contexts/UserContext';
 import type { Photo, Tag } from '../types';
 import aiCameraLens from '../assets/aicameralens1.png';
@@ -795,6 +795,49 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                 100% { background-position: 0% 50%; }
               }
             `}</style>
+            
+            {/* Navigation Links */}
+            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+              <Link 
+                to="/blog" 
+                className="flex items-center gap-2 text-sm font-medium transition-all duration-200 hover:scale-105"
+                style={{ 
+                  color: '#ea580c',
+                  textDecoration: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#FFFFFF';
+                  e.currentTarget.style.textShadow = '0 0 20px rgba(234, 88, 12, 0.8)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#ea580c';
+                  e.currentTarget.style.textShadow = 'none';
+                }}
+              >
+                <FileText className="w-4 h-4" />
+                <span>Blog</span>
+              </Link>
+              
+              <Link 
+                to="/docs" 
+                className="flex items-center gap-2 text-sm font-medium transition-all duration-200 hover:scale-105"
+                style={{ 
+                  color: '#ea580c',
+                  textDecoration: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#FFFFFF';
+                  e.currentTarget.style.textShadow = '0 0 20px rgba(234, 88, 12, 0.8)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#ea580c';
+                  e.currentTarget.style.textShadow = 'none';
+                }}
+              >
+                <Book className="w-4 h-4" />
+                <span>Documentation</span>
+              </Link>
+            </div>
             
             {/* User Info */}
             <div className="text-center md:text-right">
