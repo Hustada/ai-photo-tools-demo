@@ -702,112 +702,87 @@ const DuplicateAnalysisPageContent: React.FC = () => {
         </div>
         
         <div className="max-w-7xl mx-auto px-4 relative">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center space-y-4 md:space-y-0">
-            <div className="text-center md:text-left">
-              {/* Badge Container */}
-              <div className="inline-block mb-3">
-                <div className="flex items-center gap-4 px-6 py-3 rounded-full" 
-                  style={{ 
-                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
-                    boxShadow: '0 0 30px rgba(234, 88, 12, 0.2), 0 0 60px rgba(234, 88, 12, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-                    border: '1px solid rgba(234, 88, 12, 0.2)'
-                  }}>
-                  {/* AI Camera Lens Icon */}
-                  <div className="relative group">
-                    <img 
-                      src={aiCameraLens} 
-                      alt="AI Camera Lens"
-                      className="w-10 h-10 hover:scale-110 transition-transform duration-300 cursor-pointer"
-                      style={{ filter: 'brightness(1.2) drop-shadow(0 2px 8px rgba(234, 88, 12, 0.3))' }}
-                    />
-                    <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
-                      AI-Powered Analysis
-                    </div>
-                  </div>
-                  
-                  {/* Gradient Animated Title */}
-                  <h1 
-                    className="text-3xl md:text-5xl font-black bg-gradient-to-r from-teal-400 via-amber-500 to-purple-500 text-transparent bg-clip-text" 
-                    style={{ 
-                      fontFamily: 'Space Grotesk, var(--font-heading)',
-                      backgroundSize: '200% 200%',
-                      animation: 'gradient-shift 4s ease-in-out infinite',
-                      textShadow: '0 0 40px rgba(234, 88, 12, 0.5)'
-                    }}
-                  >
-                    Scout AI
-                  </h1>
-                  
-                  {/* Progress Indicator (if analyzing) */}
-                  {(scoutAi.isAnalyzing || claudeLoading) && (
-                    <div className="relative w-12 h-12 ml-3">
-                      <svg className="transform -rotate-90 w-12 h-12">
-                        <circle
-                          cx="24"
-                          cy="24"
-                          r="20"
-                          stroke="rgba(255, 255, 255, 0.1)"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <circle
-                          cx="24"
-                          cy="24"
-                          r="20"
-                          stroke="#ea580c"
-                          strokeWidth="4"
-                          fill="none"
-                          strokeDasharray={`${2 * Math.PI * 20}`}
-                          strokeDashoffset={`${2 * Math.PI * 20 * 0.25}`}
-                          className="transition-all duration-500"
-                          style={{ filter: 'drop-shadow(0 0 8px rgba(234, 88, 12, 0.6))' }}
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="animate-pulse">
-                          <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M13 7H7v6h6V7z"/>
-                            <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2z" clipRule="evenodd"/>
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <p 
-                className="leading-relaxed font-medium text-lg" 
+          {/* Main Header Row */}
+          <div className="flex items-center justify-between py-4">
+            {/* Logo/Brand Section */}
+            <div className="flex items-center gap-3">
+              <img 
+                src={aiCameraLens} 
+                alt="AI Camera Lens"
+                className="w-8 h-8 hover:scale-110 transition-transform duration-300 cursor-pointer"
+                style={{ filter: 'brightness(1.2) drop-shadow(0 2px 8px rgba(234, 88, 12, 0.3))' }}
+              />
+              <h1 
+                className="text-2xl md:text-3xl font-black bg-gradient-to-r from-teal-400 via-amber-500 to-purple-500 text-transparent bg-clip-text" 
                 style={{ 
-                  fontFamily: 'Inter, var(--font-body)', 
-                  color: '#C3C3C3',
-                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+                  fontFamily: 'Space Grotesk, var(--font-heading)',
+                  backgroundSize: '200% 200%',
+                  animation: 'gradient-shift 4s ease-in-out infinite',
+                  textShadow: '0 0 40px rgba(234, 88, 12, 0.5)'
                 }}
               >
-                Photo management with AI analysis and duplicate detection
-              </p>
+                Scout AI
+              </h1>
+              {/* Progress Indicator (if analyzing) */}
+              {(scoutAi.isAnalyzing || claudeLoading) && (
+                <div className="relative w-8 h-8 ml-2">
+                  <svg className="transform -rotate-90 w-8 h-8">
+                    <circle
+                      cx="16"
+                      cy="16"
+                      r="14"
+                      stroke="rgba(255, 255, 255, 0.1)"
+                      strokeWidth="3"
+                      fill="none"
+                    />
+                    <circle
+                      cx="16"
+                      cy="16"
+                      r="14"
+                      stroke="#ea580c"
+                      strokeWidth="3"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 14}`}
+                      strokeDashoffset={`${2 * Math.PI * 14 * 0.25}`}
+                      className="transition-all duration-500"
+                      style={{ filter: 'drop-shadow(0 0 8px rgba(234, 88, 12, 0.6))' }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="animate-pulse">
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M13 7H7v6h6V7z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
-            <style jsx>{`
-              @keyframes gradient-shift {
-                0% { background-position: 0% 50%; }
-                50% { background-position: 100% 50%; }
-                100% { background-position: 0% 50%; }
-              }
-            `}</style>
-            
-            {/* Navigation Links */}
-            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+            {/* Navigation Links - Center */}
+            <nav className="hidden md:flex items-center gap-8">
+              <Link 
+                to="/" 
+                className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+              >
+                Dashboard
+              </Link>
+              <Link 
+                to="/photos" 
+                className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+              >
+                Photos
+              </Link>
               <Link 
                 to="/blog" 
-                className="flex items-center gap-2 text-sm font-medium transition-all duration-200 hover:scale-105"
+                className="flex items-center gap-1.5 text-sm font-medium transition-all duration-200"
                 style={{ 
                   color: '#ea580c',
                   textDecoration: 'none'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = '#FFFFFF';
-                  e.currentTarget.style.textShadow = '0 0 20px rgba(234, 88, 12, 0.8)';
+                  e.currentTarget.style.textShadow = '0 0 10px rgba(234, 88, 12, 0.8)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.color = '#ea580c';
@@ -817,17 +792,16 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                 <FileText className="w-4 h-4" />
                 <span>Blog</span>
               </Link>
-              
               <Link 
                 to="/docs" 
-                className="flex items-center gap-2 text-sm font-medium transition-all duration-200 hover:scale-105"
+                className="flex items-center gap-1.5 text-sm font-medium transition-all duration-200"
                 style={{ 
                   color: '#ea580c',
                   textDecoration: 'none'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = '#FFFFFF';
-                  e.currentTarget.style.textShadow = '0 0 20px rgba(234, 88, 12, 0.8)';
+                  e.currentTarget.style.textShadow = '0 0 10px rgba(234, 88, 12, 0.8)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.color = '#ea580c';
@@ -837,38 +811,52 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                 <Book className="w-4 h-4" />
                 <span>Documentation</span>
               </Link>
-            </div>
+            </nav>
             
-            {/* User Info */}
-            <div className="text-center md:text-right">
+            {/* User Info - Right */}
+            <div className="flex items-center gap-4">
               {currentUser && (
-                <div>
-                  <h2 className="text-base sm:text-lg font-light text-white">
-                    Welcome, <span className="font-semibold">{currentUser.first_name || currentUser.email_address}</span>!
-                  </h2>
+                <div className="text-right">
+                  <p className="text-sm text-white">
+                    {currentUser.first_name || currentUser.email_address}
+                  </p>
                   {companyDetails && (
-                    <p className="text-sm" style={{ color: '#C3C3C3' }}>
+                    <p className="text-xs text-gray-400">
                       {companyDetails.name}
                     </p>
                   )}
-                  {userProjects.length > 0 && (
-                    <p className="text-xs" style={{ color: '#A3A3A3' }}>
-                      {userProjects.length} project{userProjects.length === 1 ? '' : 's'}
-                    </p>
-                  )}
-                  <div className="mt-2 flex flex-col sm:flex-row items-center justify-center md:justify-end space-y-1 sm:space-y-0 sm:space-x-3">
-                    <button
-                      onClick={handleLogout}
-                      className="text-xs hover:text-white transition-colors"
-                      style={{ color: '#ea580c' }}
-                    >
-                      Logout
-                    </button>
-                  </div>
                 </div>
               )}
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-md transition-colors"
+              >
+                Logout
+              </button>
             </div>
           </div>
+          
+          {/* Tagline - Below main header */}
+          <div className="pb-4 text-center md:text-left">
+            <p 
+              className="text-sm font-medium" 
+              style={{ 
+                fontFamily: 'Inter, var(--font-body)', 
+                color: '#C3C3C3',
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+              }}
+            >
+              Photo management with AI analysis and duplicate detection
+            </p>
+          </div>
+          
+          <style jsx>{`
+            @keyframes gradient-shift {
+              0% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+              100% { background-position: 0% 50%; }
+            }
+          `}</style>
         </div>
       </div>
       
