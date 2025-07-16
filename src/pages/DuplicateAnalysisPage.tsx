@@ -849,9 +849,9 @@ const DuplicateAnalysisPageContent: React.FC = () => {
         </div>
       </div>
       
-      <div className="px-4 md:px-6 lg:px-10 py-5 font-sans">
+      <div className="p-4 bg-gray-100 min-h-screen w-full font-sans">
         {/* Photo Management Section */}
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full max-w-[1400px] mx-auto">
           {/* Scout AI Controls */}
           <Card className="mb-6">
             <CardHeader>
