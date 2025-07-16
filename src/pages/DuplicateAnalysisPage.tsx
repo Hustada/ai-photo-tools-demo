@@ -701,7 +701,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
           </svg>
         </div>
         
-        <div className="max-w-7xl mx-auto px-4 relative">
+        <div className="w-full px-4 relative">
           {/* Main Header Row */}
           <div className="flex items-start justify-between py-4">
             {/* Logo/Brand Section - Left */}
@@ -849,11 +849,11 @@ const DuplicateAnalysisPageContent: React.FC = () => {
         </div>
       </div>
       
-      <div className="p-4 bg-gray-100 min-h-screen w-full font-sans">
+      <div className="bg-gray-100 min-h-screen w-full font-sans">
         {/* Photo Management Section */}
-        <div className="w-full max-w-[1400px] mx-auto">
+        <div className="w-full">
           {/* Scout AI Controls */}
-          <Card className="mb-6 bg-white rounded-lg shadow-md w-full">
+          <Card className="mb-6 bg-white rounded-none shadow-md w-full">
             <CardHeader className="text-center">
               <CardTitle className="flex items-center justify-center gap-2 text-2xl font-bold text-gray-800">
                 <Camera className="w-6 h-6" />
@@ -1089,10 +1089,10 @@ const DuplicateAnalysisPageContent: React.FC = () => {
           )}
 
           {/* Photo Grid */}
-          <div className={`grid mb-6 ${
+          <div className={`grid mb-6 px-4 ${
             isRelaxedView 
               ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6' 
-              : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'
+              : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4'
           }`}>
             {tagFiltering.filteredPhotos.map((photo) => {
               const aiData = aiEnhancements.getAiDataForPhoto(photo.id);
@@ -1124,7 +1124,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
         </div>
 
         {/* Claude Vision Analysis Results */}
-        <div className="w-full max-w-[1400px] mx-auto mt-8">
+        <div className="w-full px-4 mt-8">
 
         {/* Analysis Results */}
         {analysisSession && (

@@ -77,7 +77,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
   return (
     <div
-      className="p-4 rounded-xl cursor-pointer shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-out flex flex-col relative overflow-hidden w-full max-w-xs mx-auto"
+      className="p-4 rounded-xl cursor-pointer shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-out flex flex-col relative overflow-hidden w-full"
       style={{
         background: isArchived ? 'linear-gradient(to bottom, #f3f4f6, #e5e7eb)' : 'linear-gradient(to bottom, #ffffff, #f3f4f6)',
         opacity: isArchived ? 0.7 : 1,
