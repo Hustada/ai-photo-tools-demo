@@ -853,15 +853,15 @@ const DuplicateAnalysisPageContent: React.FC = () => {
         {/* Photo Management Section */}
         <div className="w-full max-w-[1400px] mx-auto">
           {/* Scout AI Controls */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Camera className="w-5 h-5" />
+          <Card className="mb-6 bg-white rounded-lg shadow-md w-full">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2 text-2xl font-bold text-gray-800">
+                <Camera className="w-6 h-6" />
                 Scout AI
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex flex-wrap gap-4 items-center justify-center">
                 {/* Scout AI Dropdown Menu */}
                 {currentUser && totalPhotos >= 2 && (
                   <div className="relative">
