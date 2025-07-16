@@ -141,6 +141,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
   // Analysis state (moved from FilterBar)
   const [analysisMode, setAnalysisMode] = useState<'new' | 'all' | 'force'>('new');
   const [showAnalysisDropdown, setShowAnalysisDropdown] = useState(false);
+  const [isRelaxedView, setIsRelaxedView] = useState(false);
   
   // Calculate archived photo count
   const archivedCount = React.useMemo(() => {
@@ -689,7 +690,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
       <div className="py-6 shadow-lg" style={{ backgroundColor: '#262626' }}>
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center space-y-4 md:space-y-0">
-            <div>
+            <div className="text-center md:text-left">
               <h1 
                 className="text-2xl md:text-4xl font-bold mb-2 text-white" 
                 style={{ 
@@ -706,7 +707,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                   color: '#C3C3C3' 
                 }}
               >
-                Photo management with AI analysis and Claude Vision duplicate detection
+                Photo management with AI analysis and duplicate detection
               </p>
             </div>
             
@@ -743,106 +744,9 @@ const DuplicateAnalysisPageContent: React.FC = () => {
         </div>
       </div>
       
-      <div className="p-5 font-sans">
+      <div className="px-4 md:px-6 lg:px-10 py-5 font-sans">
         {/* Photo Management Section */}
         <div className="max-w-7xl mx-auto">
-          {/* Filter Section */}
-          <FilterBar
-            availableTags={tagFiltering.availableFilterTags}
-            activeTags={tagFiltering.activeTagIds}
-            onToggleTag={tagFiltering.toggleTag}
-            onClearAll={tagFiltering.clearAllFilters}
-            totalPhotos={photosQuery.allPhotos.length}
-            filteredCount={tagFiltering.filteredPhotos.length}
-            onRefresh={handleRefreshPhotos}
-            isRefreshing={photosQuery.isLoading}
-            showArchivedPhotos={showArchivedPhotos}
-            onToggleArchivedPhotos={setShowArchivedPhotos}
-            archivedCount={archivedCount}
-          />
-
-          {/* Error Messages */}
-          {photosQuery.error && (
-            <p className="text-red-600 text-center mb-4 p-3 bg-red-100 border border-red-300 rounded-md">
-              Error: {photosQuery.error.message}
-            </p>
-          )}
-
-          {tagManagement.tagError && (
-            <div className="mb-6 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-md">
-              <p>{tagManagement.tagError}</p>
-            </div>
-          )}
-
-          {/* Scout AI Analysis Interface */}
-          {currentUser && tagFiltering.filteredPhotos.length >= 2 && (scoutAi.isAnalyzing || scoutAi.suggestions.filter(s => s.status !== 'dismissed' && s.status !== 'rejected').length > 0) && (
-            <div className="mb-6">
-              <ScoutAiDemo
-                photos={photosQuery.allPhotos}
-                visible={true}
-                onPhotoUpdate={(updatedPhoto: Photo) => {
-                  photosQuery.updatePhotoInCache(updatedPhoto);
-                }}
-              />
-            </div>
-          )}
-
-          {/* Notifications Panel */}
-          {notificationManager.hasActiveNotifications && (
-            <div className="mb-6">
-              <NotificationsPanel
-                photos={photosQuery.photos}
-                onPhotosUpdate={(updatedPhotos: Photo[]) => {
-                  updatedPhotos.forEach(photo => {
-                    photosQuery.updatePhotoInCache(photo);
-                  });
-                }}
-              />
-            </div>
-          )}
-
-          {/* Loading State */}
-          {photosQuery.isLoading && photosQuery.photos.length === 0 && (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#ea580c' }}></div>
-              <p className="mt-4 text-gray-600">Loading photos...</p>
-            </div>
-          )}
-
-          {/* Photo Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-6">
-            {tagFiltering.filteredPhotos.map((photo) => {
-              const aiData = aiEnhancements.getAiDataForPhoto(photo.id);
-              return (
-                <PhotoCard
-                  key={photo.id}
-                  photo={photo}
-                  onAddTagToCompanyCam={tagManagement.handleAddTagRequest}
-                  onAddAiTag={aiEnhancements.addAiTag}
-                  onRemoveTag={tagManagement.handleRemoveTagRequest}
-                  onTagClick={tagFiltering.toggleTag}
-                  onPhotoClick={() => photoModal.openModal(photo)}
-                  mockTagsData={[]}
-                  aiSuggestionData={aiData}
-                  onFetchAiSuggestions={aiEnhancements.fetchAiSuggestions}
-                  onUnarchivePhoto={handleUnarchivePhoto}
-                />
-              );
-            })}
-          </div>
-
-          {/* Load More Indicator */}
-          {tagFiltering.filteredPhotos.length > 0 && photosQuery.isLoadingMore && (
-            <div className="text-center mt-8">
-              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2" style={{ borderColor: '#ea580c' }}></div>
-              <p className="mt-2 text-gray-600">Loading more photos...</p>
-            </div>
-          )}
-        </div>
-
-        {/* Scout AI Analysis Section */}
-        <div className="max-w-7xl mx-auto mt-8">
-
           {/* Scout AI Controls */}
           <Card className="mb-6">
             <CardHeader>
@@ -869,7 +773,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                       <button
                         onClick={() => setShowAnalysisDropdown(!showAnalysisDropdown)}
                         disabled={scoutAi.isAnalyzing}
-                        className="p-2 border rounded-md transition-colors"
+                        className="inline-flex items-center justify-center px-4 py-2 border rounded-md font-medium transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
                         style={{ 
                           backgroundColor: '#ea580c',
                           borderColor: '#ea580c',
@@ -971,6 +875,23 @@ const DuplicateAnalysisPageContent: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Filter Section */}
+          <FilterBar
+            availableTags={tagFiltering.availableFilterTags}
+            activeTags={tagFiltering.activeTagIds}
+            onToggleTag={tagFiltering.toggleTag}
+            onClearAll={tagFiltering.clearAllFilters}
+            totalPhotos={photosQuery.allPhotos.length}
+            filteredCount={tagFiltering.filteredPhotos.length}
+            onRefresh={handleRefreshPhotos}
+            isRefreshing={photosQuery.isLoading}
+            showArchivedPhotos={showArchivedPhotos}
+            onToggleArchivedPhotos={setShowArchivedPhotos}
+            archivedCount={archivedCount}
+            isRelaxedView={isRelaxedView}
+            onToggleRelaxedView={setIsRelaxedView}
+          />
+
           {/* Claude Error Display */}
           {claudeError && (
             <Card className="mb-6 border-red-200 bg-red-50">
@@ -983,6 +904,92 @@ const DuplicateAnalysisPageContent: React.FC = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Error Messages */}
+          {photosQuery.error && (
+            <p className="text-red-600 text-center mb-4 p-3 bg-red-100 border border-red-300 rounded-md">
+              Error: {photosQuery.error.message}
+            </p>
+          )}
+
+          {tagManagement.tagError && (
+            <div className="mb-6 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-md">
+              <p>{tagManagement.tagError}</p>
+            </div>
+          )}
+
+          {/* Scout AI Analysis Interface */}
+          {currentUser && tagFiltering.filteredPhotos.length >= 2 && (scoutAi.isAnalyzing || scoutAi.suggestions.filter(s => s.status !== 'dismissed' && s.status !== 'rejected').length > 0) && (
+            <div className="mb-6">
+              <ScoutAiDemo
+                photos={photosQuery.allPhotos}
+                visible={true}
+                onPhotoUpdate={(updatedPhoto: Photo) => {
+                  photosQuery.updatePhotoInCache(updatedPhoto);
+                }}
+              />
+            </div>
+          )}
+
+          {/* Notifications Panel */}
+          {notificationManager.hasActiveNotifications && (
+            <div className="mb-6">
+              <NotificationsPanel
+                photos={photosQuery.photos}
+                onPhotosUpdate={(updatedPhotos: Photo[]) => {
+                  updatedPhotos.forEach(photo => {
+                    photosQuery.updatePhotoInCache(photo);
+                  });
+                }}
+              />
+            </div>
+          )}
+
+          {/* Loading State */}
+          {photosQuery.isLoading && photosQuery.photos.length === 0 && (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#ea580c' }}></div>
+              <p className="mt-4 text-gray-600">Loading photos...</p>
+            </div>
+          )}
+
+          {/* Photo Grid */}
+          <div className={`grid mb-6 ${
+            isRelaxedView 
+              ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8' 
+              : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6'
+          }`}>
+            {tagFiltering.filteredPhotos.map((photo) => {
+              const aiData = aiEnhancements.getAiDataForPhoto(photo.id);
+              return (
+                <PhotoCard
+                  key={photo.id}
+                  photo={photo}
+                  onAddTagToCompanyCam={tagManagement.handleAddTagRequest}
+                  onAddAiTag={aiEnhancements.addAiTag}
+                  onRemoveTag={tagManagement.handleRemoveTagRequest}
+                  onTagClick={tagFiltering.toggleTag}
+                  onPhotoClick={() => photoModal.openModal(photo)}
+                  mockTagsData={[]}
+                  aiSuggestionData={aiData}
+                  onFetchAiSuggestions={aiEnhancements.fetchAiSuggestions}
+                  onUnarchivePhoto={handleUnarchivePhoto}
+                />
+              );
+            })}
+          </div>
+
+          {/* Load More Indicator */}
+          {tagFiltering.filteredPhotos.length > 0 && photosQuery.isLoadingMore && (
+            <div className="text-center mt-8">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2" style={{ borderColor: '#ea580c' }}></div>
+              <p className="mt-2 text-gray-600">Loading more photos...</p>
+            </div>
+          )}
+        </div>
+
+        {/* Claude Vision Analysis Results */}
+        <div className="max-w-7xl mx-auto mt-8">
 
         {/* Analysis Results */}
         {analysisSession && (

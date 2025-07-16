@@ -77,7 +77,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
   return (
     <div
-      className="border p-4 rounded-lg cursor-pointer shadow-md hover:shadow-xl transition-all duration-200 ease-in-out flex flex-col relative"
+      className="border p-4 rounded-lg cursor-pointer shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 ease-in-out flex flex-col relative"
       style={{
         backgroundColor: isArchived ? '#f3f4f6' : '#FFFFFF',
         borderColor: isArchived ? '#9ca3af' : '#d1d5db',
@@ -110,7 +110,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         </div>
       )}
       
-      <div className={`w-full h-48 rounded-md mb-3 bg-gray-100 flex items-center justify-center overflow-hidden ${
+      <div className={`w-full aspect-[4/3] rounded-md mb-3 bg-gray-100 flex items-center justify-center overflow-hidden ${
         isArchived ? 'grayscale' : ''
       }`}>
         {thumbnailUrl ? (
@@ -134,22 +134,22 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         )}
       </div>
 
-      <div className="flex flex-col flex-grow">
-        <h3 className="text-lg font-semibold mb-1 mt-2 truncate" style={{ color: '#111827', fontFamily: 'Space Grotesk, var(--font-heading)' }} title={`Photo ID: ${photo.id}`}>
-          {`Photo ID: ${photo.id}`}
-        </h3>
-        <p className="text-sm mb-1 truncate" style={{ color: '#4b5563', fontFamily: 'Inter, var(--font-body)' }}>
-          By: {photo.creator_name || 'Unknown Creator'}
-        </p>
-
-
-        {photo.description && (
-          <p className="text-sm mt-1 mb-2 line-clamp-2" style={{ color: '#374151', fontFamily: 'Inter, var(--font-body)' }} title={photo.description}>
-            {photo.description}
+      <div className="flex flex-col flex-grow space-y-3">
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold truncate" style={{ color: '#111827', fontFamily: 'Space Grotesk, var(--font-heading)' }} title={`Photo ID: ${photo.id}`}>
+            {`Photo ID: ${photo.id}`}
+          </h3>
+          <p className="text-sm truncate" style={{ color: '#4b5563', fontFamily: 'Inter, var(--font-body)' }}>
+            By: {photo.creator_name || 'Unknown Creator'}
           </p>
-        )}
+          {photo.description && (
+            <p className="text-sm line-clamp-2" style={{ color: '#374151', fontFamily: 'Inter, var(--font-body)' }} title={photo.description}>
+              {photo.description}
+            </p>
+          )}
+        </div>
 
-        <div className="mt-auto pt-2 flex flex-wrap gap-2 mb-3">
+        <div className="mt-auto flex flex-wrap gap-2">
           {photo.tags && Array.isArray(photo.tags) && photo.tags.length > 0 ? (
             photo.tags.map((tag: CompanyCamTag) => {
               if (!tag || typeof tag.id !== 'string') return null;
@@ -225,35 +225,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
               );
             })
           ) : (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                // This could trigger a tag input modal or inline editing in the future
-                console.log('Add tags clicked for photo:', photo.id);
-              }}
-              className="inline-flex items-center gap-1 px-2 py-1 text-xs border-2 border-dashed rounded-full transition-all duration-200 hover:scale-105"
-              style={{ 
-                color: '#6b7280', 
-                borderColor: '#d1d5db',
-                fontFamily: 'Inter, var(--font-body)'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.color = '#ea580c';
-                e.target.style.borderColor = '#ea580c';
-                e.target.style.backgroundColor = '#fef3f2';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.color = '#6b7280';
-                e.target.style.borderColor = '#d1d5db';
-                e.target.style.backgroundColor = 'transparent';
-              }}
-              title="Add tags to this photo"
-            >
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-              </svg>
-              <span>Add Tags</span>
-            </button>
+            <span className="text-xs italic" style={{ color: '#6b7280' }}>No tags</span>
           )}
         </div>
 

@@ -13,6 +13,8 @@ interface FilterBarProps {
   showArchivedPhotos?: boolean;
   onToggleArchivedPhotos?: (show: boolean) => void;
   archivedCount?: number;
+  isRelaxedView?: boolean;
+  onToggleRelaxedView?: (relaxed: boolean) => void;
 }
 
 
@@ -27,7 +29,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   isRefreshing,
   showArchivedPhotos = false,
   onToggleArchivedPhotos,
-  archivedCount = 0
+  archivedCount = 0,
+  isRelaxedView = false,
+  onToggleRelaxedView
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isTagPanelExpanded, setIsTagPanelExpanded] = useState(false);
@@ -49,47 +53,50 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
   return (
     <div className="mb-4 p-3 border rounded-lg shadow-sm sticky top-0 z-10 backdrop-blur-sm transition-all duration-200" style={{ borderColor: '#d1d5db', backgroundColor: 'rgba(249, 250, 251, 0.95)' }}>
-      {/* Compact Horizontal Layout */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        {/* Photo Count */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium" style={{ color: '#374151' }}>Photos:</span>
-          <span className="text-sm" style={{ color: '#6b7280' }}>
-            <span className="font-medium" style={{ color: '#ea580c' }}>{filteredCount}</span> of {totalPhotos}
-          </span>
-        </div>
+      {/* Responsive Layout */}
+      <div className="flex flex-col gap-3">
+        {/* Top Row: Photo Count and Search */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          {/* Photo Count */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium" style={{ color: '#374151' }}>Photos:</span>
+            <span className="text-sm" style={{ color: '#6b7280' }}>
+              <span className="font-medium" style={{ color: '#ea580c' }}>{filteredCount}</span> of {totalPhotos}
+            </span>
+          </div>
 
-        {/* Search Input */}
-        <div className="flex-1 min-w-0">
-          <input
-            type="text"
-            placeholder="Search tags..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none transition-colors"
-            style={{ 
-              backgroundColor: '#FFFFFF', 
-              borderColor: '#d1d5db', 
-              color: '#374151'
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#ea580c'}
-            onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-          />
+          {/* Search Input */}
+          <div className="flex-1 min-w-0">
+            <input
+              type="text"
+              placeholder="Search tags..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none transition-colors"
+              style={{ 
+                backgroundColor: '#FFFFFF', 
+                borderColor: '#d1d5db', 
+                color: '#374151'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#ea580c'}
+              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+            />
+          </div>
         </div>
         
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        {/* Bottom Row: Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
           {/* Browse Tags Button */}
           {!searchTerm && (
             <button
               onClick={() => setIsTagPanelExpanded(!isTagPanelExpanded)}
-              className="px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors text-sm font-medium rounded-md flex items-center gap-2"
+              className="px-2 sm:px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors text-xs sm:text-sm font-medium rounded-md flex items-center gap-1 sm:gap-2 whitespace-nowrap"
               onMouseEnter={(e) => e.target.style.borderColor = '#ea580c'}
               onMouseLeave={(e) => e.target.style.borderColor = '#d1d5db'}
             >
               <span>Browse</span>
               <svg 
-                className={`w-4 h-4 transition-transform duration-200 ${isTagPanelExpanded ? 'rotate-180' : ''}`} 
+                className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform duration-200 ${isTagPanelExpanded ? 'rotate-180' : ''}`} 
                 fill="currentColor" 
                 viewBox="0 0 24 24"
               >
@@ -103,46 +110,89 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 disabled:bg-gray-300 disabled:opacity-70 transition-colors text-sm rounded-md"
+              className="px-2 sm:px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 disabled:bg-gray-300 disabled:opacity-70 transition-colors text-xs sm:text-sm rounded-md whitespace-nowrap"
             >
               {isRefreshing ? 'Refreshing...' : 'Refresh'}
             </button>
           )}
           
+          {/* View Density Toggle */}
+          {onToggleRelaxedView && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-white border rounded-md" style={{ borderColor: '#d1d5db' }}>
+              <span className="text-xs sm:text-sm font-medium whitespace-nowrap" style={{ color: '#374151' }}>
+                Relaxed
+              </span>
+              <button
+                onClick={() => onToggleRelaxedView(!isRelaxedView)}
+                className={`relative inline-flex w-11 h-6 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  isRelaxedView 
+                    ? 'bg-orange-600 focus:ring-orange-500' 
+                    : 'bg-gray-200 focus:ring-gray-500'
+                }`}
+                style={{
+                  backgroundColor: isRelaxedView ? '#ea580c' : '#e5e7eb'
+                }}
+                onMouseEnter={(e) => {
+                  if (isRelaxedView) {
+                    e.target.style.backgroundColor = '#c2410c';
+                  } else {
+                    e.target.style.backgroundColor = '#d1d5db';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (isRelaxedView) {
+                    e.target.style.backgroundColor = '#ea580c';
+                  } else {
+                    e.target.style.backgroundColor = '#e5e7eb';
+                  }
+                }}
+              >
+                <span
+                  className={`inline-block w-4 h-4 transform rounded-full bg-white transition-transform duration-300 ease-in-out ${
+                    isRelaxedView ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                  style={{ boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.2)' }}
+                />
+              </button>
+            </div>
+          )}
+
           {/* Show Archived Photos Toggle Switch */}
           {archivedCount > 0 && onToggleArchivedPhotos && (
-            <div className="flex items-center gap-3 px-3 py-2 bg-white border rounded-md" style={{ borderColor: '#d1d5db' }}>
-              <span className="text-sm font-medium" style={{ color: '#374151' }}>
-                Show Archived ({archivedCount})
+            <div className="flex items-center gap-2 px-3 py-2 bg-white border rounded-md" style={{ borderColor: '#d1d5db' }}>
+              <span className="text-xs sm:text-sm font-medium whitespace-nowrap" style={{ color: '#374151' }}>
+                Archived ({archivedCount})
               </span>
               <button
                 onClick={() => onToggleArchivedPhotos(!showArchivedPhotos)}
-                className={`relative inline-flex w-11 h-6 items-center rounded-full transition-colors duration-200 focus:outline-none ${
-                  showArchivedPhotos ? 'bg-blue-600' : 'bg-gray-300'
+                className={`relative inline-flex w-11 h-6 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  showArchivedPhotos 
+                    ? 'bg-blue-600 focus:ring-blue-500' 
+                    : 'bg-gray-200 focus:ring-gray-500'
                 }`}
                 style={{
-                  backgroundColor: showArchivedPhotos ? '#2563eb' : '#d1d5db'
+                  backgroundColor: showArchivedPhotos ? '#2563eb' : '#e5e7eb'
                 }}
                 onMouseEnter={(e) => {
                   if (showArchivedPhotos) {
                     e.target.style.backgroundColor = '#1d4ed8';
                   } else {
-                    e.target.style.backgroundColor = '#9ca3af';
+                    e.target.style.backgroundColor = '#d1d5db';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (showArchivedPhotos) {
                     e.target.style.backgroundColor = '#2563eb';
                   } else {
-                    e.target.style.backgroundColor = '#d1d5db';
+                    e.target.style.backgroundColor = '#e5e7eb';
                   }
                 }}
               >
                 <span
-                  className={`inline-block w-4 h-4 transform rounded-full bg-white transition-transform duration-200 ${
+                  className={`inline-block w-4 h-4 transform rounded-full bg-white transition-transform duration-300 ease-in-out ${
                     showArchivedPhotos ? 'translate-x-6' : 'translate-x-1'
                   }`}
-                  style={{ boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)' }}
+                  style={{ boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.2)' }}
                 />
               </button>
             </div>
