@@ -1124,7 +1124,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
         </div>
 
         {/* Claude Vision Analysis Results */}
-        <div className="max-w-7xl mx-auto mt-8">
+        <div className="w-full max-w-[1400px] mx-auto mt-8">
 
         {/* Analysis Results */}
         {analysisSession && (
