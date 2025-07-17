@@ -1,0 +1,54 @@
+{
+  "output": {
+    "style": "xml",
+    "filePath": "scout-ai-codebase.xml",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "topFilesLength": 50,
+    "includeEmptyDirectories": true
+  },
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "**/*.log",
+      "**/*.tmp",
+      "**/*.temp",
+      "**/*.cache",
+      "**/.DS_Store",
+      "**/node_modules/**",
+      "**/.next/**",
+      "**/build/**",
+      "**/dist/**",
+      "**/coverage/**",
+      "**/.git/**",
+      "**/*.map",
+      "**/*.lock",
+      "**/package-lock.json",
+      "**/yarn.lock",
+      "**/pnpm-lock.yaml",
+      "**/scout-ai-codebase.xml",
+      "**/scout-ai-codebase.md",
+      "**/.env*",
+      "**/api/**/*.js",
+      "**/api/**/*.js.map",
+      "**/public/blog-images/**",
+      "**/.vercel/**"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.css",
+    "scripts/**/*.ts",
+    "api/**/*.ts",
+    "*.json",
+    "*.md",
+    "*.config.js",
+    "*.config.ts",
+    ".gitignore"
+  ],
+  "security": {
+    "enableSecurityCheck": true
+  }
+}

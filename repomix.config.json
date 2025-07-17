@@ -1,0 +1,57 @@
+{
+  "output": {
+    "style": "markdown",
+    "filePath": "scout-ai-codebase.md",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "topFilesLength": 50,
+    "includeEmptyDirectories": false
+  },
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "**/coverage/**",
+      "**/coverage.*",
+      "**/*.log",
+      "**/*.tmp",
+      "**/*.temp",
+      "**/*.cache",
+      "**/.DS_Store",
+      "**/node_modules/**",
+      "**/.next/**",
+      "**/build/**",
+      "**/dist/**",
+      "**/.git/**",
+      "**/*.map",
+      "**/*.lock",
+      "**/package-lock.json",
+      "**/yarn.lock",
+      "**/pnpm-lock.yaml",
+      "**/repomix-output.xml",
+      "**/scout-ai-codebase.xml",
+      "**/scout-ai-codebase.md",
+      "**/.env*",
+      "**/public/blog-images/**",
+      "**/.vercel/**",
+      "**/test-reports/**",
+      "**/__snapshots__/**",
+      "**/coverage_output.txt"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "scripts/**/*.ts",
+    "api/**/*.ts",
+    "package.json",
+    "README.md",
+    "tsconfig.json",
+    "vite.config.ts",
+    "tailwind.config.js",
+    "postcss.config.js"
+  ],
+  "security": {
+    "enableSecurityCheck": true
+  }
+}

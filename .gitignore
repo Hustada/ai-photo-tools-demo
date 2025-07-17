@@ -41,3 +41,8 @@ source-images/*.jpeg
 
 # Blog session files
 .blog-session.json
+
+# Repomix output files
+scout-ai-codebase.xml
+scout-ai-codebase.md
+repomix-output.xml
