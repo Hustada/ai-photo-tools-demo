@@ -29,6 +29,7 @@ import { ScoutAiProvider } from '../contexts/ScoutAiContext';
 import PhotoModal from '../components/PhotoModal';
 import PhotoCard from '../components/PhotoCard';
 import { ScoutAiDemo } from '../components/ScoutAiDemo';
+import { PhotoChatBubble } from '../components/PhotoChatBubble';
 import { NotificationsPanel } from '../components/NotificationsPanel';
 
 interface PhotoMetadata {
@@ -1627,6 +1628,16 @@ const DuplicateAnalysisPageContent: React.FC = () => {
           totalPhotos={photoModal.totalPhotos}
         />
       )}
+
+      {/* Photo Chat Bubble */}
+      <PhotoChatBubble
+        onPhotosFound={(photos) => {
+          console.log('[PhotoChat] Found photos:', photos);
+          // You could update the filtered photos or highlight found photos
+          // For now, we'll just log them
+        }}
+        projectId={photosQuery.allPhotos[0]?.project_id}
+      />
     </div>
   );
 };
