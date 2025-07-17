@@ -7,6 +7,7 @@ import TestSimilarity from './pages/test-similarity';
 import BlogPage from './pages/BlogPage';
 import GettingStartedPage from './pages/GettingStartedPage';
 import DuplicateAnalysisPage from './pages/DuplicateAnalysisPage';
+import { ChatTestPage } from './pages/ChatTestPage';
 
 // Simple component to protect routes
 const ProtectedRoute: React.FC = () => {
@@ -34,6 +35,7 @@ function App() {
             <Route path="/photos" element={<HomePage />} />
             <Route path="/test-similarity" element={<TestSimilarity />} />
             <Route path="/duplicate-analysis" element={<DuplicateAnalysisPage />} />
+            <Route path="/chat-test" element={<ChatTestPage />} />
             {/* Add other protected routes here if needed */}
           </Route>
           {/* Fallback route for any undefined paths, could redirect to / or a 404 page */}
