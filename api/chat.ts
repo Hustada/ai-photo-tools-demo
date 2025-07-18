@@ -3,12 +3,16 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
+import { Pinecone } from '@pinecone-database/pinecone';
 import { kv } from '@vercel/kv';
-import { getPineconeIndex, generateEmbedding } from '../src/utils/pinecone';
 
-// Initialize OpenAI client
+// Initialize clients
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+});
+
+const pinecone = new Pinecone({
+  apiKey: process.env.PINECONE_API_KEY!,
 });
 
 // Types
@@ -134,6 +138,14 @@ function mergeWithPreviousContext(
   };
 }
 
+// Generate embedding for semantic search
+async function generateEmbedding(text: string): Promise<number[]> {
+  const response = await openai.embeddings.create({
+    input: text.replace(/\n/g, ' '),
+    model: "text-embedding-3-small",
+  });
+  return response.data[0].embedding;
+}
 
 // Perform hybrid search in Pinecone
 async function performHybridSearch(
@@ -141,7 +153,8 @@ async function performHybridSearch(
   criteria: SearchCriteria,
   limit: number = 20
 ): Promise<any[]> {
-  const index = getPineconeIndex();
+  const indexName = process.env.PINECONE_INDEX_NAME || 'companycam-photos';
+  const index = pinecone.index(indexName);
 
   // Generate query embedding
   const queryEmbedding = await generateEmbedding(query);
@@ -261,8 +274,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     'Access-Control-Allow-Origin': '*',
   });
 
+  let conversationId: string | undefined;
+  
   try {
-    const { query, conversationId, projectId, limit = 20 }: ChatRequest = req.body;
+    const { query, conversationId: convId, projectId, limit = 20 }: ChatRequest = req.body;
+    conversationId = convId;
 
     if (!query || typeof query !== 'string') {
       sendEvent(res, {
