@@ -2,6 +2,7 @@
 // 2025 Mark Hustad — MIT License
 import React, { useState, useEffect, useCallback } from 'react';
 import type { Photo } from '../types';
+import { useScoutAiFeedback } from '../hooks/useScoutAiFeedback';
 
 import type { PhotoCardAiSuggestionState } from './PhotoCard'; // Import the shared state type
 
@@ -67,6 +68,9 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
   const [modalAiError, setModalAiError] = useState<string | null>(null);
   const [editableDescription, setEditableDescription] = useState<string>('');
   const [isSavingDescription, setIsSavingDescription] = useState<boolean>(false);
+  
+  // Initialize feedback hook
+  const { submitPositiveFeedback, submitEditFeedback } = useScoutAiFeedback();
 
   useEffect(() => {
     if (photo.description) {
@@ -106,6 +110,17 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
     setModalAiError(null);
     try {
       await onAddAiTag(photo.id, suggestedTagValue, photo);
+      
+      // Submit positive feedback when user accepts an AI suggested tag
+      submitPositiveFeedback(
+        `tag-${photo.id}-${suggestedTagValue}`,
+        'tag',
+        {
+          photoId: photo.id,
+          tagValue: suggestedTagValue,
+          projectId: photo.project_id,
+        }
+      );
     } catch (error: unknown) {
       console.error(`[PhotoModal] Error adding AI tag '${suggestedTagValue}':`, error);
       // Type guard for error message
@@ -362,6 +377,22 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                     setIsSavingDescription(true);
                     try {
                       await onSaveAiDescription(photo.id, editableDescription, photo);
+                      
+                      // If the description was edited from an AI suggestion, submit edit feedback
+                      if (aiSuggestionData?.suggestedDescription && 
+                          editableDescription !== aiSuggestionData.suggestedDescription &&
+                          editableDescription !== photo.description) {
+                        submitEditFeedback(
+                          `description-${photo.id}`,
+                          'description',
+                          editableDescription,
+                          {
+                            photoId: photo.id,
+                            originalSuggestion: aiSuggestionData.suggestedDescription,
+                            projectId: photo.project_id,
+                          }
+                        );
+                      }
                     } catch (error) {
                       console.error('Error saving description from modal:', error);
                       // Optionally set a modal-specific error state here

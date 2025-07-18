@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader, Search, Camera } from 'lucide-react';
 import type { Photo } from '../types';
+import { InlineFeedback } from './ScoutAiFeedback';
 
 interface ChatMessage {
   id: string;
@@ -245,6 +246,14 @@ export const PhotoChatBubble: React.FC<ChatBubbleProps> = ({ onPhotosFound, proj
                       Found {message.photos.length} photo{message.photos.length !== 1 ? 's' : ''}
                     </p>
                   </div>
+                )}
+                
+                {/* Add feedback for assistant messages */}
+                {message.type === 'assistant' && message.id !== '1' && (
+                  <InlineFeedback 
+                    messageId={message.id}
+                    className="mt-2 pt-2 border-t border-gray-200"
+                  />
                 )}
               </div>
             </div>
