@@ -2,12 +2,19 @@
   "functions": {
     "api/**/*.ts": {
       "maxDuration": 30
+    },
+    "api/cron/evolve-prompts.ts": {
+      "maxDuration": 300
     }
   },
   "crons": [
     {
       "path": "/api/cron/aggregate-feedback",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/evolve-prompts",
+      "schedule": "0 0 * * 0"
     }
   ]
 }
