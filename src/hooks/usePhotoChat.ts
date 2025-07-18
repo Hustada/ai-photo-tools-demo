@@ -1,6 +1,7 @@
 // © 2025 Mark Hustad — MIT License
 import { useState, useCallback } from 'react';
 import type { Photo } from '../types';
+import { useScoutAi } from '../contexts/ScoutAiContext';
 
 export interface ChatSearchResult {
   photos: Photo[];
@@ -29,6 +30,9 @@ export function usePhotoChat() {
   const [conversationId, setConversationId] = useState<string>();
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Get Scout AI context for adaptive behavior
+  const scoutAi = useScoutAi();
 
   const searchPhotos = useCallback(async (
     query: string,
@@ -41,6 +45,9 @@ export function usePhotoChat() {
     setIsSearching(true);
     setError(null);
 
+    // Track the query for context detection
+    scoutAi.trackQuery(query);
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -50,6 +57,11 @@ export function usePhotoChat() {
           conversationId,
           projectId: options?.projectId,
           limit: options?.limit || 20,
+          // Include Scout AI context for adaptive responses
+          context: {
+            userType: scoutAi.userType,
+            confidence: scoutAi.contextConfidence
+          }
         }),
       });
 
@@ -128,7 +140,7 @@ export function usePhotoChat() {
     } finally {
       setIsSearching(false);
     }
-  }, [conversationId]);
+  }, [conversationId, scoutAi]);
 
   const resetConversation = useCallback(() => {
     setConversationId(undefined);

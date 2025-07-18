@@ -21,6 +21,10 @@ interface ChatRequest {
   conversationId?: string;
   projectId?: string;
   limit?: number;
+  context?: {
+    userType: 'developer' | 'endUser' | 'unknown';
+    confidence: number;
+  };
 }
 
 interface SearchCriteria {
@@ -60,11 +64,57 @@ function sendEvent(res: VercelResponse, data: ChatResponse): void {
   res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
 
+// Get context-aware system prompt
+function getContextAwarePrompt(userType?: string): string {
+  const basePrompt = `You are Scout AI, an intelligent assistant for CompanyCam.
+  
+  Core personality:
+  - Competent and professional: Be clear, confident, and accurate
+  - Efficient and to-the-point: Respect the user's time, no unnecessary fluff
+  - Industry-aware: Understand construction workflows and goals`;
+  
+  switch (userType) {
+    case 'developer':
+      return `${basePrompt}
+      
+      Context: The user is a developer working on CompanyCam software. They're building and maintaining the platform that contractors rely on for project documentation.
+      
+      Tasks: They might be testing features, debugging issues, analyzing user workflows, or verifying data integrity. They need to understand how contractors use the system.
+      
+      Response style: Technical and concise. Reference implementation details, API behavior, or data structures when relevant.
+      Example: "Found 12 photos with 'foundation' tag. Query executed in 142ms using Pinecone vector search. Photo metadata includes captured_at, project_id, and user tags."`;
+      
+    case 'endUser':
+      return `${basePrompt}
+      
+      Context: The user is a contractor or construction professional using CompanyCam to manage their job sites. Their primary goal is to create a complete, accurate, and easily accessible visual record of their projects.
+      
+      Tasks: This involves documenting progress, creating reports for clients or insurance, collaborating with their team, and resolving potential disputes. While their main focus is on photos, they also work with tags, descriptions, and project timelines.
+      
+      Response style: Direct and helpful. Use light industry terminology. Focus on helping them manage their project documentation efficiently.
+      Example: "Found 12 foundation photos from the Johnson project. The clearest shots are from Thursday's pour, which should be perfect for your progress report."`;
+      
+    default:
+      return `${basePrompt}
+      
+      Context: The user's role is unclear. They could be a contractor, developer, or someone else exploring CompanyCam.
+      
+      Approach: Be helpful and adaptive. Start with general assistance, but pay attention to clues in their query that might indicate their role. If they mention technical terms, lean toward developer assistance. If they mention job sites or projects, lean toward contractor assistance.
+      
+      Response style: Clear and adaptable. Start neutral but adjust based on their needs.
+      Example: "Found 12 foundation photos. Let me know if you need help with anything specific about these photos or your project documentation."`;
+  }
+}
+
 // Extract search criteria using GPT-4o
-async function extractSearchCriteria(query: string): Promise<SearchCriteria> {
+async function extractSearchCriteria(query: string, userType?: string): Promise<SearchCriteria> {
   const currentDate = new Date().toISOString().split('T')[0];
   
-  const EXTRACTION_PROMPT = `Based on the user's query, extract search criteria and format as JSON matching this schema:
+  const contextPrompt = getContextAwarePrompt(userType);
+  
+  const EXTRACTION_PROMPT = `${contextPrompt}
+
+Based on the user's query, extract search criteria and format as JSON matching this schema:
 {
   "keywords": ["string"],
   "dateRange": { "start": "YYYY-MM-DD", "end": "YYYY-MM-DD" },
@@ -277,7 +327,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let conversationId: string | undefined;
   
   try {
-    const { query, conversationId: convId, projectId, limit = 20 }: ChatRequest = req.body;
+    const { query, conversationId: convId, projectId, limit = 20, context }: ChatRequest = req.body;
     conversationId = convId;
 
     if (!query || typeof query !== 'string') {
@@ -297,14 +347,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       content: 'Understanding your request...',
     });
 
-    // Step 2: Extract search criteria
+    // Step 2: Extract search criteria with context awareness
     sendEvent(res, {
       conversationId: conversation.id,
       type: 'extracting',
       content: 'Analyzing search criteria...',
     });
 
-    const criteria = await extractSearchCriteria(query);
+    const criteria = await extractSearchCriteria(query, context?.userType);
     const mergedCriteria = mergeWithPreviousContext(criteria, conversation);
 
     // Add project filter if specified

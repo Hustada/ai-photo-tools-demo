@@ -8,6 +8,7 @@ import React, {
   useCallback,
   ReactNode,
 } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { Photo } from '../types';
 import type {
   ScoutAiContextType,
@@ -44,10 +45,17 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
   children, 
   userId
 }) => {
+  const location = useLocation();
   const [suggestions, setSuggestions] = useState<ScoutAiSuggestion[]>([]);
   const [userPreferences, setUserPreferences] = useState<UserCurationPreferences | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Adaptive AI context detection
+  const [userType, setUserType] = useState<'developer' | 'endUser' | 'unknown'>('unknown');
+  const [contextConfidence, setContextConfidence] = useState<number>(0);
+  const [manualUserTypeOverride, setManualUserTypeOverride] = useState<'developer' | 'endUser' | null>(null);
+  const [recentQueries, setRecentQueries] = useState<string[]>([]);
   
   // Initialize visual similarity analysis hook with enhanced pipeline settings
   const visualSimilarity = useVisualSimilarity({
@@ -79,6 +87,51 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
       previousState: any;
     }>;
   }>>([]);
+
+  // Context detection effect
+  useEffect(() => {
+    // Skip if manual override is set
+    if (manualUserTypeOverride) {
+      setUserType(manualUserTypeOverride);
+      setContextConfidence(1.0);
+      return;
+    }
+
+    // Gather context signals
+    const signals = {
+      isLocalhost: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
+      hasDevTools: !!(window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__,
+      pathname: location.pathname,
+      queryPatterns: recentQueries
+    };
+
+    // Calculate developer score
+    let devScore = 0;
+    
+    // Strong indicators
+    if (signals.isLocalhost) devScore += 0.4;
+    if (signals.hasDevTools) devScore += 0.2;
+    if (signals.pathname.includes('/test') || signals.pathname.includes('/chat-test')) devScore += 0.3;
+    
+    // Check for code-related paths
+    if (signals.pathname.includes('api') || signals.pathname.includes('debug')) devScore += 0.2;
+    
+    // Check recent query patterns for technical terms
+    const technicalTerms = ['function', 'api', 'endpoint', 'component', 'hook', 'implementation', '.ts', '.tsx', 'code', 'file'];
+    const hasTechnicalQueries = recentQueries.some(q => 
+      technicalTerms.some(term => q.toLowerCase().includes(term))
+    );
+    if (hasTechnicalQueries) devScore += 0.2;
+    
+    // Determine user type based on score
+    if (devScore >= 0.6) {
+      setUserType('developer');
+      setContextConfidence(Math.min(devScore, 1.0));
+    } else {
+      setUserType('endUser');
+      setContextConfidence(1.0 - devScore);
+    }
+  }, [location.pathname, recentQueries, manualUserTypeOverride]);
 
   // Load user preferences from localStorage on mount
   useEffect(() => {
@@ -513,7 +566,28 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     console.log(`[Scout AI] Updated suggestion ${suggestionId} status to ${status}`);
   }, []);
 
+  // Track user queries for context detection
+  const trackQuery = useCallback((query: string) => {
+    setRecentQueries(prev => [...prev.slice(-4), query]); // Keep last 5 queries
+    console.log(`[Scout AI] Tracking query for context detection: "${query}"`);
+  }, []);
+
   const contextValue: ScoutAiContextType = {
+    // Core identity
+    agent: 'Scout AI' as const,
+    
+    // Adaptive context
+    userType,
+    contextConfidence,
+    activeKnowledge: {
+      photos: userType === 'endUser' ? 'primary' : 'secondary',
+      code: userType === 'developer' ? 'primary' : 'hidden',
+      construction: 'primary' // Always available
+    },
+    setUserType: (type: 'developer' | 'endUser') => setManualUserTypeOverride(type),
+    trackQuery,
+    
+    // Existing functionality
     suggestions,
     userPreferences,
     isAnalyzing: isAnalyzing || visualSimilarity.state.isAnalyzing,

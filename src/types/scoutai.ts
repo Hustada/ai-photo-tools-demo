@@ -98,6 +98,21 @@ export interface VisualSimilarityState {
 }
 
 export interface ScoutAiContextType {
+  // Core identity
+  agent: 'Scout AI';
+  
+  // Adaptive context detection
+  userType: 'developer' | 'endUser' | 'unknown';
+  contextConfidence: number;
+  activeKnowledge: {
+    photos: 'primary' | 'secondary' | 'hidden';
+    code: 'primary' | 'secondary' | 'hidden';
+    construction: 'primary' | 'secondary' | 'hidden';
+  };
+  setUserType: (type: 'developer' | 'endUser') => void;
+  trackQuery: (query: string) => void;
+  
+  // Existing properties
   suggestions: ScoutAiSuggestion[];
   userPreferences: UserCurationPreferences | null;
   isAnalyzing: boolean;
