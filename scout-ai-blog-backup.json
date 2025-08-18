@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "id": "scout-ai-context-aware-assistant",
+    "title": "Building a Self-Improving AI Assistant: Scout AI Implementation",
+    "author": "hustada",
+    "date": "2025-07-18T23:55:00Z",
+    "description": "A comprehensive implementation of Scout AI - a context-aware, self-improving AI assistant that learns from user feedback and evolves its responses over time.",
+    "filename": "scout-ai-context-aware-assistant.md",
+    "readingTime": 8,
+    "tags": ["AI", "Machine Learning", "React", "TypeScript", "API Development", "Self-Improving Systems"]
+  },
+  "gitCommitHash": "8d7803c4",
+  "branchName": "feat/chat-over-project",
+  "commits": [
+    "8d7803c: PromptEvolutionEngine for self-improving AI",
+    "2e1d101: Feedback aggregation system", 
+    "57e3e3e: KV schema for prompt evolution storage",
+    "23a9a60: Feedback collection in UI interactions",
+    "156cb53: Unified Scout AI API endpoint"
+  ]
+}

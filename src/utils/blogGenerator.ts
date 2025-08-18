@@ -257,7 +257,7 @@ FINAL REMINDERS:
 
 // Get system prompt based on options
 const getSystemPrompt = (options: Required<BlogGenerationOptions>): string => {
-  const basePrompt = `You are a senior software engineer creating professional technical documentation for your development team. This documentation will be used for knowledge sharing, onboarding new team members, and maintaining institutional knowledge about the codebase.
+  let basePrompt = `You are a senior software engineer creating professional technical documentation for your development team. This documentation will be used for knowledge sharing, onboarding new team members, and maintaining institutional knowledge about the codebase.
 
 DOCUMENTATION PURPOSE:
 - Provide clear, structured information about implementation decisions

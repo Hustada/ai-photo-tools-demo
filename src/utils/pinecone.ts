@@ -2,24 +2,45 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
 
-// Initialize clients
-const pinecone = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY!,
-});
+// Lazy-loaded clients
+let pinecone: Pinecone | null = null;
+let openai: OpenAI | null = null;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize Pinecone client
+function getPineconeClient(): Pinecone {
+  if (!pinecone) {
+    if (!process.env.PINECONE_API_KEY) {
+      throw new Error('PINECONE_API_KEY environment variable is not set');
+    }
+    pinecone = new Pinecone({
+      apiKey: process.env.PINECONE_API_KEY,
+    });
+  }
+  return pinecone;
+}
+
+// Initialize OpenAI client
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 // Get Pinecone index
 export function getPineconeIndex() {
   const indexName = process.env.PINECONE_INDEX_NAME || 'companycam-photos';
-  return pinecone.index(indexName);
+  return getPineconeClient().index(indexName);
 }
 
 // Generate embedding for text
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await openai.embeddings.create({
+  const response = await getOpenAIClient().embeddings.create({
     input: text.replace(/\n/g, ' '),
     model: "text-embedding-3-small",
   });
@@ -73,8 +94,10 @@ export async function upsertPhotos(photos: PhotoMetadata[]): Promise<void> {
   const batchSize = 100;
   for (let i = 0; i < vectors.length; i += batchSize) {
     const batch = vectors.slice(i, i + batchSize);
+    console.log(`[Pinecone] Upserting batch of ${batch.length} vectors`);
     await index.upsert(batch);
   }
+  console.log(`[Pinecone] Successfully upserted ${vectors.length} vectors`);
 }
 
 // Delete photos from Pinecone

@@ -111,7 +111,7 @@ export const ScoutAiProvider: React.FC<ScoutAiProviderProps> = ({
     // Strong indicators
     if (signals.isLocalhost) devScore += 0.4;
     if (signals.hasDevTools) devScore += 0.2;
-    if (signals.pathname.includes('/test') || signals.pathname.includes('/chat-test')) devScore += 0.3;
+    if (signals.pathname.includes('/test')) devScore += 0.3;
     
     // Check for code-related paths
     if (signals.pathname.includes('api') || signals.pathname.includes('debug')) devScore += 0.2;

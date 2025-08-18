@@ -1,6 +1,6 @@
 // api/ai-enhancements.ts
 import { kv } from '@vercel/kv'; // Import the default kv client
-import type { NextApiRequest, NextApiResponse } from 'next'; // Using Next.js types for Vercel Functions
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // The 'kv' object is now automatically configured with KV_REST_API_URL and KV_REST_API_TOKEN.
 // No need for createClient or manual configuration here.
@@ -18,7 +18,7 @@ interface PhotoAiEnhancement {
 
 const getEnhancementKey = (photoId: string): string => `photo_enhancement:${photoId}`;
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('API_AI_ENHANCEMENTS_HANDLER: File execution started. Method:', req.method, 'Query:', req.query);
   const { photoId } = req.query; // For GET requests
   const body = req.body; // For POST/DELETE requests

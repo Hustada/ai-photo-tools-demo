@@ -1,16 +1,17 @@
 {
+  "framework": null,
+  "devCommand": "vite --port $PORT",
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
   "functions": {
     "api/**/*.ts": {
       "maxDuration": 30
-    },
-    "api/cron/evolve-prompts.ts": {
-      "maxDuration": 300
     }
   },
   "crons": [
     {
       "path": "/api/cron/aggregate-feedback",
-      "schedule": "0 * * * *"
+      "schedule": "0 12 * * *"
     },
     {
       "path": "/api/cron/evolve-prompts",

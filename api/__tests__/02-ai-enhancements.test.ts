@@ -1,6 +1,6 @@
 // © 2025 Mark Hustad — MIT License
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { NextApiRequest, NextApiResponse } from 'next'
+import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 // Mock @vercel/kv before importing the handler
 vi.mock('@vercel/kv', () => ({
@@ -18,7 +18,7 @@ import { kv } from '@vercel/kv'
 const mockKv = vi.mocked(kv)
 
 // Helper function to create mock request and response objects
-function createMockReq(method: string, query: any = {}, body: any = {}): NextApiRequest {
+function createMockReq(method: string, query: any = {}, body: any = {}): VercelRequest {
   return {
     method,
     query,
@@ -26,16 +26,16 @@ function createMockReq(method: string, query: any = {}, body: any = {}): NextApi
     headers: {},
     cookies: {},
     url: '',
-  } as NextApiRequest
+  } as VercelRequest
 }
 
-function createMockRes(): NextApiResponse {
+function createMockRes(): VercelResponse {
   const res = {
     status: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
     end: vi.fn().mockReturnThis(),
     setHeader: vi.fn().mockReturnThis(),
-  } as unknown as NextApiResponse
+  } as unknown as VercelResponse
   return res
 }
 

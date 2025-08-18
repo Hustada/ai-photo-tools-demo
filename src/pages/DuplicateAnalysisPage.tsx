@@ -29,7 +29,6 @@ import { ScoutAiProvider } from '../contexts/ScoutAiContext';
 import PhotoModal from '../components/PhotoModal';
 import PhotoCard from '../components/PhotoCard';
 import { ScoutAiDemo } from '../components/ScoutAiDemo';
-import { PhotoChatBubble } from '../components/PhotoChatBubble';
 import { NotificationsPanel } from '../components/NotificationsPanel';
 
 interface PhotoMetadata {
@@ -1088,52 +1087,18 @@ const DuplicateAnalysisPageContent: React.FC = () => {
               <p className="mt-4 text-gray-600">Loading photos...</p>
             </div>
           )}
-
-          {/* Photo Grid */}
-          <div className={`grid mb-6 px-4 ${
-            isRelaxedView 
-              ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6' 
-              : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4'
-          }`}>
-            {tagFiltering.filteredPhotos.map((photo) => {
-              const aiData = aiEnhancements.getAiDataForPhoto(photo.id);
-              return (
-                <PhotoCard
-                  key={photo.id}
-                  photo={photo}
-                  onAddTagToCompanyCam={tagManagement.handleAddTagRequest}
-                  onAddAiTag={aiEnhancements.addAiTag}
-                  onRemoveTag={tagManagement.handleRemoveTagRequest}
-                  onTagClick={tagFiltering.toggleTag}
-                  onPhotoClick={() => photoModal.openModal(photo)}
-                  mockTagsData={[]}
-                  aiSuggestionData={aiData}
-                  onFetchAiSuggestions={aiEnhancements.fetchAiSuggestions}
-                  onUnarchivePhoto={handleUnarchivePhoto}
-                />
-              );
-            })}
-          </div>
-
-          {/* Load More Indicator */}
-          {tagFiltering.filteredPhotos.length > 0 && photosQuery.isLoadingMore && (
-            <div className="text-center mt-8">
-              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2" style={{ borderColor: '#ea580c' }}></div>
-              <p className="mt-2 text-gray-600">Loading more photos...</p>
-            </div>
-          )}
         </div>
 
         {/* Claude Vision Analysis Results */}
-        <div className="w-full px-4 mt-8">
+        <div className="w-full px-4 mt-8 pb-20">
 
         {/* Analysis Results */}
         {analysisSession && (
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="photos">Photo Grid</TabsTrigger>
               <TabsTrigger value="groups">Duplicate Groups</TabsTrigger>
+              <TabsTrigger value="photos">Photo Grid</TabsTrigger>
               <TabsTrigger value="metadata">Debug Data</TabsTrigger>
             </TabsList>
 
@@ -1606,6 +1571,42 @@ const DuplicateAnalysisPageContent: React.FC = () => {
           </div>
         )}
         </div>
+
+        {/* Main Photo Grid Section */}
+        <div className="w-full px-4 mt-8">
+          <div className={`grid mb-6 px-4 ${
+            isRelaxedView 
+              ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6' 
+              : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4'
+          }`}>
+            {tagFiltering.filteredPhotos.map((photo) => {
+              const aiData = aiEnhancements.getAiDataForPhoto(photo.id);
+              return (
+                <PhotoCard
+                  key={photo.id}
+                  photo={photo}
+                  onAddTagToCompanyCam={tagManagement.handleAddTagRequest}
+                  onAddAiTag={aiEnhancements.addAiTag}
+                  onRemoveTag={tagManagement.handleRemoveTagRequest}
+                  onTagClick={tagFiltering.toggleTag}
+                  onPhotoClick={() => photoModal.openModal(photo)}
+                  mockTagsData={[]}
+                  aiSuggestionData={aiData}
+                  onFetchAiSuggestions={aiEnhancements.fetchAiSuggestions}
+                  onUnarchivePhoto={handleUnarchivePhoto}
+                />
+              );
+            })}
+          </div>
+
+          {/* Load More Indicator */}
+          {tagFiltering.filteredPhotos.length > 0 && photosQuery.isLoadingMore && (
+            <div className="text-center mt-8">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2" style={{ borderColor: '#ea580c' }}></div>
+              <p className="mt-2 text-gray-600">Loading more photos...</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Photo Modal */}
@@ -1629,15 +1630,56 @@ const DuplicateAnalysisPageContent: React.FC = () => {
         />
       )}
 
-      {/* Photo Chat Bubble */}
-      <PhotoChatBubble
-        onPhotosFound={(photos) => {
-          console.log('[PhotoChat] Found photos:', photos);
-          // You could update the filtered photos or highlight found photos
-          // For now, we'll just log them
-        }}
-        projectId={photosQuery.allPhotos[0]?.project_id}
-      />
+      {/* Minimalist Footer */}
+      <footer className="mt-auto border-t border-gray-200 bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            {/* Left side - Brand and tagline */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <img src={aiCameraLens} alt="Scout AI" className="w-6 h-6 opacity-70" />
+                <span className="font-semibold text-gray-800">Scout AI</span>
+              </div>
+              <span className="text-gray-500 text-sm hidden sm:inline">|</span>
+              <span className="text-gray-500 text-sm hidden sm:inline">Intelligent Photo Analysis</span>
+            </div>
+
+            {/* Center - Quick stats */}
+            {analysisSession && (
+              <div className="flex items-center gap-6 text-sm text-gray-600">
+                <span>{analysisSession.metadata.totalAnalyzed} photos analyzed</span>
+                <span className="text-gray-400">•</span>
+                <span>{analysisSession.duplicateGroups.length} groups found</span>
+                <span className="text-gray-400">•</span>
+                <span className="text-green-600">{analysisSession.metadata.uniquePhotos} unique</span>
+              </div>
+            )}
+
+            {/* Right side - Links */}
+            <div className="flex items-center gap-6 text-sm">
+              <Link to="/docs" className="text-gray-600 hover:text-orange-600 transition-colors">
+                Documentation
+              </Link>
+              <Link to="/blog" className="text-gray-600 hover:text-orange-600 transition-colors">
+                Blog
+              </Link>
+              <a 
+                href="https://github.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-gray-600 hover:text-orange-600 transition-colors"
+              >
+                GitHub
+              </a>
+            </div>
+          </div>
+
+          {/* Bottom row - Copyright */}
+          <div className="mt-4 pt-4 border-t border-gray-100 text-center text-xs text-gray-500">
+            <p>© 2025 Scout AI • Powered by CompanyCam</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

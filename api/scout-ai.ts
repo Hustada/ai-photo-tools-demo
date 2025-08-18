@@ -24,16 +24,9 @@ interface ScoutAiContext {
 }
 
 interface ScoutAiRequest {
-  action: 'chat' | 'analyze' | 'feedback' | 'learn';
+  action: 'analyze' | 'feedback' | 'learn';
   context: ScoutAiContext;
   payload: any;
-}
-
-interface ChatPayload {
-  query: string;
-  conversationId?: string;
-  projectId?: string;
-  limit?: number;
 }
 
 interface AnalyzePayload {
@@ -60,10 +53,6 @@ interface LearnPayload {
 }
 
 // Type guards for payload validation
-function isChatPayload(payload: any): payload is ChatPayload {
-  return typeof payload?.query === 'string';
-}
-
 function isAnalyzePayload(payload: any): payload is AnalyzePayload {
   return Array.isArray(payload?.photos) && 
          typeof payload?.analysisType === 'string';
@@ -166,32 +155,6 @@ async function trackLearning(
   await kv.set(key, existingData, { ex: 7 * 24 * 60 * 60 }); // 7 days TTL
 }
 
-// Process chat request (delegating to existing chat functionality)
-async function processChat(
-  context: ScoutAiContext,
-  payload: ChatPayload,
-  res: VercelResponse
-): Promise<void> {
-  // For now, delegate to existing chat endpoint
-  // In future, we'll move all chat logic here
-  const chatModule = await import('./chat');
-  const chatHandler = chatModule.default;
-  
-  // Create a modified request with context
-  const modifiedReq = {
-    body: {
-      ...payload,
-      context: {
-        userType: context.userType,
-        confidence: context.confidence,
-      },
-    },
-    method: 'POST',
-  } as VercelRequest;
-  
-  return chatHandler(modifiedReq, res);
-}
-
 // Process analysis request
 async function processAnalysis(
   context: ScoutAiContext,
@@ -245,15 +208,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Route to appropriate handler with type validation
     switch (action) {
-      case 'chat':
-        if (!isChatPayload(payload)) {
-          return res.status(400).json({ 
-            error: 'Invalid chat payload',
-            details: 'Missing required field: query'
-          });
-        }
-        return await processChat(context, payload, res);
-        
       case 'analyze':
         if (!isAnalyzePayload(payload)) {
           return res.status(400).json({ 
