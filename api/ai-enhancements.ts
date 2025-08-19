@@ -1,27 +1,61 @@
 // api/ai-enhancements.ts
-import { kv } from '@vercel/kv'; // Import the default kv client
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
 
-// The 'kv' object is now automatically configured with KV_REST_API_URL and KV_REST_API_TOKEN.
-// No need for createClient or manual configuration here.
-
-// Define the structure for our AI enhancement data
-interface PhotoAiEnhancement {
-  photo_id: string; // CompanyCam photo ID
-  user_id: string; // User who accepted/made the enhancement
+// Database types
+interface PhotoEnhancement {
+  id?: string;
+  photo_id: string;
+  user_id: string;
   ai_description?: string | null;
   accepted_ai_tags: string[];
-  suggestion_source?: string; // e.g., "OpenAI-GPT-4o"
-  created_at: string; // ISO timestamp
-  updated_at: string; // ISO timestamp
+  suggestion_source?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
-const getEnhancementKey = (photoId: string): string => `photo_enhancement:${photoId}`;
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Helper functions
+const photoEnhancements = {
+  async get(photoId: string): Promise<PhotoEnhancement | null> {
+    const { data, error } = await supabase
+      .from('photo_enhancements')
+      .select('*')
+      .eq('photo_id', photoId)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching enhancement:', error);
+      throw error;
+    }
+    
+    return data;
+  },
+
+  async upsert(enhancement: PhotoEnhancement): Promise<PhotoEnhancement> {
+    const { data, error } = await supabase
+      .from('photo_enhancements')
+      .upsert(enhancement, { onConflict: 'photo_id' })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error upserting enhancement:', error);
+      throw error;
+    }
+    
+    return data;
+  }
+};
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  console.log('API_AI_ENHANCEMENTS_HANDLER: File execution started. Method:', req.method, 'Query:', req.query);
-  const { photoId } = req.query; // For GET requests
-  const body = req.body; // For POST/DELETE requests
+  console.log('API_AI_ENHANCEMENTS_HANDLER: Method:', req.method, 'Query:', req.query);
+  const { photoId } = req.query;
+  const body = req.body;
 
   if (req.method === 'GET') {
     if (!photoId || typeof photoId !== 'string') {
@@ -29,27 +63,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Missing or invalid photoId' });
     }
 
-    const key = getEnhancementKey(photoId);
-    console.log(`[AI Enhancements GET] Attempting to fetch data for key: ${key}`);
-
     try {
-      const enhancement = await kv.get<PhotoAiEnhancement>(key);
+      const enhancement = await photoEnhancements.get(photoId);
 
       if (enhancement) {
-        console.log(`[AI Enhancements GET] Data found for key ${key}:`, enhancement);
+        console.log(`[AI Enhancements GET] Data found for photo ${photoId}`);
         return res.status(200).json(enhancement);
       } else {
-        console.log(`[AI Enhancements GET] No data found for key ${key}.`);
+        console.log(`[AI Enhancements GET] No data found for photo ${photoId}`);
         return res.status(404).json({ message: 'No enhancements found for this photo.' });
       }
-    } catch (error: any) { // Added :any to access error.message safely
-      console.error(`[AI Enhancements GET] Error fetching data for key ${key}:`, error.message, error); // Log message and full error
-      return res.status(500).json({ error: 'Failed to fetch enhancement.', details: error.message }); // Add details
+    } catch (error: any) {
+      console.error(`[AI Enhancements GET] Error fetching data:`, error);
+      return res.status(500).json({ 
+        error: 'Failed to fetch enhancement.', 
+        details: error.message 
+      });
     }
   }
 
   if (req.method === 'POST') {
-      console.log('API_POST_ENHANCEMENT: Received POST request. Body:', JSON.stringify(body, null, 2));
+    console.log('API_POST_ENHANCEMENT: Received POST request. Body:', JSON.stringify(body, null, 2));
     const {
       photoId: bodyPhotoId,
       userId,
@@ -64,71 +98,67 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Photo ID is required in the request body.' });
     }
     if (!userId || typeof userId !== 'string') {
-      // For now, we can use VITE_APP_DEFAULT_USER_ID from .env
       return res.status(400).json({ error: 'User ID is required.' });
     }
 
     try {
-      const key = getEnhancementKey(bodyPhotoId);
-      console.log(`API_POST_ENHANCEMENT: Generated key: '${key}' for photoId: '${bodyPhotoId}'`); // Added log
+      // Get existing enhancement if it exists
+      const existing = await photoEnhancements.get(bodyPhotoId);
+      
+      // Prepare the enhancement object
+      const enhancement: PhotoEnhancement = {
+        photo_id: bodyPhotoId,
+        user_id: userId,
+        ai_description: null,
+        accepted_ai_tags: existing?.accepted_ai_tags || [],
+        suggestion_source: suggestionSource || existing?.suggestion_source || 'Unknown',
+      };
 
-      let enhancement = await kv.get<PhotoAiEnhancement>(key);
-      const now = new Date().toISOString();
-
-      if (!enhancement) {
-        enhancement = {
-          photo_id: bodyPhotoId,
-          user_id: userId,
-          accepted_ai_tags: [],
-          created_at: now,
-          updated_at: now,
-          suggestion_source: suggestionSource || 'Unknown',
-        };
-      } else {
-        enhancement.updated_at = now;
-        enhancement.user_id = userId; // Update user if a different user modifies
-      }
-
-      // Handle description updates (support both field names for compatibility)
+      // Handle description updates
       const descriptionValue = aiDescription || description;
       if (typeof descriptionValue === 'string') {
         enhancement.ai_description = descriptionValue;
-      } else if (descriptionValue === null) { // Explicitly clear description
+      } else if (descriptionValue === null) {
         enhancement.ai_description = null;
+      } else if (existing?.ai_description) {
+        enhancement.ai_description = existing.ai_description;
       }
 
-      // Handle tag updates - support both single tag and array of tags
+      // Handle tag updates
       if (Array.isArray(acceptedAiTags)) {
-        // New frontend sends full array of accepted AI tags
-        enhancement.accepted_ai_tags = acceptedAiTags.filter(tag => typeof tag === 'string' && tag.trim() !== '');
+        enhancement.accepted_ai_tags = acceptedAiTags.filter(tag => 
+          typeof tag === 'string' && tag.trim() !== ''
+        );
         console.log(`API_POST_ENHANCEMENT: Set accepted_ai_tags to:`, enhancement.accepted_ai_tags);
       } else if (typeof tagToAdd === 'string' && tagToAdd.trim() !== '') {
-        // Legacy single tag support
         if (!enhancement.accepted_ai_tags.includes(tagToAdd)) {
           enhancement.accepted_ai_tags.push(tagToAdd);
         }
-        console.log(`API_POST_ENHANCEMENT: Added single tag "${tagToAdd}", tags now:`, enhancement.accepted_ai_tags);
+        console.log(`API_POST_ENHANCEMENT: Added single tag "${tagToAdd}"`);
       }
       
       if (suggestionSource && typeof suggestionSource === 'string') {
         enhancement.suggestion_source = suggestionSource;
       }
 
-      console.log('API_POST_ENHANCEMENT: Full enhancement data to save:', JSON.stringify(enhancement, null, 2)); // Added log
-      const setResult = await kv.set(key, enhancement);
-      console.log(`API_POST_ENHANCEMENT: kv.set('${key}') result:`, JSON.stringify(setResult, null, 2)); // Added log
+      console.log('API_POST_ENHANCEMENT: Saving enhancement:', JSON.stringify(enhancement, null, 2));
+      const saved = await photoEnhancements.upsert(enhancement);
+      console.log('API_POST_ENHANCEMENT: Successfully saved');
       
-      return res.status(200).json(enhancement);
-    } catch (error) {
-      console.error('API_POST_ENHANCEMENT_ERROR: Error saving enhancement:', error); // Enhanced error log
-      return res.status(500).json({ error: 'Failed to save enhancement.' });
+      return res.status(200).json(saved);
+    } catch (error: any) {
+      console.error('API_POST_ENHANCEMENT_ERROR:', error);
+      return res.status(500).json({ 
+        error: 'Failed to save enhancement.',
+        details: error.message 
+      });
     }
   }
 
   if (req.method === 'DELETE') {
     const {
       photoId: bodyPhotoId,
-      userId, // Good to have for authorization in future, not strictly used for delete logic here yet
+      userId,
       tagToRemove,
       clearDescription,
     } = body;
@@ -136,56 +166,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!bodyPhotoId || typeof bodyPhotoId !== 'string') {
       return res.status(400).json({ error: 'Photo ID is required in the request body.' });
     }
-     if (!userId || typeof userId !== 'string') {
+    if (!userId || typeof userId !== 'string') {
       return res.status(400).json({ error: 'User ID is required.' });
     }
 
     try {
-      const key = getEnhancementKey(bodyPhotoId);
-      let enhancement = await kv.get<PhotoAiEnhancement>(key);
+      const existing = await photoEnhancements.get(bodyPhotoId);
 
-      if (!enhancement) {
+      if (!existing) {
         return res.status(404).json({ message: 'No enhancements found to delete.' });
       }
 
       let modified = false;
+      const enhancement = { ...existing };
+
       if (typeof tagToRemove === 'string' && tagToRemove.trim() !== '') {
         const initialLength = enhancement.accepted_ai_tags.length;
         enhancement.accepted_ai_tags = enhancement.accepted_ai_tags.filter(
           (tag: string) => tag !== tagToRemove
         );
-        if (enhancement.accepted_ai_tags.length !== initialLength) modified = true;
+        if (enhancement.accepted_ai_tags.length !== initialLength) {
+          modified = true;
+        }
       }
 
       if (clearDescription === true) {
         if (enhancement.ai_description !== null && enhancement.ai_description !== undefined) {
-             enhancement.ai_description = null;
-             modified = true;
+          enhancement.ai_description = null;
+          modified = true;
         }
       }
-      
-      // If the object becomes empty of AI data (no description, no tags), consider deleting the key
-      // or leave it to indicate it was processed. For now, we'll update.
-      // if (!enhancement.ai_description && enhancement.accepted_ai_tags.length === 0) {
-      //   await kv.del(key);
-      //   return res.status(200).json({ message: 'Enhancements cleared and record deleted.' });
-      // }
 
       if (modified) {
-        enhancement.updated_at = new Date().toISOString();
-        await kv.set(key, enhancement);
-        return res.status(200).json(enhancement);
+        const updated = await photoEnhancements.upsert(enhancement);
+        return res.status(200).json(updated);
       } else {
-        return res.status(200).json({ message: 'No changes made to enhancements.', enhancement });
+        return res.status(200).json({ 
+          message: 'No changes made to enhancements.', 
+          enhancement 
+        });
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting/clearing enhancement:', error);
-      return res.status(500).json({ error: 'Failed to delete/clear enhancement.' });
+      return res.status(500).json({ 
+        error: 'Failed to delete/clear enhancement.',
+        details: error.message 
+      });
     }
   }
 
-  // Handle other methods or return 405 Method Not Allowed
   res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
   return res.status(405).end(`Method ${req.method} Not Allowed`);
 }

@@ -4,7 +4,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import https from 'https';
 import OpenAI from 'openai';
 import existingCompanyCamTagsFromFile from './companycam-standard-tags.json';
-import { Pinecone } from '@pinecone-database/pinecone';
+// import { Pinecone } from '@pinecone-database/pinecone'; // Commented out - Pinecone not configured
 import fs from 'fs';
 import path from 'path';
 
@@ -89,6 +89,11 @@ async function queryVectorMemory(
     return []; 
   }
 
+  // Pinecone integration disabled - not configured
+  console.log('Pinecone vector memory disabled - returning empty results');
+  return [];
+  
+  /* Commented out - Pinecone not installed
   try {
     const pinecone = new Pinecone(); // Automatically uses PINECONE_API_KEY and PINECONE_ENVIRONMENT from process.env for v6+
 
@@ -106,7 +111,7 @@ async function queryVectorMemory(
 
     if (queryResponse.matches && queryResponse.matches.length > 0) {
       console.log(`Found ${queryResponse.matches.length} matches in Pinecone.`);
-      const memoryChunksToReturn: MemoryChunk[] = queryResponse.matches.map(match => ({
+      const memoryChunksToReturn: MemoryChunk[] = queryResponse.matches.map((match: any) => ({
         id: match.id, 
         text: match.metadata?.text || 'No text metadata found',
         similarity: match.score || 0, 
@@ -120,6 +125,7 @@ async function queryVectorMemory(
     console.error('Error querying Pinecone:', error);
     return []; 
   }
+  */
 }
 
 async function generateEmbeddings(

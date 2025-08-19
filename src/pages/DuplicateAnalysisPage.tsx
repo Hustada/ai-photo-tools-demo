@@ -601,8 +601,6 @@ const DuplicateAnalysisPageContent: React.FC = () => {
     if (!analysisSession) return [];
     
     switch (analysisFilter) {
-      case 'duplicates':
-        return analysisSession.analysisResults.filter(r => r.decision === 'duplicate');
       case 'burst_shots':
         return analysisSession.analysisResults.filter(r => r.decision === 'burst_shot');
       case 'unique':
@@ -768,7 +766,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                   textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
                 }}
               >
-                Photo management with AI analysis and duplicate detection
+                Photo management with AI analysis and burst shot detection
               </p>
             </div>
             
@@ -1097,7 +1095,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="groups">Duplicate Groups</TabsTrigger>
+              <TabsTrigger value="groups">Burst Sequences</TabsTrigger>
               <TabsTrigger value="photos">Photo Grid</TabsTrigger>
               <TabsTrigger value="metadata">Debug Data</TabsTrigger>
             </TabsList>
@@ -1107,17 +1105,13 @@ const DuplicateAnalysisPageContent: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Analysis Summary</CardTitle>
+                    <CardTitle className="text-lg">Burst Detection Summary</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Total Photos:</span>
                         <span className="font-medium">{analysisSession.metadata.totalAnalyzed}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Duplicates Found:</span>
-                        <span className="font-medium text-red-600">{analysisSession.metadata.duplicatesFound}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Burst Shots:</span>
@@ -1161,14 +1155,6 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full"
-                        onClick={() => setAnalysisFilter('duplicates')}
-                      >
-                        View Duplicates
-                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -1294,18 +1280,18 @@ const DuplicateAnalysisPageContent: React.FC = () => {
             <TabsContent value="groups">
               <Card>
                 <CardHeader>
-                  <CardTitle>Detected Duplicate Groups</CardTitle>
+                  <CardTitle>Detected Burst Sequences</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {analysisSession.duplicateGroups.length === 0 ? (
+                  {analysisSession.duplicateGroups.filter(g => g.type === 'burst_sequence').length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
-                      No duplicate groups detected in this analysis.
+                      No burst sequences detected in this analysis.
                       <br />
-                      <span className="text-sm">This indicates good photo curation or unique shots.</span>
+                      <span className="text-sm">Photos appear to be individual shots rather than rapid sequences.</span>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {analysisSession.duplicateGroups.map((group) => (
+                      {analysisSession.duplicateGroups.filter(g => g.type === 'burst_sequence').map((group) => (
                         <Card key={group.id} className="border-orange-200">
                           <CardHeader>
                             <CardTitle className="text-lg flex items-center justify-between">
