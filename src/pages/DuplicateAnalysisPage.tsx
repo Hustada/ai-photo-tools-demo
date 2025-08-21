@@ -1088,7 +1088,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
         </div>
 
         {/* Claude Vision Analysis Results */}
-        <div className="w-full px-4 mt-8 pb-20">
+        <div className="w-full px-4 mt-8">
 
         {/* Analysis Results */}
         {analysisSession && (
@@ -1102,7 +1102,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
 
             {/* Overview Tab */}
             <TabsContent value="overview">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Burst Detection Summary</CardTitle>
@@ -1145,32 +1145,6 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                         <span className="text-gray-600">Analysis Method:</span>
                         <Badge>Claude Visual</Badge>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Quick Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full"
-                        onClick={() => setAnalysisFilter('burst_shots')}
-                      >
-                        View Burst Shots
-                      </Button>
-                      <Button 
-                        variant="accent" 
-                        size="sm" 
-                        className="w-full"
-                        onClick={() => fetchPhotos(100)}
-                      >
-                        Analyze More Photos
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>

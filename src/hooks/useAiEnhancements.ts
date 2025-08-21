@@ -230,10 +230,14 @@ export const useAiEnhancements = (
       })
 
       // Update photo data if provided and callback available
+      console.log(`[useAiEnhancements] saveAiDescription - photo provided: ${!!photo}, callback available: ${!!options?.onPhotoUpdate}`)
       if (photo && options?.onPhotoUpdate) {
         const updatedPhoto = { ...photo, description }
+        console.log(`[useAiEnhancements] Calling onPhotoUpdate for photo ${photoId} with description`)
         options.onPhotoUpdate(updatedPhoto)
         console.log(`[useAiEnhancements] Updated photo description in data cache for ${photoId}`)
+      } else {
+        console.warn(`[useAiEnhancements] Cannot update UI - photo: ${!!photo}, onPhotoUpdate: ${!!options?.onPhotoUpdate}`)
       }
 
     } catch (error: any) {
@@ -293,6 +297,7 @@ export const useAiEnhancements = (
       })
 
       // Update photo data if provided and callback available
+      console.log(`[useAiEnhancements] addAiTag - photo provided: ${!!photo}, callback available: ${!!options?.onPhotoUpdate}`)
       if (photo && options?.onPhotoUpdate) {
         // Create synthetic AI tag
         const newAiTag: Tag = {
@@ -309,8 +314,11 @@ export const useAiEnhancements = (
           ...photo,
           tags: [...(photo.tags || []), newAiTag],
         }
+        console.log(`[useAiEnhancements] Calling onPhotoUpdate for photo ${photoId} with new AI tag: ${tagDisplayValue}`)
         options.onPhotoUpdate(updatedPhoto)
         console.log(`[useAiEnhancements] Updated photo with synthetic AI tag for ${photoId}`)
+      } else {
+        console.warn(`[useAiEnhancements] Cannot update UI - photo: ${!!photo}, onPhotoUpdate: ${!!options?.onPhotoUpdate}`)
       }
 
     } catch (error: any) {

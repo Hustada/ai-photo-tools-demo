@@ -183,6 +183,9 @@ export const usePhotosQuery = (options: UsePhotosQueryOptions = {}): UsePhotosQu
 
   // Optimistic update for photo modifications
   const updatePhotoInCache = useCallback((updatedPhoto: Photo) => {
+    console.log(`[usePhotosQuery] updatePhotoInCache called for photo ${updatedPhoto.id}`)
+    console.log(`[usePhotosQuery] Updated photo data:`, updatedPhoto)
+    
     // Save archive state to localStorage for persistence across refresh
     if (updatedPhoto.archive_state === 'archived') {
       const archivedPhotos = JSON.parse(localStorage.getItem('archivedPhotos') || '[]');
@@ -198,10 +201,15 @@ export const usePhotosQuery = (options: UsePhotosQueryOptions = {}): UsePhotosQu
     }
 
     // Update the query cache for current page
+    console.log(`[usePhotosQuery] Updating React Query cache for page ${currentPage}`)
     queryClient.setQueryData(
       photoQueryKeys.list(currentPage, { tagIds }),
       (oldData: Photo[] | undefined) => {
-        if (!oldData) return oldData;
+        if (!oldData) {
+          console.log(`[usePhotosQuery] No oldData in cache for page ${currentPage}`)
+          return oldData;
+        }
+        console.log(`[usePhotosQuery] Found ${oldData.length} photos in cache, updating photo ${updatedPhoto.id}`)
         return oldData.map(photo => 
           photo.id === updatedPhoto.id ? { ...updatedPhoto } : photo
         );
@@ -209,23 +217,30 @@ export const usePhotosQuery = (options: UsePhotosQueryOptions = {}): UsePhotosQu
     );
 
     // Update local state with new object reference to force re-render
-    setAllFetchedPhotos(prevPhotos => 
-      prevPhotos.map(photo => 
+    console.log(`[usePhotosQuery] Updating local state (allFetchedPhotos)`)
+    setAllFetchedPhotos(prevPhotos => {
+      console.log(`[usePhotosQuery] Current allFetchedPhotos has ${prevPhotos.length} photos`)
+      const updated = prevPhotos.map(photo => 
         photo.id === updatedPhoto.id ? { ...updatedPhoto } : photo
-      )
-    );
+      );
+      console.log(`[usePhotosQuery] Updated allFetchedPhotos, photo ${updatedPhoto.id} now has ${updatedPhoto.tags?.length || 0} tags`)
+      
+      // Also update the persistent cache to keep it in sync
+      const cachedPhotos = persistentCache.getPhotos();
+      if (cachedPhotos.photos.length > 0) {
+        const updatedCachedPhotos = cachedPhotos.photos.map(photo => 
+          photo.id === updatedPhoto.id ? { ...updatedPhoto } : photo
+        );
+        persistentCache.savePhotos(updatedCachedPhotos, cachedPhotos.page || 1);
+        console.log(`[usePhotosQuery] Updated persistent cache for photo ${updatedPhoto.id}`);
+      }
+      
+      return updated;
+    });
 
-    // Force invalidation and refetch to ensure UI updates
-    queryClient.invalidateQueries({
-      queryKey: photoQueryKeys.lists(),
-      exact: false
-    });
-    
-    // Also invalidate individual photo queries
-    queryClient.invalidateQueries({
-      queryKey: photoQueryKeys.detail(updatedPhoto.id),
-      exact: false
-    });
+    // Don't invalidate queries - this causes a refetch with stale data
+    // The local state update above is sufficient for UI updates
+    console.log(`[usePhotosQuery] Skipping query invalidation to prevent stale data refetch`);
   }, [queryClient, currentPage, tagIds]);
 
   return {
