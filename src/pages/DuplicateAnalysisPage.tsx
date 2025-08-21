@@ -28,6 +28,15 @@ import { ScoutAiProvider } from '../contexts/ScoutAiContext';
 // Import components
 import PhotoModal from '../components/PhotoModal';
 import PhotoCard from '../components/PhotoCard';
+import PhotoCardNew from '../components/PhotoCardNew';
+import PhotoCardClean from '../components/PhotoCardClean';
+
+// Toggle between different card designs for testing
+const CARD_VERSION = 'new'; // Options: 'original', 'new', 'clean'
+const PhotoCardComponent = 
+  CARD_VERSION === 'new' ? PhotoCardNew : 
+  CARD_VERSION === 'clean' ? PhotoCardClean : 
+  PhotoCard;
 import { ScoutAiDemo } from '../components/ScoutAiDemo';
 import { NotificationsPanel } from '../components/NotificationsPanel';
 
@@ -701,18 +710,19 @@ const DuplicateAnalysisPageContent: React.FC = () => {
         
         <div className="w-full px-4 relative">
           {/* Main Header Row */}
-          <div className="flex items-start justify-between py-4">
-            {/* Logo/Brand Section - Left */}
-            <div>
-              <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between py-4 gap-3">
+            {/* Mobile: Two-row centered layout | Desktop: Left-aligned */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-center sm:justify-start gap-3 w-full sm:w-auto">
+              {/* Row 1: Logo and Title */}
+              <div className="flex items-center justify-center sm:justify-start gap-2 sm:gap-3">
                 <img 
                   src={aiCameraLens} 
                   alt="AI Camera Lens"
-                  className="w-8 h-8 hover:scale-110 transition-transform duration-300 cursor-pointer"
+                  className="w-7 h-7 sm:w-8 sm:h-8 hover:scale-110 transition-transform duration-300 cursor-pointer"
                   style={{ filter: 'brightness(1.2) drop-shadow(0 2px 8px rgba(234, 88, 12, 0.3))' }}
                 />
                 <h1 
-                  className="text-2xl md:text-3xl font-black bg-gradient-to-r from-teal-400 via-amber-500 to-purple-500 text-transparent bg-clip-text" 
+                  className="text-xl sm:text-2xl md:text-3xl font-black bg-gradient-to-r from-teal-400 via-amber-500 to-purple-500 text-transparent bg-clip-text" 
                   style={{ 
                     fontFamily: 'Space Grotesk, var(--font-heading)',
                     backgroundSize: '200% 200%',
@@ -757,9 +767,10 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                   </div>
                 )}
               </div>
-              {/* Tagline - Below logo */}
+              
+              {/* Tagline - Below logo - Hidden on mobile */}
               <p 
-                className="text-sm font-medium mt-2" 
+                className="hidden sm:block text-xs sm:text-sm font-medium" 
                 style={{ 
                   fontFamily: 'Inter, var(--font-body)', 
                   color: '#C3C3C3',
@@ -770,34 +781,36 @@ const DuplicateAnalysisPageContent: React.FC = () => {
               </p>
             </div>
             
-            {/* User Info and Navigation - Right */}
-            <div className="text-right">
+            {/* Mobile: Centered user info and nav | Desktop: Right-aligned */}
+            <div className="flex flex-col items-center sm:items-end gap-2 sm:gap-3 w-full sm:w-auto">
+              {/* User info and logout */}
               {currentUser && (
-                <div className="flex items-center gap-4 mb-3">
-                  <div>
+                <div className="flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-end gap-1 sm:gap-4 w-full sm:w-auto">
+                  {/* Mobile: Stack vertically | Desktop: Side by side */}
+                  <div className="text-center sm:text-right">
                     <p className="text-sm text-white">
                       {currentUser.first_name || currentUser.email_address}
                     </p>
                     {companyDetails && (
-                      <p className="text-xs text-gray-400">
+                      <p className="hidden sm:block text-xs text-gray-400">
                         {companyDetails.name}
                       </p>
                     )}
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="px-3 py-1.5 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-md transition-colors"
+                    className="px-4 py-1 sm:px-3 sm:py-1.5 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded transition-colors"
                   >
                     Logout
                   </button>
                 </div>
               )}
               
-              {/* Navigation Links - Below user info */}
-              <nav className="flex items-center justify-end gap-6">
+              {/* Navigation Links - Centered on mobile */}
+              <nav className="flex items-center justify-center sm:justify-end gap-4 sm:gap-6">
                 <Link 
                   to="/blog" 
-                  className="flex items-center gap-1.5 text-sm font-medium transition-all duration-200"
+                  className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium transition-all duration-200"
                   style={{ 
                     color: '#ea580c',
                     textDecoration: 'none'
@@ -810,13 +823,14 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                     e.currentTarget.style.color = '#ea580c';
                     e.currentTarget.style.textShadow = 'none';
                   }}
+                  title="Blog"
                 >
                   <FileText className="w-4 h-4" />
-                  <span>Blog</span>
+                  <span className="hidden sm:inline">Blog</span>
                 </Link>
                 <Link 
                   to="/docs" 
-                  className="flex items-center gap-1.5 text-sm font-medium transition-all duration-200"
+                  className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium transition-all duration-200"
                   style={{ 
                     color: '#ea580c',
                     textDecoration: 'none'
@@ -829,9 +843,10 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                     e.currentTarget.style.color = '#ea580c';
                     e.currentTarget.style.textShadow = 'none';
                   }}
+                  title="Documentation"
                 >
                   <Book className="w-4 h-4" />
-                  <span>Documentation</span>
+                  <span className="hidden sm:inline">Documentation</span>
                 </Link>
               </nav>
             </div>
@@ -1542,7 +1557,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
             {tagFiltering.filteredPhotos.map((photo) => {
               const aiData = aiEnhancements.getAiDataForPhoto(photo.id);
               return (
-                <PhotoCard
+                <PhotoCardComponent
                   key={photo.id}
                   photo={photo}
                   onAddTagToCompanyCam={tagManagement.handleAddTagRequest}
