@@ -77,12 +77,12 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
   return (
     <div
-      className="p-4 rounded-xl cursor-pointer shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-out flex flex-col relative overflow-hidden w-full"
+      className="p-3 rounded-xl cursor-pointer shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-out flex flex-col relative overflow-hidden w-full"
       style={{
         background: isArchived ? 'linear-gradient(to bottom, #f3f4f6, #e5e7eb)' : 'linear-gradient(to bottom, #ffffff, #f3f4f6)',
         opacity: isArchived ? 0.7 : 1,
         color: '#1f2937',
-        minHeight: '400px'
+        minHeight: '450px'
       }}
       onClick={() => onPhotoClick(photo)}
     >
@@ -110,7 +110,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         </div>
       )}
       
-      <div className={`w-full aspect-[4/3] rounded-lg mb-4 bg-gray-100 flex items-center justify-center overflow-hidden ${
+      <div className={`w-full aspect-[3/2] rounded-lg mb-3 bg-gray-100 flex items-center justify-center overflow-hidden ${
         isArchived ? 'grayscale' : ''
       }`}>
         {thumbnailUrl ? (
@@ -118,8 +118,8 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             src={thumbnailUrl}
             alt={photo.description || `Photo by ${photo.creator_name}`}
             className="w-full h-full object-cover"
-            width={300}
-            height={192}
+            width={400}
+            height={267}
             loadingThreshold={100}
             onLoad={() => {
               // Optional: track successful image loads for analytics
@@ -136,23 +136,23 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
       <div className="flex flex-col flex-grow">
         {/* Header Section */}
-        <div className="mb-3">
-          <h3 className="text-lg font-bold mb-1" style={{ color: '#111827', fontFamily: 'Space Grotesk, var(--font-heading)' }}>
+        <div className="mb-2">
+          <h3 className="text-base font-bold" style={{ color: '#111827', fontFamily: 'Space Grotesk, var(--font-heading)' }}>
             Photo ID: {photo.id}
           </h3>
-          <p className="text-sm font-medium" style={{ color: '#6b7280', fontFamily: 'Inter, var(--font-body)' }}>
+          <p className="text-xs font-medium mt-0.5" style={{ color: '#6b7280', fontFamily: 'Inter, var(--font-body)' }}>
             By: {photo.creator_name || 'Unknown Creator'}
           </p>
           {photo.description && (
-            <p className="text-sm mt-2 line-clamp-2" style={{ color: '#374151', fontFamily: 'Inter, var(--font-body)', lineHeight: '1.5' }} title={photo.description}>
+            <p className="text-xs mt-1.5 line-clamp-2" style={{ color: '#374151', fontFamily: 'Inter, var(--font-body)', lineHeight: '1.4' }} title={photo.description}>
               {photo.description}
             </p>
           )}
         </div>
 
         {/* Tags Section - Fixed Height */}
-        <div className="flex-grow flex items-end mb-3">
-          <div className="w-full" style={{ minHeight: '60px' }}>
+        <div className="flex-grow flex items-end mb-2">
+          <div className="w-full" style={{ minHeight: '50px' }}>
             {photo.tags && Array.isArray(photo.tags) && photo.tags.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {photo.tags.map((tag: CompanyCamTag) => {
