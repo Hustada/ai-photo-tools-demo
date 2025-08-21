@@ -229,11 +229,11 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         </div>
 
         {/* AI Suggestions Section - Fixed height for consistency */}
-        <div className="pt-2 border-t" style={{ borderColor: '#e5e7eb', minHeight: '48px' }}>
+        <div className="border-t flex items-center justify-center" style={{ borderColor: '#e5e7eb', height: '56px' }}>
           {/* Enhanced Loading State for New Suggestions */}
           {aiSuggestionData?.isSuggesting && (
             <div className="flex justify-center">
-              <div className="relative mt-1 px-6 py-2 text-xs font-bold italic flex items-center justify-center gap-2 rounded-full overflow-hidden" 
+              <div className="relative px-6 py-2 text-xs font-bold italic flex items-center justify-center gap-2 rounded-full overflow-hidden" 
                 style={{ 
                   background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #262626 100%)',
                   color: '#FFFFFF',
@@ -263,10 +263,9 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
           {/* Button to initiate NEW suggestions (shown if not suggesting AND (no successful new data yet OR new suggestion error)) */}
           {!aiSuggestionData?.isSuggesting && 
             ((!aiSuggestionData?.suggestedDescription && !(aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0)) || aiSuggestionData?.suggestionError) && (
-            <div className="flex justify-center">
               <button
                 onClick={handleSuggestAiTags}
-                className="relative mt-1 px-6 py-2 text-xs font-bold italic flex items-center justify-center gap-2 transition-all duration-300 ease-out group hover:scale-105 active:scale-95 rounded-full overflow-hidden"
+                className="relative px-6 py-2 text-xs font-bold italic flex items-center justify-center gap-2 transition-all duration-300 ease-out group hover:scale-105 active:scale-95 rounded-full overflow-hidden"
                 style={{ 
                   background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #262626 100%)',
                   color: '#FFFFFF', 
@@ -317,25 +316,18 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                 
                 <span className="relative z-10">Suggest Tags</span>
               </button>
-              
-              <style jsx>{`
-                @keyframes shimmer {
-                  0% { transform: translateX(-100%); }
-                  100% { transform: translateX(100%); }
-                }
-              `}</style>
-            </div>
           )}
 
-          {/* Error for New Suggestions */}
-          {aiSuggestionData?.suggestionError && !aiSuggestionData?.isSuggesting && (
-            <p className="mt-2 text-xs" style={{ color: '#ef4444' }}>Error: {aiSuggestionData.suggestionError}</p>
-          )}
+        </div>
+        
+        {/* Error for New Suggestions - Outside fixed height container */}
+        {aiSuggestionData?.suggestionError && !aiSuggestionData?.isSuggesting && (
+          <p className="px-2 pb-2 text-xs" style={{ color: '#ef4444' }}>Error: {aiSuggestionData.suggestionError}</p>
+        )}
 
-
-          {/* Display New Suggested Description */}
-          {aiSuggestionData?.suggestedDescription && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
-            <div className="mt-2 py-2"> {/* Added py-2 for vertical padding */}
+        {/* Display New Suggested Description - Outside fixed height container */}
+        {aiSuggestionData?.suggestedDescription && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
+          <div className="px-2 pb-2">
               <p className="text-xs" style={{ color: '#374151' }}>
               <span className="font-semibold mr-1" style={{ color: '#1f2937' }}>AI Suggested Description:
               <span className="ml-1" style={{ color: '#4b5563' }}>
@@ -346,52 +338,64 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             </div>
           )}
 
-          {/* Divider between New description and New tags */}
-          {aiSuggestionData?.suggestedDescription && aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData.isSuggesting && !aiSuggestionData.suggestionError && (
-            <hr className="my-3" style={{ borderColor: '#d1d5db' }} />
-          )}
+        {/* Divider between New description and New tags */}
+        {aiSuggestionData?.suggestedDescription && aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData.isSuggesting && !aiSuggestionData.suggestionError && (
+          <hr className="mx-2" style={{ borderColor: '#d1d5db' }} />
+        )}
 
-          {/* Display New Suggested Tags */}
-          {aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
-            <div className="mt-2 py-2"> {/* Added py-2 for vertical padding */}
-              <p className="text-xs font-semibold mb-1" style={{ color: '#1f2937' }}>AI Suggested Tags:</p>
-              <div className="flex flex-wrap gap-1">
-                {aiSuggestionData.suggestedTags.map((tag: string, index: number) => (
-                  <button
-                    key={`ai-tag-${index}`}
-                    onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.stopPropagation();
-                      try {
-                        await onAddAiTag(photo.id, tag, photo);
-                      } catch (err) {
-                        console.error(`[PhotoCard] Error calling onAddAiTag for tag '${tag}':`, err);
-                      }
-                    }}
-                    className="px-2.5 py-1 border text-xs rounded-full transition-colors duration-150"
-                    style={{ 
-                      backgroundColor: '#FFFFFF', 
-                      color: '#374151', 
-                      borderColor: '#d1d5db' 
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = '#f9fafb';
-                      e.target.style.borderColor = '#ea580c';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = '#FFFFFF';
-                      e.target.style.borderColor = '#d1d5db';
-                    }}
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
+        {/* Display New Suggested Tags */}
+        {aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
+          <div className="px-2 pb-2">
+            <p className="text-xs font-semibold mb-1" style={{ color: '#1f2937' }}>AI Suggested Tags:</p>
+            <div className="flex flex-wrap gap-1">
+              {aiSuggestionData.suggestedTags.map((tag: string, index: number) => (
+                <button
+                  key={`ai-tag-${index}`}
+                  onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.stopPropagation();
+                    try {
+                      await onAddAiTag(photo.id, tag, photo);
+                    } catch (err) {
+                      console.error(`[PhotoCard] Error calling onAddAiTag for tag '${tag}':`, err);
+                    }
+                  }}
+                  className="px-2.5 py-1 border text-xs rounded-full transition-colors duration-150"
+                  style={{ 
+                    backgroundColor: '#FFFFFF', 
+                    color: '#374151', 
+                    borderColor: '#d1d5db' 
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#f9fafb';
+                    e.target.style.borderColor = '#ea580c';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#FFFFFF';
+                    e.target.style.borderColor = '#d1d5db';
+                  }}
+                >
+                  {tag}
+                </button>
+              ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default PhotoCard;
+
+// Add global style for shimmer animation
+if (typeof document !== 'undefined' && !document.getElementById('photo-card-styles')) {
+  const style = document.createElement('style');
+  style.id = 'photo-card-styles';
+  style.textContent = `
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+  `;
+  document.head.appendChild(style);
+}
