@@ -77,12 +77,12 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
   return (
     <div
-      className="p-1 rounded-xl cursor-pointer shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-out flex flex-col relative overflow-hidden w-full h-full"
+      className="p-1 rounded-xl cursor-pointer shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-out flex flex-col relative overflow-hidden w-full"
       style={{
         background: isArchived ? 'linear-gradient(to bottom, #f3f4f6, #e5e7eb)' : 'linear-gradient(to bottom, #ffffff, #f3f4f6)',
         opacity: isArchived ? 0.7 : 1,
         color: '#1f2937',
-        minHeight: '450px'
+        height: '100%'
       }}
       onClick={() => onPhotoClick(photo)}
     >
@@ -110,9 +110,9 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         </div>
       )}
       
-      <div className={`relative w-full flex-1 rounded-lg mb-1 bg-gray-100 overflow-hidden flex items-center justify-center ${
+      <div className={`relative w-full rounded-lg mb-1 bg-gray-100 overflow-hidden flex items-center justify-center ${
         isArchived ? 'grayscale' : ''
-      }`} style={{ minHeight: '300px' }}>
+      }`} style={{ height: '280px' }}>
         {thumbnailUrl ? (
           <img
             src={thumbnailUrl}
