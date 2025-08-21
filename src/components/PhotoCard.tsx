@@ -228,11 +228,11 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
           </div>
         </div>
 
-        {/* AI Suggestions Section - Fixed height for consistency */}
-        <div className="border-t flex items-center justify-center" style={{ borderColor: '#e5e7eb', height: '56px' }}>
+        {/* AI Suggestions Section */}
+        <div className="pt-3 border-t" style={{ borderColor: '#e5e7eb' }}>
           {/* Enhanced Loading State for New Suggestions */}
           {aiSuggestionData?.isSuggesting && (
-            <div className="flex justify-center">
+            <div className="flex justify-center pb-3">
               <div className="relative px-6 py-2 text-xs font-bold italic flex items-center justify-center gap-2 rounded-full overflow-hidden" 
                 style={{ 
                   background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #262626 100%)',
@@ -263,6 +263,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
           {/* Button to initiate NEW suggestions (shown if not suggesting AND (no successful new data yet OR new suggestion error)) */}
           {!aiSuggestionData?.isSuggesting && 
             ((!aiSuggestionData?.suggestedDescription && !(aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0)) || aiSuggestionData?.suggestionError) && (
+            <div className="flex justify-center pb-3">
               <button
                 onClick={handleSuggestAiTags}
                 className="relative px-6 py-2 text-xs font-bold italic flex items-center justify-center gap-2 transition-all duration-300 ease-out group hover:scale-105 active:scale-95 rounded-full overflow-hidden"
@@ -316,18 +317,17 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                 
                 <span className="relative z-10">Suggest Tags</span>
               </button>
+            </div>
           )}
 
-        </div>
-        
-        {/* Error for New Suggestions - Outside fixed height container */}
-        {aiSuggestionData?.suggestionError && !aiSuggestionData?.isSuggesting && (
-          <p className="px-2 pb-2 text-xs" style={{ color: '#ef4444' }}>Error: {aiSuggestionData.suggestionError}</p>
-        )}
+          {/* Error for New Suggestions */}
+          {aiSuggestionData?.suggestionError && !aiSuggestionData?.isSuggesting && (
+            <p className="px-3 pb-3 text-xs" style={{ color: '#ef4444' }}>Error: {aiSuggestionData.suggestionError}</p>
+          )}
 
-        {/* Display New Suggested Description - Outside fixed height container */}
-        {aiSuggestionData?.suggestedDescription && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
-          <div className="px-2 pb-2">
+          {/* Display New Suggested Description */}
+          {aiSuggestionData?.suggestedDescription && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
+            <div className="px-3 pb-2">
               <p className="text-xs" style={{ color: '#374151' }}>
               <span className="font-semibold mr-1" style={{ color: '#1f2937' }}>AI Suggested Description:
               <span className="ml-1" style={{ color: '#4b5563' }}>
@@ -338,14 +338,14 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             </div>
           )}
 
-        {/* Divider between New description and New tags */}
-        {aiSuggestionData?.suggestedDescription && aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData.isSuggesting && !aiSuggestionData.suggestionError && (
-          <hr className="mx-2" style={{ borderColor: '#d1d5db' }} />
-        )}
+          {/* Divider between New description and New tags */}
+          {aiSuggestionData?.suggestedDescription && aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData.isSuggesting && !aiSuggestionData.suggestionError && (
+            <hr className="mx-3" style={{ borderColor: '#d1d5db' }} />
+          )}
 
-        {/* Display New Suggested Tags */}
-        {aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
-          <div className="px-2 pb-2">
+          {/* Display New Suggested Tags */}
+          {aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
+            <div className="px-3 pb-3">
             <p className="text-xs font-semibold mb-1" style={{ color: '#1f2937' }}>AI Suggested Tags:</p>
             <div className="flex flex-wrap gap-1">
               {aiSuggestionData.suggestedTags.map((tag: string, index: number) => (
@@ -380,6 +380,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

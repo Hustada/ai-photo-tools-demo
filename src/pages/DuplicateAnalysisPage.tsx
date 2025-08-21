@@ -142,7 +142,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
   // Analysis state (moved from FilterBar)
   const [analysisMode, setAnalysisMode] = useState<'new' | 'all' | 'force'>('new');
   const [showAnalysisDropdown, setShowAnalysisDropdown] = useState(false);
-  const [isRelaxedView, setIsRelaxedView] = useState(false);
+  const [isRelaxedView, setIsRelaxedView] = useState(true);
   
   // Calculate archived photo count
   const archivedCount = React.useMemo(() => {
