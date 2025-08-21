@@ -3,7 +3,7 @@
 import React from 'react';
 import type { Photo, Tag as CompanyCamTag } from '../types';
 import { useUserContext } from '../contexts/UserContext';
-import LazyImage from './LazyImage';
+// import LazyImage from './LazyImage'; // Temporarily disabled due to positioning issues
 
 // Interface for mock/local tag definitions (e.g., from mockTagsData)
 interface MockTag {
@@ -110,17 +110,15 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         </div>
       )}
       
-      <div className={`relative w-full flex-1 rounded-lg mb-1 bg-gray-100 overflow-hidden ${
+      <div className={`relative w-full flex-1 rounded-lg mb-1 bg-gray-100 overflow-hidden flex items-center justify-center ${
         isArchived ? 'grayscale' : ''
       }`} style={{ minHeight: '300px' }}>
         {thumbnailUrl ? (
-          <LazyImage
+          <img
             src={thumbnailUrl}
             alt={photo.description || `Photo by ${photo.creator_name}`}
-            className="absolute inset-0 w-full h-full object-cover"
-            width={500}
-            height={350}
-            loadingThreshold={100}
+            className="w-full h-full object-cover"
+            loading="lazy"
             onLoad={() => {
               // Optional: track successful image loads for analytics
               console.debug(`[PhotoCard] Image loaded for photo ${photo.id}`);
@@ -134,21 +132,21 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         )}
       </div>
 
-      <div className="flex flex-col">
-        {/* Header Section - More Compact */}
-        <div className="mb-0.5">
+      <div className="flex flex-col p-2">
+        {/* Header Section - With proper spacing */}
+        <div className="mb-2">
           <h3 className="text-xs font-semibold truncate" style={{ color: '#111827', fontFamily: 'Space Grotesk, var(--font-heading)' }}>
             {photo.creator_name || 'Unknown Creator'}
           </h3>
           {photo.description && (
-            <p className="text-xs line-clamp-1 text-gray-600" style={{ fontFamily: 'Inter, var(--font-body)' }} title={photo.description}>
+            <p className="text-xs line-clamp-1 text-gray-600 mt-1" style={{ fontFamily: 'Inter, var(--font-body)' }} title={photo.description}>
               {photo.description}
             </p>
           )}
         </div>
 
-        {/* Tags Section - More Compact */}
-        <div className="">
+        {/* Tags Section - With proper spacing */}
+        <div className="mb-2">
           <div className="w-full"  style={{ minHeight: '25px' }}>
             {photo.tags && Array.isArray(photo.tags) && photo.tags.length > 0 ? (
               <div className="flex flex-wrap gap-1">
