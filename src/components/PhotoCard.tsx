@@ -133,23 +133,21 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
       </div>
 
       <div className="flex flex-col p-2">
-        {/* Header Section - With proper spacing */}
-        <div className="mb-2">
-          <h3 className="text-xs font-semibold truncate" style={{ color: '#111827', fontFamily: 'Space Grotesk, var(--font-heading)' }}>
+        {/* Header Section - Fixed height for consistency */}
+        <div className="mb-2" style={{ minHeight: '36px' }}>
+          <h3 className="text-xs font-semibold" style={{ color: '#111827', fontFamily: 'Space Grotesk, var(--font-heading)' }}>
             {photo.creator_name || 'Unknown Creator'}
           </h3>
-          {photo.description && (
-            <p className="text-xs line-clamp-1 text-gray-600 mt-1" style={{ fontFamily: 'Inter, var(--font-body)' }} title={photo.description}>
-              {photo.description}
-            </p>
-          )}
+          <p className="text-xs text-gray-600 mt-1" style={{ fontFamily: 'Inter, var(--font-body)' }} title={photo.description || ''}>
+            {photo.description || '\u00A0'} {/* Non-breaking space to maintain height */}
+          </p>
         </div>
 
-        {/* Tags Section - With proper spacing */}
+        {/* Tags Section - Fixed height for consistency */}
         <div className="mb-2">
-          <div className="w-full"  style={{ minHeight: '25px' }}>
+          <div className="w-full flex items-center" style={{ height: '32px', overflow: 'hidden' }}>
             {photo.tags && Array.isArray(photo.tags) && photo.tags.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 w-full">
                 {photo.tags.map((tag: CompanyCamTag) => {
               if (!tag || typeof tag.id !== 'string') return null;
               const isActive = activeTagIds?.includes(tag.id);
@@ -225,15 +223,13 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             })}
               </div>
             ) : (
-              <div className="flex items-center" style={{ minHeight: '25px' }}>
-                <span className="text-xs" style={{ color: '#9ca3af', fontFamily: 'Inter, var(--font-body)' }}>No tags</span>
-              </div>
+              <span className="text-xs" style={{ color: '#9ca3af', fontFamily: 'Inter, var(--font-body)' }}>No tags</span>
             )}
           </div>
         </div>
 
-        {/* AI Suggestions Section - Fixed at Bottom */}
-        <div className="pt-2 border-t" style={{ borderColor: '#e5e7eb' }}>
+        {/* AI Suggestions Section - Fixed height for consistency */}
+        <div className="pt-2 border-t" style={{ borderColor: '#e5e7eb', minHeight: '48px' }}>
           {/* Enhanced Loading State for New Suggestions */}
           {aiSuggestionData?.isSuggesting && (
             <div className="flex justify-center">
