@@ -246,7 +246,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         ) : (
           <button
             onClick={handleSuggestAiTags}
-            className="w-full border-t flex items-center justify-center gap-2 text-xs font-bold italic transition-all duration-300 ease-out hover:bg-orange-50 active:bg-orange-100"
+            className="w-full border-t flex items-center justify-center gap-2 text-xs font-bold italic transition-all duration-300 ease-out rounded-b-xl"
             style={{ 
               borderColor: '#e5e7eb',
               height: '48px',
@@ -277,14 +277,14 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         )}
 
         {/* Error for New Suggestions */}
-        {aiSuggestionData?.suggestionError && !aiSuggestionData?.isSuggesting && (
+        {aiSuggestionData?.suggestionError && aiSuggestionData.suggestionError.trim() && !aiSuggestionData?.isSuggesting && (
           <div className="px-3 py-2 border-t" style={{ borderColor: '#e5e7eb' }}>
             <p className="text-xs" style={{ color: '#ef4444' }}>Error: {aiSuggestionData.suggestionError}</p>
           </div>
         )}
 
         {/* Display New Suggested Description */}
-        {aiSuggestionData?.suggestedDescription && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
+        {aiSuggestionData?.suggestedDescription && aiSuggestionData.suggestedDescription.trim() && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
           <div className="px-3 py-2 border-t" style={{ borderColor: '#e5e7eb' }}>
             <p className="text-xs" style={{ color: '#374151' }}>
             <span className="font-semibold mr-1" style={{ color: '#1f2937' }}>AI Suggested Description:
@@ -297,11 +297,11 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         )}
 
         {/* Display New Suggested Tags */}
-        {aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
+        {aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && aiSuggestionData.suggestedTags.some(tag => tag.trim()) && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
           <div className={`px-3 py-2 ${!aiSuggestionData?.suggestedDescription ? 'border-t' : ''}`} style={{ borderColor: '#e5e7eb' }}>
             <p className="text-xs font-semibold mb-1" style={{ color: '#1f2937' }}>AI Suggested Tags:</p>
             <div className="flex flex-wrap gap-1">
-              {aiSuggestionData.suggestedTags.map((tag: string, index: number) => (
+              {aiSuggestionData.suggestedTags.filter((tag: string) => tag.trim()).map((tag: string, index: number) => (
                 <button
                   key={`ai-tag-${index}`}
                   onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
