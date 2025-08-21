@@ -7,6 +7,7 @@ import TestSimilarity from './pages/test-similarity';
 import BlogPage from './pages/BlogPage';
 import GettingStartedPage from './pages/GettingStartedPage';
 import DuplicateAnalysisPage from './pages/DuplicateAnalysisPage';
+import DemoBanner from './components/DemoBanner';
 
 // Simple component to protect routes
 const ProtectedRoute: React.FC = () => {
@@ -24,6 +25,7 @@ function App() {
   console.log('App component rendering - setting up routes');
   return (
       <div className="w-full min-h-screen"> {/* Base container for the app */}
+        <DemoBanner />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/blog" element={<BlogPage />} />

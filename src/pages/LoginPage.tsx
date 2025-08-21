@@ -6,6 +6,7 @@ import scoutAiAvatar from '../assets/scout-ai-avatar-orange2.png';
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [apiKey, setApiKey] = useState<string>('');
+  const demoApiKey = import.meta.env.VITE_DEMO_API_KEY;
 
   const handleLogin = () => {
     console.log('LoginPage: Attempting to login with API Key:', apiKey.substring(0, 10) + '...'); // Log a snippet for security
@@ -15,10 +16,23 @@ const LoginPage: React.FC = () => {
       return;
     }
     localStorage.setItem('companyCamApiKey', apiKey);
+    localStorage.removeItem('isDemo'); // Clear demo flag if using own key
     console.log('LoginPage: API Key stored in localStorage.');
     setApiKey(''); // Clear the input field
     console.log('LoginPage: Navigating to /');
     navigate('/'); // Navigate to HomePage 
+  };
+
+  const handleDemoLogin = () => {
+    if (!demoApiKey) {
+      alert('Demo mode is not configured. Please use your own API key.');
+      return;
+    }
+    console.log('LoginPage: Starting demo mode');
+    localStorage.setItem('companyCamApiKey', demoApiKey);
+    localStorage.setItem('isDemo', 'true');
+    console.log('LoginPage: Demo mode activated, navigating to /');
+    navigate('/');
   };
 
   return (
@@ -54,6 +68,31 @@ const LoginPage: React.FC = () => {
         >
           Login
         </button>
+        
+        {/* Demo Mode Button - Only show if demo key is configured */}
+        {demoApiKey && (
+          <>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-gray-800 text-gray-400">OR</span>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleDemoLogin}
+              className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800 border border-gray-600"
+            >
+              🚀 Try Demo
+            </button>
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              Demo mode uses test project data
+            </p>
+          </>
+        )}
+        
         <p className="text-xs text-gray-500 mt-4 text-center">
           Your API key will be stored locally in your browser.
         </p>
