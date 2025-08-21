@@ -228,124 +228,80 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
           </div>
         </div>
 
-        {/* AI Suggestions Section */}
-        <div className="py-3 border-t" style={{ borderColor: '#e5e7eb', minHeight: '60px' }}>
-          {/* Enhanced Loading State for New Suggestions */}
-          {aiSuggestionData?.isSuggesting && (
-            <div className="flex justify-center">
-              <div className="relative px-6 py-2 text-xs font-bold italic flex items-center justify-center gap-2 rounded-full overflow-hidden" 
-                style={{ 
-                  background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #262626 100%)',
-                  color: '#FFFFFF',
-                  boxShadow: '0 4px 15px 0 rgba(234, 88, 12, 0.3), 0 1px 3px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
-                  fontFamily: 'Inter, var(--font-body)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)'
-                }}>
-                {/* Animated gradient overlay */}
-                <div 
-                  className="absolute inset-0"
-                  style={{
-                    background: 'linear-gradient(135deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%)',
-                    animation: 'shimmer 1.5s infinite'
-                  }}
-                />
-                
-                <svg className="animate-spin h-4 w-4 relative z-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span className="relative z-10">Analyzing...</span>
-              </div>
-            </div>
-          )}
+        {/* AI Suggestions Button Section - Fixed height, full-width button */}
+        {!aiSuggestionData?.isSuggesting && 
+          ((!aiSuggestionData?.suggestedDescription && !(aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0)) || aiSuggestionData?.suggestionError) ? (
+          <button
+            onClick={handleSuggestAiTags}
+            className="w-full border-t flex items-center justify-center gap-2 text-xs font-bold italic transition-all duration-300 ease-out hover:bg-orange-50 active:bg-orange-100"
+            style={{ 
+              borderColor: '#e5e7eb',
+              height: '48px',
+              background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #262626 100%)',
+              color: '#FFFFFF',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, #dc2626 0%, #ea580c 50%, #262626 100%)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #262626 100%)';
+            }}
+          >
+            {/* Enhanced tag icon */}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7V12C2 17 6.5 21.16 12 22C17.5 21.16 22 17 22 12V7L12 2Z" fill="currentColor" fillOpacity="0.9"/>
+              <g className="animate-pulse">
+                <circle cx="8" cy="10" r="1" fill="white" fillOpacity="0.8"/>
+                <circle cx="16" cy="10" r="1" fill="white" fillOpacity="0.8"/>
+                <circle cx="12" cy="14" r="1.5" fill="white" fillOpacity="0.9"/>
+              </g>
+              <path d="M12 8V16M8 12H16" stroke="white" strokeWidth="2" strokeLinecap="round" className="drop-shadow-sm"/>
+            </svg>
+            <span>Suggest Tags</span>
+          </button>
+        ) : aiSuggestionData?.isSuggesting ? (
+          <div className="w-full border-t flex items-center justify-center gap-2 text-xs font-bold italic" 
+            style={{ 
+              borderColor: '#e5e7eb',
+              height: '48px',
+              background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #262626 100%)',
+              color: '#FFFFFF'
+            }}>
+            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Analyzing...</span>
+          </div>
+        ) : (
+          <div className="border-t" style={{ borderColor: '#e5e7eb', height: '48px' }}></div>
+        )}
 
-          {/* Button to initiate NEW suggestions (shown if not suggesting AND (no successful new data yet OR new suggestion error)) */}
-          {!aiSuggestionData?.isSuggesting && 
-            ((!aiSuggestionData?.suggestedDescription && !(aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0)) || aiSuggestionData?.suggestionError) && (
-            <div className="flex justify-center">
-              <button
-                onClick={handleSuggestAiTags}
-                className="relative px-6 py-2 text-xs font-bold italic flex items-center justify-center gap-2 transition-all duration-300 ease-out group hover:scale-105 active:scale-95 rounded-full overflow-hidden"
-                style={{ 
-                  background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #262626 100%)',
-                  color: '#FFFFFF', 
-                  boxShadow: '0 4px 15px 0 rgba(234, 88, 12, 0.3), 0 1px 3px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
-                  fontFamily: 'Inter, var(--font-body)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.boxShadow = '0 6px 20px 0 rgba(234, 88, 12, 0.4), 0 2px 4px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 30px rgba(234, 88, 12, 0.3)';
-                  e.target.style.transform = 'translateY(-2px) scale(1.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.boxShadow = '0 4px 15px 0 rgba(234, 88, 12, 0.3), 0 1px 3px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
-                  e.target.style.transform = 'translateY(0) scale(1)';
-                }}
-                onMouseDown={(e) => {
-                  e.target.style.transform = 'translateY(0) scale(0.95)';
-                }}
-                onMouseUp={(e) => {
-                  e.target.style.transform = 'translateY(-2px) scale(1.05)';
-                }}
-              >
-                {/* Animated gradient overlay */}
-                <div 
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{
-                    background: 'linear-gradient(135deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%)',
-                    animation: 'shimmer 1.5s infinite'
-                  }}
-                />
-                
-                {/* Enhanced tag icon with sparkle */}
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-all duration-200 group-hover:scale-110 group-hover:rotate-12" viewBox="0 0 24 24" fill="none">
-                  {/* Main tag shape */}
-                  <path d="M12 2L2 7V12C2 17 6.5 21.16 12 22C17.5 21.16 22 17 22 12V7L12 2Z" fill="currentColor" fillOpacity="0.9"/>
-                  
-                  {/* Sparkle elements */}
-                  <g className="animate-pulse">
-                    <circle cx="8" cy="10" r="1" fill="white" fillOpacity="0.8"/>
-                    <circle cx="16" cy="10" r="1" fill="white" fillOpacity="0.8"/>
-                    <circle cx="12" cy="14" r="1.5" fill="white" fillOpacity="0.9"/>
-                  </g>
-                  
-                  {/* Plus sign */}
-                  <path d="M12 8V16M8 12H16" stroke="white" strokeWidth="2" strokeLinecap="round" className="drop-shadow-sm"/>
-                </svg>
-                
-                <span className="relative z-10">Suggest Tags</span>
-              </button>
-            </div>
-          )}
+        {/* Error for New Suggestions */}
+        {aiSuggestionData?.suggestionError && !aiSuggestionData?.isSuggesting && (
+          <div className="px-3 py-2 border-t" style={{ borderColor: '#e5e7eb' }}>
+            <p className="text-xs" style={{ color: '#ef4444' }}>Error: {aiSuggestionData.suggestionError}</p>
+          </div>
+        )}
 
-          {/* Error for New Suggestions */}
-          {aiSuggestionData?.suggestionError && !aiSuggestionData?.isSuggesting && (
-            <p className="px-3 mt-2 text-xs" style={{ color: '#ef4444' }}>Error: {aiSuggestionData.suggestionError}</p>
-          )}
+        {/* Display New Suggested Description */}
+        {aiSuggestionData?.suggestedDescription && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
+          <div className="px-3 py-2 border-t" style={{ borderColor: '#e5e7eb' }}>
+            <p className="text-xs" style={{ color: '#374151' }}>
+            <span className="font-semibold mr-1" style={{ color: '#1f2937' }}>AI Suggested Description:
+            <span className="ml-1" style={{ color: '#4b5563' }}>
+                {aiSuggestionData.suggestedDescription}
+            </span>
+            </span>
+            </p>
+          </div>
+        )}
 
-          {/* Display New Suggested Description */}
-          {aiSuggestionData?.suggestedDescription && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
-            <div className="px-3 mt-2">
-              <p className="text-xs" style={{ color: '#374151' }}>
-              <span className="font-semibold mr-1" style={{ color: '#1f2937' }}>AI Suggested Description:
-              <span className="ml-1" style={{ color: '#4b5563' }}>
-                  {aiSuggestionData.suggestedDescription}
-              </span>
-              </span>
-              </p>
-            </div>
-          )}
-
-          {/* Divider between New description and New tags */}
-          {aiSuggestionData?.suggestedDescription && aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData.isSuggesting && !aiSuggestionData.suggestionError && (
-            <hr className="mx-3 my-2" style={{ borderColor: '#d1d5db' }} />
-          )}
-
-          {/* Display New Suggested Tags */}
-          {aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
-            <div className={`px-3 ${!aiSuggestionData?.suggestedDescription ? 'mt-2' : ''}`}>
+        {/* Display New Suggested Tags */}
+        {aiSuggestionData?.suggestedTags && aiSuggestionData.suggestedTags.length > 0 && !aiSuggestionData?.isSuggesting && !aiSuggestionData?.suggestionError && (
+          <div className={`px-3 py-2 ${!aiSuggestionData?.suggestedDescription ? 'border-t' : ''}`} style={{ borderColor: '#e5e7eb' }}>
             <p className="text-xs font-semibold mb-1" style={{ color: '#1f2937' }}>AI Suggested Tags:</p>
             <div className="flex flex-wrap gap-1">
               {aiSuggestionData.suggestedTags.map((tag: string, index: number) => (
@@ -380,7 +336,6 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             </div>
           </div>
         )}
-        </div>
       </div>
     </div>
   );
