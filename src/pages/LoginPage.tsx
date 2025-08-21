@@ -17,7 +17,9 @@ const LoginPage: React.FC = () => {
     }
     localStorage.setItem('companyCamApiKey', apiKey);
     localStorage.removeItem('isDemo'); // Clear demo flag if using own key
-    console.log('LoginPage: API Key stored in localStorage.');
+    // Clear photo cache to force fresh fetch from API
+    localStorage.removeItem('scout-ai-photos-cache');
+    console.log('LoginPage: API Key stored and cache cleared.');
     setApiKey(''); // Clear the input field
     console.log('LoginPage: Navigating to /');
     navigate('/'); // Navigate to HomePage 
@@ -31,7 +33,9 @@ const LoginPage: React.FC = () => {
     console.log('LoginPage: Starting demo mode');
     localStorage.setItem('companyCamApiKey', demoApiKey);
     localStorage.setItem('isDemo', 'true');
-    console.log('LoginPage: Demo mode activated, navigating to /');
+    // Clear photo cache to force fresh fetch from API
+    localStorage.removeItem('scout-ai-photos-cache');
+    console.log('LoginPage: Demo mode activated, cache cleared, navigating to /');
     navigate('/');
   };
 
