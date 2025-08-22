@@ -13,6 +13,26 @@ vi.mock('../pages/LoginPage', () => ({
   default: () => <div data-testid="login-page">LoginPage Component</div>
 }))
 
+vi.mock('../pages/DuplicateAnalysisPage', () => ({
+  default: () => <div data-testid="duplicate-analysis-page">DuplicateAnalysisPage Component</div>
+}))
+
+vi.mock('../pages/BlogPage', () => ({
+  default: () => <div data-testid="blog-page">BlogPage Component</div>
+}))
+
+vi.mock('../pages/GettingStartedPage', () => ({
+  default: () => <div data-testid="getting-started-page">GettingStartedPage Component</div>
+}))
+
+vi.mock('../pages/test-similarity', () => ({
+  default: () => <div data-testid="test-similarity-page">TestSimilarity Component</div>
+}))
+
+vi.mock('../components/DemoBanner', () => ({
+  default: () => <div data-testid="demo-banner">DemoBanner Component</div>
+}))
+
 // Mock localStorage
 const mockLocalStorage = {
   getItem: vi.fn(),
@@ -49,7 +69,7 @@ describe('App', () => {
       renderApp(['/'])
       
       expect(screen.getByTestId('login-page')).toBeInTheDocument()
-      expect(screen.queryByTestId('home-page')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('duplicate-analysis-page')).not.toBeInTheDocument()
       expect(mockLocalStorage.getItem).toHaveBeenCalledWith('companyCamApiKey')
     })
 
@@ -58,7 +78,8 @@ describe('App', () => {
       
       renderApp(['/'])
       
-      expect(screen.getByTestId('home-page')).toBeInTheDocument()
+      // Default route is now DuplicateAnalysisPage
+      expect(screen.getByTestId('duplicate-analysis-page')).toBeInTheDocument()
       expect(screen.queryByTestId('login-page')).not.toBeInTheDocument()
       expect(mockLocalStorage.getItem).toHaveBeenCalledWith('companyCamApiKey')
     })
@@ -70,7 +91,7 @@ describe('App', () => {
       renderApp(['/'])
       
       expect(screen.getByTestId('login-page')).toBeInTheDocument()
-      expect(screen.queryByTestId('home-page')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('duplicate-analysis-page')).not.toBeInTheDocument()
     })
 
     it('should show HomePage when API key is whitespace (truthy)', () => {
@@ -78,7 +99,8 @@ describe('App', () => {
       
       renderApp(['/'])
       
-      expect(screen.getByTestId('home-page')).toBeInTheDocument()
+      // Default route is now DuplicateAnalysisPage
+      expect(screen.getByTestId('duplicate-analysis-page')).toBeInTheDocument()
       expect(screen.queryByTestId('login-page')).not.toBeInTheDocument()
     })
   })
@@ -90,7 +112,7 @@ describe('App', () => {
       renderApp(['/login'])
       
       expect(screen.getByTestId('login-page')).toBeInTheDocument()
-      expect(screen.queryByTestId('home-page')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('duplicate-analysis-page')).not.toBeInTheDocument()
     })
 
     it('should show LoginPage on /login route when no API key', () => {
@@ -99,7 +121,7 @@ describe('App', () => {
       renderApp(['/login'])
       
       expect(screen.getByTestId('login-page')).toBeInTheDocument()
-      expect(screen.queryByTestId('home-page')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('duplicate-analysis-page')).not.toBeInTheDocument()
     })
   })
 
@@ -109,7 +131,7 @@ describe('App', () => {
       
       renderApp(['/unknown-route'])
       
-      expect(screen.getByTestId('home-page')).toBeInTheDocument()
+      expect(screen.getByTestId('duplicate-analysis-page')).toBeInTheDocument()
       expect(screen.queryByTestId('login-page')).not.toBeInTheDocument()
     })
 
@@ -119,7 +141,7 @@ describe('App', () => {
       renderApp(['/unknown-route'])
       
       expect(screen.getByTestId('login-page')).toBeInTheDocument()
-      expect(screen.queryByTestId('home-page')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('duplicate-analysis-page')).not.toBeInTheDocument()
     })
 
     it('should handle deeply nested unknown routes', () => {
@@ -127,7 +149,7 @@ describe('App', () => {
       
       renderApp(['/some/deep/unknown/route'])
       
-      expect(screen.getByTestId('home-page')).toBeInTheDocument()
+      expect(screen.getByTestId('duplicate-analysis-page')).toBeInTheDocument()
       expect(screen.queryByTestId('login-page')).not.toBeInTheDocument()
     })
   })
@@ -149,7 +171,7 @@ describe('App', () => {
       renderApp(['/non-existent'])
       
       // The wildcard Navigate should replace the unknown route with /
-      expect(screen.getByTestId('home-page')).toBeInTheDocument()
+      expect(screen.getByTestId('duplicate-analysis-page')).toBeInTheDocument()
     })
   })
 
@@ -169,7 +191,7 @@ describe('App', () => {
       renderApp(['/'])
       
       // Verify the protected route allows nested content
-      expect(screen.getByTestId('home-page')).toBeInTheDocument()
+      expect(screen.getByTestId('duplicate-analysis-page')).toBeInTheDocument()
     })
   })
 

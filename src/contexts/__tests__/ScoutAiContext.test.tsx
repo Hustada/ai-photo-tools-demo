@@ -3,6 +3,7 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, act, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { ScoutAiProvider, useScoutAi } from '../ScoutAiContext';
 import type { Photo } from '../../types';
 import type { ScoutAiSuggestion, UserCurationPreferences } from '../../types/scoutai';
@@ -144,9 +145,11 @@ const TestComponent: React.FC<{ onContextReady?: (context: any) => void }> = ({ 
 
 const renderWithContext = (userId: string = 'test-user') => {
   return render(
-    <ScoutAiProvider userId={userId}>
-      <TestComponent />
-    </ScoutAiProvider>
+    <MemoryRouter>
+      <ScoutAiProvider userId={userId}>
+        <TestComponent />
+      </ScoutAiProvider>
+    </MemoryRouter>
   );
 };
 

@@ -35,10 +35,12 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 }))
 
 // Mock HTMLElement methods that might be missing in jsdom
-Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
-  value: vi.fn(),
-  writable: true,
-})
+if (typeof HTMLElement !== 'undefined') {
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+    value: vi.fn(),
+    writable: true,
+  })
+}
 
 // Global test setup
 beforeEach(() => {

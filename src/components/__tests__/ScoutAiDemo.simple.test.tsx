@@ -79,7 +79,7 @@ describe('ScoutAiDemo - Basic Functionality', () => {
       );
 
       expect(screen.getByText('Scout AI')).toBeInTheDocument();
-      expect(screen.getByText('Trigger Analysis')).toBeInTheDocument();
+      expect(screen.getByText('3 photos loaded')).toBeInTheDocument();
     });
 
     it('should not render when visible is false', () => {
@@ -117,7 +117,7 @@ describe('ScoutAiDemo - Basic Functionality', () => {
         />
       );
 
-      const triggerButton = screen.getByText('Trigger Analysis');
+      const triggerButton = screen.getByText('Analyze Photos');
       
       await act(async () => {
         fireEvent.click(triggerButton);
@@ -141,8 +141,9 @@ describe('ScoutAiDemo - Basic Functionality', () => {
         />
       );
 
-      const triggerButton = screen.getByText('Analyzing...');
-      expect(triggerButton).toBeDisabled();
+      // When analyzing, status text shows instead of button
+      expect(screen.getByText('Analyzing photos...')).toBeInTheDocument();
+      expect(screen.queryByText('Analyze Photos')).not.toBeInTheDocument();
     });
 
     it('should show analyzing status text when analyzing', () => {
@@ -186,8 +187,7 @@ describe('ScoutAiDemo - Basic Functionality', () => {
         />
       );
 
-      const triggerButton = screen.getByText('Need 2+ Photos');
-      expect(triggerButton).toBeDisabled();
+      expect(screen.getByText('💡 Load at least 2 photos to use Scout AI analysis')).toBeInTheDocument();
     });
 
     it('should show helpful message when insufficient photos', () => {

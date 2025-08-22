@@ -1,4 +1,7 @@
 // © 2025 Mark Hustad — MIT License
+/**
+ * @vitest-environment node
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
@@ -9,6 +12,23 @@ vi.mock('@vercel/kv', () => ({
     set: vi.fn(),
     del: vi.fn(),
   },
+}))
+
+// Mock Supabase
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: vi.fn(() => ({
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn().mockResolvedValue({ data: null, error: null })
+        }))
+      })),
+      insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+      update: vi.fn(() => ({
+        eq: vi.fn().mockResolvedValue({ data: null, error: null })
+      }))
+    }))
+  }))
 }))
 
 import handler from '../ai-enhancements'
@@ -42,10 +62,18 @@ function createMockRes(): VercelResponse {
 describe('/api/ai-enhancements', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Set required environment variables
+    process.env.SUPABASE_URL = 'https://test.supabase.co'
+    process.env.SUPABASE_ANON_KEY = 'test-anon-key'
+    process.env.OPENAI_API_KEY = 'test-openai-key'
   })
 
   afterEach(() => {
     vi.resetAllMocks()
+    // Clean up environment variables
+    delete process.env.SUPABASE_URL
+    delete process.env.SUPABASE_ANON_KEY
+    delete process.env.OPENAI_API_KEY
   })
 
   describe('GET requests', () => {

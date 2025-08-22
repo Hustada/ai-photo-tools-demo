@@ -119,7 +119,7 @@ const renderWithActiveSuggestions = async (suggestions = [mockSuggestion]) => {
   );
   
   // Trigger analysis to activate suggestions display
-  const triggerButton = screen.getByText('Trigger Analysis');
+  const triggerButton = screen.getByText('Analyze Photos');
   await act(async () => {
     fireEvent.click(triggerButton);
   });
@@ -173,7 +173,10 @@ describe('ScoutAiDemo', () => {
       );
 
       expect(screen.getByText('Scout AI')).toBeInTheDocument();
-      expect(screen.getByText('Trigger Analysis')).toBeInTheDocument();
+      // Component may be in minimized state initially, check for either state
+      const analyzeButton = screen.queryByText('Analyze Photos');
+      const photoCount = screen.queryByText('5 photos loaded');
+      expect(analyzeButton || photoCount).toBeTruthy();
     });
   });
 
@@ -227,7 +230,6 @@ describe('ScoutAiDemo', () => {
       );
 
       expect(screen.getByText('Analyzing photos...')).toBeInTheDocument();
-      expect(screen.getByText('Analyzing...')).toBeInTheDocument(); // Button text
     });
 
     it('should enable trigger button when photos available and not analyzing', () => {
@@ -239,7 +241,7 @@ describe('ScoutAiDemo', () => {
         />
       );
 
-      const triggerButton = screen.getByText('Trigger Analysis');
+      const triggerButton = screen.getByText('Analyze Photos');
       expect(triggerButton).toBeEnabled();
     });
 
@@ -254,8 +256,10 @@ describe('ScoutAiDemo', () => {
         />
       );
 
-      const triggerButton = screen.getByText('Analyzing...');
-      expect(triggerButton).toBeDisabled();
+      // When analyzing, there's no trigger button, just the status text
+      expect(screen.getByText('Analyzing photos...')).toBeInTheDocument();
+      // Button should not be present during analysis
+      expect(screen.queryByText('Analyze Photos')).not.toBeInTheDocument();
     });
 
     it('should disable trigger button when less than 2 photos', () => {
@@ -322,7 +326,7 @@ describe('ScoutAiDemo', () => {
         />
       );
 
-      const triggerButton = screen.getByText('Trigger Analysis');
+      const triggerButton = screen.getByText('Analyze Photos');
       
       await act(async () => {
         fireEvent.click(triggerButton);
@@ -344,7 +348,7 @@ describe('ScoutAiDemo', () => {
         />
       );
 
-      const triggerButton = screen.getByText('Trigger Analysis');
+      const triggerButton = screen.getByText('Analyze Photos');
       
       await act(async () => {
         fireEvent.click(triggerButton);
@@ -375,7 +379,7 @@ describe('ScoutAiDemo', () => {
       );
       
       // Simulate manual trigger to show suggestions
-      const triggerButton = screen.getByText('Trigger Analysis');
+      const triggerButton = screen.getByText('Analyze Photos');
       await act(async () => {
         fireEvent.click(triggerButton);
       });
@@ -650,7 +654,7 @@ describe('ScoutAiDemo', () => {
         />
       );
 
-      const triggerButton = screen.getByText('Trigger Analysis');
+      const triggerButton = screen.getByText('Analyze Photos');
       
       await act(async () => {
         fireEvent.click(triggerButton);

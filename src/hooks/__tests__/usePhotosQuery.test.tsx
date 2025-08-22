@@ -12,7 +12,16 @@ vi.mock('../../lib/queries/photoQueries');
 
 // Mock localStorage
 const mockLocalStorage = {
-  getItem: vi.fn(),
+  getItem: vi.fn((key: string) => {
+    // Return appropriate values based on the key
+    if (key === 'companycam_api_key' || key === 'companyCamApiKey') {
+      return 'test-api-key';
+    }
+    if (key === 'archivedPhotos' || key.startsWith('archived_photos_')) {
+      return '[]'; // Return empty array as JSON string
+    }
+    return null;
+  }),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn(),
@@ -65,7 +74,6 @@ const createWrapper = () => {
 describe('usePhotosQuery', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockLocalStorage.getItem.mockReturnValue('test-api-key');
     
     // Setup default mock implementation
     vi.mocked(photoQueries.fetchPhotosWithEnhancements).mockResolvedValue([mockPhoto]);
@@ -163,7 +171,7 @@ describe('usePhotosQuery', () => {
     });
 
     it('should be disabled when no API key is available', () => {
-      mockLocalStorage.getItem.mockReturnValue(null);
+      mockLocalStorage.getItem.mockImplementation(() => null);
 
       const { result } = renderHook(() => usePhotosQuery(), {
         wrapper: createWrapper(),
@@ -353,7 +361,7 @@ describe('usePhotosQuery', () => {
 
   describe('Error Handling', () => {
     it('should not execute query when no API key is available', async () => {
-      mockLocalStorage.getItem.mockReturnValue(null);
+      mockLocalStorage.getItem.mockImplementation(() => null);
 
       const { result } = renderHook(
         () => usePhotosQuery({ enabled: true }),

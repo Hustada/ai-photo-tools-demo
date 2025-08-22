@@ -7,6 +7,10 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    environmentMatchGlobs: [
+      ['api/**', 'node'],
+      ['__tests__/fetch-*.test.js', 'node']
+    ],
     globals: true,
     isolate: true, // Ensure test files run in isolation
     pool: 'forks', // Use process forks for better isolation

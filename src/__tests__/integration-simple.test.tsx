@@ -1,12 +1,15 @@
 // © 2025 Mark Hustad — MIT License
 // Simplified integration tests focusing on component interactions
+import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import PhotoCard from '../components/PhotoCard'
 import PhotoModal from '../components/PhotoModal'
 import type { Photo } from '../types'
 import { companyCamService } from '../services/companyCamService'
+import { ScoutAiProvider } from '../contexts/ScoutAiContext'
 
 // Mock UserContext
 vi.mock('../contexts/UserContext', () => ({
@@ -33,6 +36,37 @@ vi.mock('../services/companyCamService', () => ({
   }
 }))
 
+// Mock the hooks
+vi.mock('../hooks/useVisualSimilarity', () => ({
+  useVisualSimilarity: () => ({
+    state: {
+      isAnalyzing: false,
+      progress: 0,
+      error: null,
+      similarityGroups: [],
+      filteredGroups: [],
+      allGroups: [],
+      similarityMatrix: new Map()
+    },
+    analyzeSimilarity: vi.fn(),
+    getSimilarityScore: vi.fn(),
+    getGroupForPhoto: vi.fn(),
+    getAllGroups: vi.fn(),
+    getFilteredGroups: vi.fn(),
+    clearAnalysis: vi.fn(),
+    cancelAnalysis: vi.fn()
+  })
+}))
+
+vi.mock('../hooks/useAnalysisTracking', () => ({
+  useAnalysisTracking: () => ({
+    markPhotoAnalyzed: vi.fn().mockResolvedValue({ success: true }),
+    markPhotosAnalyzed: vi.fn().mockResolvedValue({ success: true, results: [] }),
+    getAnalysisHistory: vi.fn().mockReturnValue([]),
+    clearAnalysisHistory: vi.fn(),
+  })
+}))
+
 // Mock fetch for AI suggestions
 global.fetch = vi.fn()
 
@@ -57,6 +91,17 @@ const mockPhoto: Photo = {
   created_at: 1641074400000,
   updated_at: 1641074400000,
   tags: []
+}
+
+// Helper function to render with necessary providers
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(
+    <MemoryRouter>
+      <ScoutAiProvider userId="test-user">
+        {ui}
+      </ScoutAiProvider>
+    </MemoryRouter>
+  )
 }
 
 describe('Integration Tests - Component Workflows', () => {
@@ -108,7 +153,7 @@ describe('Integration Tests - Component Workflows', () => {
       const mockOnAddAiTag = vi.fn()
 
       // Render PhotoCard
-      const { rerender } = render(
+      const { rerender } = renderWithProviders(
         <PhotoCard
           photo={mockPhoto}
           onPhotoClick={() => {}}
@@ -162,7 +207,7 @@ describe('Integration Tests - Component Workflows', () => {
       
       const mockOnFetchAiSuggestions = vi.fn()
 
-      render(
+      renderWithProviders(
         <PhotoCard
           photo={mockPhoto}
           onPhotoClick={() => {}}
@@ -210,7 +255,7 @@ describe('Integration Tests - Component Workflows', () => {
       const mockOnAddAiTag = vi.fn()
 
       // Render modal
-      const { rerender } = render(
+      const { rerender } = renderWithProviders(
         <PhotoModal
           photo={mockPhoto}
           onClose={() => {}}
@@ -289,7 +334,7 @@ describe('Integration Tests - Component Workflows', () => {
       const mockOnShowNext = vi.fn()
       const mockOnShowPrevious = vi.fn()
 
-      render(
+      renderWithProviders(
         <PhotoModal
           photo={mockPhoto}
           onClose={() => {}}
@@ -326,7 +371,7 @@ describe('Integration Tests - Component Workflows', () => {
       // Mock onAddAiTag to fail
       const mockOnAddAiTag = vi.fn().mockRejectedValue(new Error('Service error'))
 
-      render(
+      renderWithProviders(
         <PhotoModal
           photo={mockPhoto}
           onClose={() => {}}
@@ -381,7 +426,7 @@ describe('Integration Tests - Component Workflows', () => {
         persistedError: null
       }
 
-      render(
+      renderWithProviders(
         <PhotoCard
           photo={mockPhoto}
           onPhotoClick={() => {}}
@@ -410,7 +455,7 @@ describe('Integration Tests - Component Workflows', () => {
         persistedError: null
       }
 
-      render(
+      renderWithProviders(
         <PhotoCard
           photo={mockPhoto}
           onPhotoClick={() => {}}
@@ -441,7 +486,7 @@ describe('Integration Tests - Component Workflows', () => {
         })
       })
 
-      render(
+      renderWithProviders(
         <PhotoCard
           photo={mockPhoto}
           onPhotoClick={() => {}}
@@ -489,7 +534,7 @@ describe('Integration Tests - Component Workflows', () => {
 
       const mockOnAddAiTag = vi.fn()
 
-      render(
+      renderWithProviders(
         <PhotoCard
           photo={mockPhoto}
           onPhotoClick={() => {}}

@@ -1,11 +1,14 @@
 // © 2025 Mark Hustad — MIT License
+import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import PhotoModal from '../PhotoModal'
 import type { Photo } from '../../types'
 import type { PhotoCardAiSuggestionState } from '../PhotoCard'
 import { companyCamService } from '../../services/companyCamService'
+import { ScoutAiProvider } from '../../contexts/ScoutAiContext'
 
 // Mock the companyCamService
 vi.mock('../../services/companyCamService', () => ({
@@ -14,6 +17,37 @@ vi.mock('../../services/companyCamService', () => ({
     createCompanyCamTagDefinition: vi.fn(),
     addTagsToPhoto: vi.fn(),
   }
+}))
+
+// Mock the hooks that PhotoModal might use
+vi.mock('../../hooks/useVisualSimilarity', () => ({
+  useVisualSimilarity: () => ({
+    state: {
+      isAnalyzing: false,
+      progress: 0,
+      error: null,
+      similarityGroups: [],
+      filteredGroups: [],
+      allGroups: [],
+      similarityMatrix: new Map()
+    },
+    analyzeSimilarity: vi.fn(),
+    getSimilarityScore: vi.fn(),
+    getGroupForPhoto: vi.fn(),
+    getAllGroups: vi.fn(),
+    getFilteredGroups: vi.fn(),
+    clearAnalysis: vi.fn(),
+    cancelAnalysis: vi.fn()
+  })
+}))
+
+vi.mock('../../hooks/useAnalysisTracking', () => ({
+  useAnalysisTracking: () => ({
+    markPhotoAnalyzed: vi.fn().mockResolvedValue({ success: true }),
+    markPhotosAnalyzed: vi.fn().mockResolvedValue({ success: true, results: [] }),
+    getAnalysisHistory: vi.fn().mockReturnValue([]),
+    clearAnalysisHistory: vi.fn(),
+  })
 }))
 
 // Mock data factory functions to avoid test pollution
@@ -78,6 +112,17 @@ const mockAiSuggestionData: PhotoCardAiSuggestionState = {
   persistedError: null
 }
 
+// Helper function to render with necessary providers
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(
+    <MemoryRouter>
+      <ScoutAiProvider userId="test-user">
+        {ui}
+      </ScoutAiProvider>
+    </MemoryRouter>
+  )
+}
+
 describe('PhotoModal', () => {
   const mockOnClose = vi.fn()
   const mockOnAddTagToCompanyCam = vi.fn()
@@ -117,7 +162,7 @@ describe('PhotoModal', () => {
 
   describe('Basic rendering', () => {
     it('should render modal with photo information', () => {
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       expect(screen.getByText('Jane Contractor')).toBeInTheDocument()
       // Check what the actual date is being rendered
@@ -127,7 +172,7 @@ describe('PhotoModal', () => {
     })
 
     it('should render photo image with correct src', () => {
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const image = screen.getByAltText('Electrical work in progress')
       expect(image).toBeInTheDocument()
@@ -143,7 +188,7 @@ describe('PhotoModal', () => {
         ]
       }
 
-      render(<PhotoModal {...defaultProps} photo={photoWithoutWeb} />)
+      renderWithProviders(<PhotoModal {...defaultProps} photo={photoWithoutWeb} />)
 
       const image = screen.getByAltText('Electrical work in progress')
       expect(image).toHaveAttribute('src', 'https://example.com/original.jpg')
@@ -155,13 +200,13 @@ describe('PhotoModal', () => {
         uris: []
       }
 
-      render(<PhotoModal {...defaultProps} photo={photoWithoutImage} />)
+      renderWithProviders(<PhotoModal {...defaultProps} photo={photoWithoutImage} />)
 
       expect(screen.getByText('No image available')).toBeInTheDocument()
     })
 
     it('should handle missing description gracefully', () => {
-      render(<PhotoModal {...defaultProps} photo={createMockPhotoNoTags()} />)
+      renderWithProviders(<PhotoModal {...defaultProps} photo={createMockPhotoNoTags()} />)
 
       expect(screen.getByText('No description provided.')).toBeInTheDocument()
     })
@@ -172,7 +217,7 @@ describe('PhotoModal', () => {
         creator_name: ''
       }
 
-      render(<PhotoModal {...defaultProps} photo={photoWithoutCreator} />)
+      renderWithProviders(<PhotoModal {...defaultProps} photo={photoWithoutCreator} />)
 
       expect(screen.getByText('Captured By:')).toBeInTheDocument()
     })
@@ -180,7 +225,7 @@ describe('PhotoModal', () => {
 
   describe('Tag rendering', () => {
     it('should render all photo tags with appropriate styling', () => {
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       expect(screen.getByText('Electrical (AI)')).toBeInTheDocument()
       expect(screen.getByText('Installation')).toBeInTheDocument()
@@ -193,7 +238,7 @@ describe('PhotoModal', () => {
     })
 
     it('should show "No tags yet." when photo has no tags', () => {
-      render(<PhotoModal {...defaultProps} photo={createMockPhotoNoTags()} />)
+      renderWithProviders(<PhotoModal {...defaultProps} photo={createMockPhotoNoTags()} />)
 
       expect(screen.getByText('No tags yet.')).toBeInTheDocument()
     })
@@ -202,7 +247,7 @@ describe('PhotoModal', () => {
   describe('Modal close functionality', () => {
     it('should call onClose when close button is clicked', async () => {
       const user = userEvent.setup()
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const closeButton = screen.getByLabelText('Close')
       await user.click(closeButton)
@@ -223,7 +268,7 @@ describe('PhotoModal', () => {
 
     it('should not close when modal content is clicked', async () => {
       const user = userEvent.setup()
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const modalContent = screen.getByText('Jane Contractor')
       await user.click(modalContent)
@@ -235,7 +280,7 @@ describe('PhotoModal', () => {
   describe('Navigation', () => {
     it('should call onShowNextPhoto when next button is clicked', async () => {
       const user = userEvent.setup()
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const nextButton = screen.getByLabelText('Next photo')
       await user.click(nextButton)
@@ -245,7 +290,7 @@ describe('PhotoModal', () => {
 
     it('should call onShowPreviousPhoto when previous button is clicked', async () => {
       const user = userEvent.setup()
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const prevButton = screen.getByLabelText('Previous photo')
       await user.click(prevButton)
@@ -254,14 +299,14 @@ describe('PhotoModal', () => {
     })
 
     it('should disable next button when canNavigateNext is false', () => {
-      render(<PhotoModal {...defaultProps} canNavigateNext={false} />)
+      renderWithProviders(<PhotoModal {...defaultProps} canNavigateNext={false} />)
 
       const nextButton = screen.getByLabelText('Next photo')
       expect(nextButton).toBeDisabled()
     })
 
     it('should disable previous button when canNavigatePrevious is false', () => {
-      render(<PhotoModal {...defaultProps} canNavigatePrevious={false} />)
+      renderWithProviders(<PhotoModal {...defaultProps} canNavigatePrevious={false} />)
 
       const prevButton = screen.getByLabelText('Previous photo')
       expect(prevButton).toBeDisabled()
@@ -270,7 +315,7 @@ describe('PhotoModal', () => {
 
   describe('Keyboard navigation', () => {
     it('should close modal when Escape key is pressed', () => {
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       fireEvent.keyDown(document, { key: 'Escape' })
 
@@ -278,7 +323,7 @@ describe('PhotoModal', () => {
     })
 
     it('should navigate to next photo when ArrowRight key is pressed', () => {
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       fireEvent.keyDown(document, { key: 'ArrowRight' })
 
@@ -286,7 +331,7 @@ describe('PhotoModal', () => {
     })
 
     it('should navigate to previous photo when ArrowLeft key is pressed', () => {
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       fireEvent.keyDown(document, { key: 'ArrowLeft' })
 
@@ -294,7 +339,7 @@ describe('PhotoModal', () => {
     })
 
     it('should not navigate when canNavigateNext is false', () => {
-      render(<PhotoModal {...defaultProps} canNavigateNext={false} />)
+      renderWithProviders(<PhotoModal {...defaultProps} canNavigateNext={false} />)
 
       fireEvent.keyDown(document, { key: 'ArrowRight' })
 
@@ -302,7 +347,7 @@ describe('PhotoModal', () => {
     })
 
     it('should not navigate when canNavigatePrevious is false', () => {
-      render(<PhotoModal {...defaultProps} canNavigatePrevious={false} />)
+      renderWithProviders(<PhotoModal {...defaultProps} canNavigatePrevious={false} />)
 
       fireEvent.keyDown(document, { key: 'ArrowLeft' })
 
@@ -312,7 +357,7 @@ describe('PhotoModal', () => {
 
   describe('AI Suggestions', () => {
     it('should show AI suggestion button when no suggestions exist', () => {
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       expect(screen.getByText('Get AI Suggestions')).toBeInTheDocument()
     })
@@ -325,7 +370,7 @@ describe('PhotoModal', () => {
         suggestedDescription: ''
       }
 
-      render(<PhotoModal {...defaultProps} aiSuggestionData={loadingAiData} />)
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={loadingAiData} />)
 
       expect(screen.getByText('Getting Suggestions...')).toBeInTheDocument()
       expect(screen.queryByText('Get AI Suggestions')).not.toBeInTheDocument()
@@ -333,7 +378,7 @@ describe('PhotoModal', () => {
 
     it('should call onFetchAiSuggestions when AI button is clicked', async () => {
       const user = userEvent.setup()
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const aiButton = screen.getByText('Get AI Suggestions')
       await user.click(aiButton)
@@ -346,7 +391,7 @@ describe('PhotoModal', () => {
     })
 
     it('should display AI suggested tags when available', () => {
-      render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
       expect(screen.getByText('wiring')).toBeInTheDocument()
       expect(screen.getByText('conduit')).toBeInTheDocument()
@@ -359,7 +404,7 @@ describe('PhotoModal', () => {
         suggestedTags: ['electrical', 'wiring', 'installation', 'conduit'] // electrical and installation already exist
       }
 
-      render(<PhotoModal {...defaultProps} aiSuggestionData={aiDataWithExistingTags} />)
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={aiDataWithExistingTags} />)
 
       expect(screen.getByText('wiring')).toBeInTheDocument()
       expect(screen.getByText('conduit')).toBeInTheDocument()
@@ -375,7 +420,7 @@ describe('PhotoModal', () => {
         suggestionError: 'Network timeout'
       }
 
-      render(<PhotoModal {...defaultProps} aiSuggestionData={errorAiData} />)
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={errorAiData} />)
 
       expect(screen.getByText(/Network timeout/)).toBeInTheDocument()
     })
@@ -389,7 +434,7 @@ describe('PhotoModal', () => {
 
     it('should add AI suggested tag when clicked', async () => {
       const user = userEvent.setup()
-      render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
       const tagButton = screen.getByText('wiring')
       await user.click(tagButton)
@@ -402,7 +447,7 @@ describe('PhotoModal', () => {
     it('should create new tag if it does not exist', async () => {
       const user = userEvent.setup()
 
-      render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
       const tagButton = screen.getByText('conduit')
       await user.click(tagButton)
@@ -420,7 +465,7 @@ describe('PhotoModal', () => {
         () => new Promise(resolve => setTimeout(() => resolve(undefined), 100))
       )
 
-      render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
       const tagButton = screen.getByText('wiring')
       await user.click(tagButton)
@@ -433,7 +478,7 @@ describe('PhotoModal', () => {
       // AI tag adding doesn't require API key, so simulate an error from onAddAiTag instead
       mockOnAddAiTag.mockRejectedValue(new Error('User not available for adding AI tag'))
       
-      render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
       const tagButton = screen.getByText('wiring')
       await user.click(tagButton)
@@ -449,7 +494,7 @@ describe('PhotoModal', () => {
       
       mockOnAddAiTag.mockRejectedValue(new Error('Service unavailable'))
 
-      render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
       const tagButton = screen.getByText('wiring')
       await user.click(tagButton)
@@ -470,7 +515,7 @@ describe('PhotoModal', () => {
       
       mockOnAddAiTag.mockRejectedValue('Network connection failed')
 
-      render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
       const tagButton = screen.getByText('wiring')
       await user.click(tagButton)
@@ -485,7 +530,7 @@ describe('PhotoModal', () => {
       
       mockOnAddAiTag.mockRejectedValue({ code: 500, message: 'Unknown error' })
 
-      render(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
       const tagButton = screen.getByText('wiring')
       await user.click(tagButton)
@@ -498,14 +543,14 @@ describe('PhotoModal', () => {
 
   describe('Description editing', () => {
     it('should initialize description from photo', () => {
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const textarea = screen.getByDisplayValue('Electrical work in progress')
       expect(textarea).toBeInTheDocument()
     })
 
     it('should initialize description from AI suggestion when photo has no description', () => {
-      render(<PhotoModal {...defaultProps} photo={createMockPhotoNoTags()} aiSuggestionData={mockAiSuggestionData} />)
+      renderWithProviders(<PhotoModal {...defaultProps} photo={createMockPhotoNoTags()} aiSuggestionData={mockAiSuggestionData} />)
 
       const textarea = screen.getByDisplayValue('Electrical conduit and wiring installation')
       expect(textarea).toBeInTheDocument()
@@ -513,7 +558,7 @@ describe('PhotoModal', () => {
 
     it('should allow editing description', async () => {
       const user = userEvent.setup()
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const textarea = screen.getByDisplayValue('Electrical work in progress')
       await user.clear(textarea)
@@ -526,7 +571,7 @@ describe('PhotoModal', () => {
       const user = userEvent.setup()
       mockOnSaveAiDescription.mockResolvedValue(undefined)
 
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const textarea = screen.getByDisplayValue('Electrical work in progress')
       await user.clear(textarea)
@@ -546,7 +591,7 @@ describe('PhotoModal', () => {
         () => new Promise(resolve => setTimeout(resolve, 100))
       )
 
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const textarea = screen.getByDisplayValue('Electrical work in progress')
       await user.clear(textarea)
@@ -559,7 +604,7 @@ describe('PhotoModal', () => {
     })
 
     it('should disable save button when description is unchanged', () => {
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const saveButton = screen.getByText('Save Description')
       expect(saveButton).toBeDisabled()
@@ -571,7 +616,7 @@ describe('PhotoModal', () => {
       
       mockOnSaveAiDescription.mockRejectedValue(new Error('Save failed'))
 
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const textarea = screen.getByDisplayValue('Electrical work in progress')
       await user.clear(textarea)
@@ -599,7 +644,7 @@ describe('PhotoModal', () => {
         captured_at: 1641074400000 // January 1, 2022 22:00:00 UTC (safe from timezone issues)
       }
       
-      render(<PhotoModal {...defaultProps} photo={photoWithValidDate} />)
+      renderWithProviders(<PhotoModal {...defaultProps} photo={photoWithValidDate} />)
 
       expect(screen.getByText(/January 1, 2022/)).toBeInTheDocument()
     })
@@ -610,7 +655,7 @@ describe('PhotoModal', () => {
         captured_at: NaN
       }
 
-      render(<PhotoModal {...defaultProps} photo={photoWithInvalidDate} />)
+      renderWithProviders(<PhotoModal {...defaultProps} photo={photoWithInvalidDate} />)
 
       // Component should handle invalid dates gracefully
       expect(screen.getByText(/Captured On:/)).toBeInTheDocument()
@@ -623,7 +668,7 @@ describe('PhotoModal', () => {
         captured_at: null as any
       }
 
-      render(<PhotoModal {...defaultProps} photo={photoWithNullDate} />)
+      renderWithProviders(<PhotoModal {...defaultProps} photo={photoWithNullDate} />)
 
       expect(screen.getByText(/N\/A/)).toBeInTheDocument()
     })
@@ -631,7 +676,7 @@ describe('PhotoModal', () => {
 
   describe('Accessibility', () => {
     it('should have proper aria labels for navigation buttons', () => {
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       expect(screen.getByLabelText('Previous photo')).toBeInTheDocument()
       expect(screen.getByLabelText('Next photo')).toBeInTheDocument()
@@ -639,14 +684,14 @@ describe('PhotoModal', () => {
     })
 
     it('should have proper alt text for images', () => {
-      render(<PhotoModal {...defaultProps} />)
+      renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const image = screen.getByAltText('Electrical work in progress')
       expect(image).toBeInTheDocument()
     })
 
     it('should handle missing alt text gracefully', () => {
-      render(<PhotoModal {...defaultProps} photo={createMockPhotoNoTags()} />)
+      renderWithProviders(<PhotoModal {...defaultProps} photo={createMockPhotoNoTags()} />)
 
       const image = screen.getByAltText('Photo')
       expect(image).toBeInTheDocument()
@@ -664,7 +709,7 @@ describe('PhotoModal', () => {
         tags: []
       }
 
-      render(<PhotoModal {...defaultProps} photo={emptyPhoto} />)
+      renderWithProviders(<PhotoModal {...defaultProps} photo={emptyPhoto} />)
 
       expect(screen.getByText('No image available')).toBeInTheDocument()
       expect(screen.getByText('No description provided.')).toBeInTheDocument()
@@ -678,7 +723,7 @@ describe('PhotoModal', () => {
         project_id: undefined
       }
 
-      render(<PhotoModal {...defaultProps} photo={photoWithoutProject} />)
+      renderWithProviders(<PhotoModal {...defaultProps} photo={photoWithoutProject} />)
 
       const aiButton = screen.getByText('Get AI Suggestions')
       await user.click(aiButton)
@@ -697,7 +742,7 @@ describe('PhotoModal', () => {
         uris: []
       }
 
-      render(<PhotoModal {...defaultProps} photo={photoWithoutUris} />)
+      renderWithProviders(<PhotoModal {...defaultProps} photo={photoWithoutUris} />)
 
       const aiButton = screen.getByText('Get AI Suggestions')
       await user.click(aiButton)

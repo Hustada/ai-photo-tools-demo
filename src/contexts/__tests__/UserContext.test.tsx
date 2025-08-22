@@ -370,12 +370,26 @@ describe('UserContext', () => {
 
   describe('Edge Cases', () => {
     it('should handle localStorage throwing an error', async () => {
+      // Mock console.error to suppress the error output in tests
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      
       mockLocalStorage.getItem.mockImplementation(() => {
         throw new Error('localStorage unavailable')
       })
       
       // Should not crash the app
       expect(() => renderWithProvider()).not.toThrow()
+      
+      // Restore console.error
+      consoleErrorSpy.mockRestore()
+      
+      // Reset localStorage mock for other tests
+      mockLocalStorage.getItem.mockImplementation((key: string) => {
+        if (key === 'companycam_api_key' || key === 'companyCamApiKey') {
+          return 'test-api-key'
+        }
+        return null
+      })
     })
 
     it('should handle empty projects array', async () => {
