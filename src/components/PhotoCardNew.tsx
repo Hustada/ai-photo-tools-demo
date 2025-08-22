@@ -1,6 +1,6 @@
 // src/components/PhotoCardNew.tsx
 // 2025 Mark Hustad — MIT License
-import React from 'react';
+import React, { useState } from 'react';
 import type { Photo, Tag as CompanyCamTag } from '../types';
 import { useUserContext } from '../contexts/UserContext';
 
@@ -32,6 +32,7 @@ interface PhotoCardProps {
   aiSuggestionData?: PhotoCardAiSuggestionState;
   onFetchAiSuggestions: (photoId: string, photoUrl: string) => Promise<void>;
   onUnarchivePhoto?: (photoId: string) => void;
+  onSaveAiDescription?: (photoId: string, description: string, photo?: Photo) => Promise<void>;
 }
 
 const PhotoCardNew: React.FC<PhotoCardProps> = ({
@@ -44,8 +45,10 @@ const PhotoCardNew: React.FC<PhotoCardProps> = ({
   aiSuggestionData,
   onFetchAiSuggestions,
   onUnarchivePhoto,
+  onSaveAiDescription,
 }) => {
   const { userSettings } = useUserContext();
+  const [isSavingDescription, setIsSavingDescription] = useState(false);
   const thumbnailUrl = photo.uris.find((uri) => uri.type === 'thumbnail')?.uri 
                     || photo.uris.find((uri) => uri.type === 'web')?.uri
                     || photo.uris.find((uri) => uri.type === 'original')?.uri;
@@ -196,10 +199,31 @@ const PhotoCardNew: React.FC<PhotoCardProps> = ({
           <div className="border-t border-gray-200 bg-gray-50 p-3">
             {aiSuggestionData.suggestedDescription && aiSuggestionData.suggestedDescription.trim() && (
               <div className="mb-2">
-                <p className="text-xs text-gray-600">
-                  <span className="font-semibold text-gray-700">AI Description: </span>
-                  {aiSuggestionData.suggestedDescription}
-                </p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-xs text-gray-600 flex-1">
+                    <span className="font-semibold text-gray-700">AI Description: </span>
+                    {aiSuggestionData.suggestedDescription}
+                  </p>
+                  {onSaveAiDescription && (
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        setIsSavingDescription(true);
+                        try {
+                          await onSaveAiDescription(photo.id, aiSuggestionData.suggestedDescription, photo);
+                        } catch (error) {
+                          console.error('Error saving description:', error);
+                        } finally {
+                          setIsSavingDescription(false);
+                        }
+                      }}
+                      disabled={isSavingDescription || photo.description === aiSuggestionData.suggestedDescription}
+                      className="px-2 py-0.5 bg-white border border-gray-300 hover:border-orange-500 hover:bg-orange-50 text-xs rounded transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    >
+                      {isSavingDescription ? 'Saving...' : 'Save'}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
             

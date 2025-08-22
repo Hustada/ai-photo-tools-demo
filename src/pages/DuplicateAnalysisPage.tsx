@@ -1396,6 +1396,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                   aiSuggestionData={aiData}
                   onFetchAiSuggestions={aiEnhancements.fetchAiSuggestions}
                   onUnarchivePhoto={handleUnarchivePhoto}
+                  onSaveAiDescription={aiEnhancements.saveAiDescription}
                 />
               );
             })}

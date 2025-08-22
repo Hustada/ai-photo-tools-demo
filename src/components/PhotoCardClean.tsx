@@ -32,6 +32,7 @@ interface PhotoCardProps {
   aiSuggestionData?: PhotoCardAiSuggestionState;
   onFetchAiSuggestions: (photoId: string, photoUrl: string) => Promise<void>;
   onUnarchivePhoto?: (photoId: string) => void;
+  onSaveAiDescription?: (photoId: string, description: string, photo?: Photo) => Promise<void>;
 }
 
 const PhotoCardClean: React.FC<PhotoCardProps> = ({
