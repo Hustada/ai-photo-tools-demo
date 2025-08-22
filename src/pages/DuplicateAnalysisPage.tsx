@@ -132,6 +132,10 @@ const DuplicateAnalysisPageContent: React.FC = () => {
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoMetadata | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<DuplicateGroup | null>(null);
   const [analysisFilter, setAnalysisFilter] = useState<'all' | 'duplicates' | 'burst_shots' | 'unique'>('all');
+  
+  // Elapsed time tracking for burst detection
+  const [detectionStartTime, setDetectionStartTime] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
   const [visualAnalysisMode, setVisualAnalysisMode] = useState<'metadata' | 'visual_review' | 'claude_analysis'>('metadata');
   const [currentlyAnalyzing, setCurrentlyAnalyzing] = useState<PhotoMetadata | null>(null);
 
@@ -242,10 +246,23 @@ const DuplicateAnalysisPageContent: React.FC = () => {
   };
 
   // Scout AI analysis removed - now only using burst detection
+  
+  // Effect for tracking elapsed time during burst detection
+  useEffect(() => {
+    if (claudeLoading && detectionStartTime) {
+      const interval = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - detectionStartTime) / 1000));
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setElapsedTime(0);
+    }
+  }, [claudeLoading, detectionStartTime]);
 
   // Claude Vision Analysis - Fetch photos from CompanyCam API
   const fetchPhotos = async (maxPhotos: number = 50) => {
     setClaudeLoading(true);
+    setDetectionStartTime(Date.now());
     setClaudeError(null);
     
     try {
@@ -282,6 +299,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
       setClaudeError(err.message || 'Failed to fetch photos');
     } finally {
       setClaudeLoading(false);
+      setDetectionStartTime(null);
     }
   };
 
@@ -728,36 +746,59 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                 </div>
                 {/* Progress Indicator (if analyzing) */}
                 {(scoutAi.isAnalyzing || claudeLoading) && (
-                  <div className="relative w-8 h-8 ml-2">
-                    <svg className="transform -rotate-90 w-8 h-8">
-                      <circle
-                        cx="16"
-                        cy="16"
-                        r="14"
-                        stroke="rgba(255, 255, 255, 0.1)"
-                        strokeWidth="3"
-                        fill="none"
-                      />
-                      <circle
-                        cx="16"
-                        cy="16"
-                        r="14"
-                        stroke="#ea580c"
-                        strokeWidth="3"
-                        fill="none"
-                        strokeDasharray={`${2 * Math.PI * 14}`}
-                        strokeDashoffset={`${2 * Math.PI * 14 * 0.25}`}
-                        className="transition-all duration-500"
-                        style={{ filter: 'drop-shadow(0 0 8px rgba(234, 88, 12, 0.6))' }}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="animate-pulse">
-                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M13 7H7v6h6V7z"/>
-                        </svg>
+                  <div className="flex items-center gap-2 ml-2">
+                    <div className="relative w-8 h-8">
+                      {/* Background circle */}
+                      <svg className="absolute inset-0 w-8 h-8">
+                        <circle 
+                          cx="16" 
+                          cy="16" 
+                          r="14" 
+                          stroke="rgba(255, 255, 255, 0.1)" 
+                          strokeWidth="3" 
+                          fill="none" 
+                        />
+                      </svg>
+                      
+                      {/* Spinning gradient circle */}
+                      <svg className="absolute inset-0 w-8 h-8 animate-spin">
+                        <defs>
+                          <linearGradient id="spinner-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#ea580c" stopOpacity="0" />
+                            <stop offset="50%" stopColor="#ea580c" stopOpacity="1" />
+                            <stop offset="100%" stopColor="#ea580c" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        <circle 
+                          cx="16" 
+                          cy="16" 
+                          r="14" 
+                          stroke="url(#spinner-gradient)" 
+                          strokeWidth="3" 
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeDasharray="30 60"
+                          style={{ filter: 'drop-shadow(0 0 8px rgba(234, 88, 12, 0.6))' }}
+                        />
+                      </svg>
+                      
+                      {/* Pulsing center dot */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
                       </div>
                     </div>
+                    
+                    {/* Status text with elapsed time */}
+                    {claudeLoading && (
+                      <div className="text-xs text-gray-300">
+                        <div>Detecting...</div>
+                        {elapsedTime > 0 && (
+                          <div className="text-gray-400">
+                            {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
