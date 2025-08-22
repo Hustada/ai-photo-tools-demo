@@ -98,7 +98,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               onMouseEnter={(e) => e.target.style.borderColor = '#ea580c'}
               onMouseLeave={(e) => e.target.style.borderColor = '#d1d5db'}
             >
-              <span>Browse</span>
+              <span>Browse Tags</span>
               <svg 
                 className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform duration-200 ${isTagPanelExpanded ? 'rotate-180' : ''}`} 
                 fill="currentColor" 
@@ -195,18 +195,18 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   onClick={() => onToggleTag(tag.id)}
                   className="px-3 py-3 text-sm font-medium border transition-all duration-200 min-h-[44px]"
                   style={{
-                    backgroundColor: activeTags.includes(tag.display_value.toLowerCase()) ? '#262626' : '#FFFFFF',
-                    color: activeTags.includes(tag.display_value.toLowerCase()) ? '#FFFFFF' : '#374151',
-                    borderColor: activeTags.includes(tag.display_value.toLowerCase()) ? '#3f3f3f' : '#d1d5db'
+                    backgroundColor: activeTags.includes(tag.id) ? '#262626' : '#FFFFFF',
+                    color: activeTags.includes(tag.id) ? '#FFFFFF' : '#374151',
+                    borderColor: activeTags.includes(tag.id) ? '#3f3f3f' : '#d1d5db'
                   }}
                   onMouseEnter={(e) => {
-                    if (!activeTags.includes(tag.display_value.toLowerCase())) {
+                    if (!activeTags.includes(tag.id)) {
                       e.target.style.backgroundColor = '#f9fafb';
                       e.target.style.borderColor = '#ea580c';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!activeTags.includes(tag.display_value.toLowerCase())) {
+                    if (!activeTags.includes(tag.id)) {
                       e.target.style.backgroundColor = '#FFFFFF';
                       e.target.style.borderColor = '#d1d5db';
                     }
@@ -253,18 +253,18 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   onClick={() => onToggleTag(tag.id)}
                   className="px-3 py-2 text-sm font-medium border transition-all duration-200"
                   style={{
-                    backgroundColor: activeTags.includes(tag.display_value.toLowerCase()) ? '#262626' : '#FFFFFF',
-                    color: activeTags.includes(tag.display_value.toLowerCase()) ? '#FFFFFF' : '#374151',
-                    borderColor: activeTags.includes(tag.display_value.toLowerCase()) ? '#3f3f3f' : '#d1d5db'
+                    backgroundColor: activeTags.includes(tag.id) ? '#262626' : '#FFFFFF',
+                    color: activeTags.includes(tag.id) ? '#FFFFFF' : '#374151',
+                    borderColor: activeTags.includes(tag.id) ? '#3f3f3f' : '#d1d5db'
                   }}
                   onMouseEnter={(e) => {
-                    if (!activeTags.includes(tag.display_value.toLowerCase())) {
+                    if (!activeTags.includes(tag.id)) {
                       e.target.style.backgroundColor = '#f9fafb';
                       e.target.style.borderColor = '#ea580c';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!activeTags.includes(tag.display_value.toLowerCase())) {
+                    if (!activeTags.includes(tag.id)) {
                       e.target.style.backgroundColor = '#FFFFFF';
                       e.target.style.borderColor = '#d1d5db';
                     }
@@ -284,15 +284,15 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <span className="text-sm" style={{ color: '#9CA3AF' }}>Active:</span>
             <div className="flex flex-wrap gap-2">
-              {activeTags.map(activeDisplayValue => {
-                const tag = availableTags.find(t => t.display_value.toLowerCase() === activeDisplayValue.toLowerCase());
+              {activeTags.map(activeTagId => {
+                const tag = availableTags.find(t => t.id === activeTagId);
                 return (
                   <span
-                    key={activeDisplayValue}
+                    key={activeTagId}
                     className="inline-flex items-center gap-2 text-white px-3 py-2 text-sm border group min-h-[36px]"
                     style={{ backgroundColor: '#ea580c', borderColor: '#c2410c' }}
                   >
-                    <span>{tag ? tag.display_value : activeDisplayValue}</span>
+                    <span>{tag ? tag.display_value : activeTagId}</span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
