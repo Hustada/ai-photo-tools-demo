@@ -148,9 +148,8 @@ const DuplicateAnalysisPageContent: React.FC = () => {
   // State for archived photos toggle
   const [showArchivedPhotos, setShowArchivedPhotos] = useState(false);
   
-  // Analysis state (moved from FilterBar)
-  const [analysisMode, setAnalysisMode] = useState<'new' | 'all' | 'force'>('new');
-  const [showAnalysisDropdown, setShowAnalysisDropdown] = useState(false);
+  // Analysis state removed - now only using burst detection in FilterBar
+  // Removed dropdown state - now using button in FilterBar
   const [isRelaxedView, setIsRelaxedView] = useState(true);
   
   // Calculate archived photo count
@@ -242,25 +241,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
     photosQuery.updatePhotoInCache(updatedPhoto);
   };
 
-  const handleAnalyzePhotos = (mode: 'new' | 'all' | 'force') => {
-    if (!currentUser) return;
-    
-    let filterOptions;
-    switch (mode) {
-      case 'new':
-        filterOptions = { mode: 'smart' as const, newPhotoDays: 30, forceReanalysis: false, includeArchived: false };
-        break;
-      case 'all':
-        filterOptions = { mode: 'all' as const, forceReanalysis: false, includeArchived: false };
-        break;
-      case 'force':
-        filterOptions = { mode: 'all' as const, forceReanalysis: true, includeArchived: true };
-        break;
-    }
-    
-    console.log('[DuplicateAnalysisPage] Triggering analysis with mode:', mode, 'options:', filterOptions);
-    scoutAi.analyzeSimilarPhotos(photosQuery.allPhotos, true, filterOptions);
-  };
+  // Scout AI analysis removed - now only using burst detection
 
   // Claude Vision Analysis - Fetch photos from CompanyCam API
   const fetchPhotos = async (maxPhotos: number = 50) => {
@@ -721,17 +702,30 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                   className="w-7 h-7 sm:w-8 sm:h-8 hover:scale-110 transition-transform duration-300 cursor-pointer"
                   style={{ filter: 'brightness(1.2) drop-shadow(0 2px 8px rgba(234, 88, 12, 0.3))' }}
                 />
-                <h1 
-                  className="text-xl sm:text-2xl md:text-3xl font-black bg-gradient-to-r from-teal-400 via-amber-500 to-purple-500 text-transparent bg-clip-text" 
-                  style={{ 
-                    fontFamily: 'Space Grotesk, var(--font-heading)',
-                    backgroundSize: '200% 200%',
-                    animation: 'gradient-shift 4s ease-in-out infinite',
-                    textShadow: '0 0 40px rgba(234, 88, 12, 0.5)'
-                  }}
-                >
-                  Scout AI
-                </h1>
+                <div className="flex flex-col">
+                  <h1 
+                    className="text-xl sm:text-2xl md:text-3xl font-black bg-gradient-to-r from-teal-400 via-amber-500 to-purple-500 text-transparent bg-clip-text" 
+                    style={{ 
+                      fontFamily: 'Space Grotesk, var(--font-heading)',
+                      backgroundSize: '200% 200%',
+                      animation: 'gradient-shift 4s ease-in-out infinite',
+                      textShadow: '0 0 40px rgba(234, 88, 12, 0.5)'
+                    }}
+                  >
+                    Scout AI
+                  </h1>
+                  {/* Tagline - Below title - Hidden on mobile */}
+                  <p 
+                    className="hidden sm:block text-xs sm:text-sm font-medium" 
+                    style={{ 
+                      fontFamily: 'Inter, var(--font-body)', 
+                      color: '#C3C3C3',
+                      textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+                    }}
+                  >
+                    Photo management with AI analysis and burst shot detection
+                  </p>
+                </div>
                 {/* Progress Indicator (if analyzing) */}
                 {(scoutAi.isAnalyzing || claudeLoading) && (
                   <div className="relative w-8 h-8 ml-2">
@@ -767,18 +761,6 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                   </div>
                 )}
               </div>
-              
-              {/* Tagline - Below logo - Hidden on mobile */}
-              <p 
-                className="hidden sm:block text-xs sm:text-sm font-medium" 
-                style={{ 
-                  fontFamily: 'Inter, var(--font-body)', 
-                  color: '#C3C3C3',
-                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-                }}
-              >
-                Photo management with AI analysis and burst shot detection
-              </p>
             </div>
             
             {/* Mobile: Centered user info and nav | Desktop: Right-aligned */}
@@ -865,163 +847,6 @@ const DuplicateAnalysisPageContent: React.FC = () => {
       <div className="bg-gray-100 min-h-screen w-full font-sans">
         {/* Photo Management Section */}
         <div className="w-full">
-          {/* Scout AI Controls */}
-          <Card className="mb-6 bg-white rounded-none shadow-md w-full">
-            <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-2 text-2xl font-bold text-gray-800">
-                <Camera className="w-6 h-6" />
-                Scout AI
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-4 items-center justify-center">
-                {/* Scout AI Dropdown Menu */}
-                {currentUser && totalPhotos >= 2 && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowAnalysisDropdown(!showAnalysisDropdown)}
-                      disabled={scoutAi.isAnalyzing || claudeLoading}
-                      className="inline-flex items-center justify-center px-6 py-3 border-2 rounded-lg font-semibold transition-all text-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none gap-3 shadow-lg hover:shadow-xl"
-                      style={{ 
-                        backgroundColor: '#ea580c',
-                        borderColor: '#ea580c',
-                        color: '#FFFFFF'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!scoutAi.isAnalyzing && !claudeLoading) {
-                          e.target.style.backgroundColor = '#c2410c';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!scoutAi.isAnalyzing && !claudeLoading) {
-                          e.target.style.backgroundColor = '#ea580c';
-                        }
-                      }}
-                    >
-                      <span>
-                        {scoutAi.isAnalyzing ? 'Scout AI Analyzing...' : 
-                         claudeLoading ? 'Claude Analyzing...' : 
-                         'Analyze Photos'}
-                      </span>
-                      <svg className={`w-6 h-6 transition-transform ${showAnalysisDropdown ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M7 10l5 5 5-5z"/>
-                      </svg>
-                    </button>
-                    
-                    {showAnalysisDropdown && (
-                      <div className="absolute top-full mt-3 left-1/2 transform -translate-x-1/2 w-[28rem] border-2 shadow-2xl z-20 rounded-lg" style={{ backgroundColor: '#FFFFFF', borderColor: '#e5e7eb' }}>
-                        {/* Scout AI Analysis Option */}
-                        <div className="border-b" style={{ borderColor: '#e5e7eb' }}>
-                          <button
-                            onClick={() => {
-                              handleAnalyzePhotos(analysisMode);
-                              setShowAnalysisDropdown(false);
-                            }}
-                            disabled={scoutAi.isAnalyzing}
-                            className="w-full text-left px-8 py-5 hover:bg-gray-50 transition-colors flex items-center gap-5 rounded-t-lg"
-                          >
-                            <div className="flex-shrink-0">
-                              <Eye className="w-7 h-7" style={{ color: '#ea580c' }} />
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-semibold text-lg" style={{ color: '#111827' }}>Scout AI Analysis</div>
-                              <div className="text-base mt-1" style={{ color: '#6b7280' }}>
-                                Smart photo organization & tagging
-                              </div>
-                            </div>
-                          </button>
-                          
-                          {/* Analysis Mode Options */}
-                          <div className="px-8 pb-5 pt-4 space-y-3" style={{ backgroundColor: '#f9fafb' }}>
-                            <label className="flex items-center space-x-4 cursor-pointer py-2 px-3 rounded hover:bg-gray-100">
-                              <input
-                                type="radio"
-                                name="analysisMode"
-                                value="new"
-                                checked={analysisMode === 'new'}
-                                onChange={() => setAnalysisMode('new')}
-                                style={{ accentColor: '#ea580c' }}
-                                className="w-5 h-5"
-                              />
-                              <span className="text-base" style={{ color: '#374151' }}>New Photos Only (30 days)</span>
-                            </label>
-                            <label className="flex items-center space-x-4 cursor-pointer py-2 px-3 rounded hover:bg-gray-100">
-                              <input
-                                type="radio"
-                                name="analysisMode"
-                                value="all"
-                                checked={analysisMode === 'all'}
-                                onChange={() => setAnalysisMode('all')}
-                                style={{ accentColor: '#ea580c' }}
-                                className="w-5 h-5"
-                              />
-                              <span className="text-base" style={{ color: '#374151' }}>All Photos (Skip Analyzed)</span>
-                            </label>
-                            <label className="flex items-center space-x-4 cursor-pointer py-2 px-3 rounded hover:bg-gray-100">
-                              <input
-                                type="radio"
-                                name="analysisMode"
-                                value="force"
-                                checked={analysisMode === 'force'}
-                                onChange={() => setAnalysisMode('force')}
-                                style={{ accentColor: '#ea580c' }}
-                                className="w-5 h-5"
-                              />
-                              <span className="text-base" style={{ color: '#374151' }}>Force Re-analysis (Testing)</span>
-                            </label>
-                          </div>
-                        </div>
-                        
-                        {/* Claude Vision Analysis Option */}
-                        <button
-                          onClick={() => {
-                            fetchPhotos(50);
-                            setShowAnalysisDropdown(false);
-                          }}
-                          disabled={claudeLoading}
-                          className="w-full text-left px-8 py-5 hover:bg-gray-50 transition-colors flex items-center gap-5 rounded-b-lg"
-                        >
-                          <div className="flex-shrink-0">
-                            <Eye className="w-7 h-7" style={{ color: '#ea580c' }} />
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-semibold text-lg" style={{ color: '#111827' }}>Claude Vision Duplicates</div>
-                            <div className="text-base mt-1" style={{ color: '#6b7280' }}>
-                              Find & manage duplicate photos
-                            </div>
-                          </div>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {/* Status Badges */}
-                {(analysisSession || (scoutAi.suggestions && scoutAi.suggestions.length > 0)) && (
-                  <div className="flex flex-wrap gap-2">
-                    {analysisSession && (
-                      <>
-                        <Badge variant="accent">
-                          {analysisSession.metadata.totalAnalyzed} photos analyzed
-                        </Badge>
-                        <Badge variant="destructive">
-                          {analysisSession.metadata.duplicatesFound} duplicates
-                        </Badge>
-                        <Badge variant="outline">
-                          {analysisSession.metadata.burstShotsFound} burst shots
-                        </Badge>
-                      </>
-                    )}
-                    {scoutAi.suggestions && scoutAi.suggestions.length > 0 && (
-                      <Badge variant="default">
-                        {scoutAi.suggestions.filter(s => s.status !== 'dismissed' && s.status !== 'rejected').length} Scout AI suggestions
-                      </Badge>
-                    )}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Filter Section */}
           <FilterBar
@@ -1038,6 +863,8 @@ const DuplicateAnalysisPageContent: React.FC = () => {
             archivedCount={archivedCount}
             isRelaxedView={isRelaxedView}
             onToggleRelaxedView={setIsRelaxedView}
+            onDetectBurstShots={() => fetchPhotos(50)}
+            isDetectingBursts={claudeLoading}
           />
 
           {/* Claude Error Display */}

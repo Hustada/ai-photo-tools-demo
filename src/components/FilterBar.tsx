@@ -15,6 +15,8 @@ interface FilterBarProps {
   archivedCount?: number;
   isRelaxedView?: boolean;
   onToggleRelaxedView?: (relaxed: boolean) => void;
+  onDetectBurstShots?: () => void;
+  isDetectingBursts?: boolean;
 }
 
 
@@ -31,7 +33,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   onToggleArchivedPhotos,
   archivedCount = 0,
   isRelaxedView = false,
-  onToggleRelaxedView
+  onToggleRelaxedView,
+  onDetectBurstShots,
+  isDetectingBursts = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isTagPanelExpanded, setIsTagPanelExpanded] = useState(false);
@@ -113,6 +117,30 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               className="px-2 sm:px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 disabled:bg-gray-300 disabled:opacity-70 transition-colors text-xs sm:text-sm rounded-md whitespace-nowrap"
             >
               {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          )}
+          
+          {/* Detect Burst Shots Button */}
+          {onDetectBurstShots && (
+            <button
+              onClick={onDetectBurstShots}
+              disabled={isDetectingBursts}
+              className="px-2 sm:px-3 py-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 disabled:bg-gray-300 disabled:opacity-70 transition-colors text-xs sm:text-sm font-medium rounded-md flex items-center gap-1 sm:gap-2 whitespace-nowrap"
+              onMouseEnter={(e) => !isDetectingBursts && (e.currentTarget.style.borderColor = '#ea580c')}
+              onMouseLeave={(e) => !isDetectingBursts && (e.currentTarget.style.borderColor = '#d1d5db')}
+            >
+              {/* Camera burst icon */}
+              <svg 
+                className="w-3 h-3 sm:w-4 sm:h-4" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>{isDetectingBursts ? 'Detecting...' : 'Detect Burst Shots'}</span>
             </button>
           )}
           
