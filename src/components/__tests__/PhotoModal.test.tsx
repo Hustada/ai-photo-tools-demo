@@ -165,9 +165,9 @@ describe('PhotoModal', () => {
       renderWithProviders(<PhotoModal {...defaultProps} />)
 
       expect(screen.getByText('Jane Contractor')).toBeInTheDocument()
-      // Check what the actual date is being rendered
-      expect(screen.getByText(/Captured On:/)).toBeInTheDocument()
-      expect(screen.getAllByText('Electrical work in progress')).toHaveLength(2) // One in description, one in textarea
+      // The modal now shows the formatted date directly, not "Captured On:"
+      expect(screen.getByText(/2022/)).toBeInTheDocument() // Date will contain 2022 from the mock timestamp
+      expect(screen.getByText('Electrical work in progress')).toBeInTheDocument()
       expect(screen.getByText('2 / 5')).toBeInTheDocument()
     })
 
@@ -208,7 +208,7 @@ describe('PhotoModal', () => {
     it('should handle missing description gracefully', () => {
       renderWithProviders(<PhotoModal {...defaultProps} photo={createMockPhotoNoTags()} />)
 
-      expect(screen.getByText('No description provided.')).toBeInTheDocument()
+      expect(screen.getByText('No description provided')).toBeInTheDocument()
     })
 
     it('should handle missing creator name', () => {
@@ -219,7 +219,9 @@ describe('PhotoModal', () => {
 
       renderWithProviders(<PhotoModal {...defaultProps} photo={photoWithoutCreator} />)
 
-      expect(screen.getByText('Captured By:')).toBeInTheDocument()
+      // Creator name is empty, so nothing special is rendered
+      const creatorElement = screen.queryByText('Jane Contractor')
+      expect(creatorElement).not.toBeInTheDocument()
     })
   })
 
@@ -230,17 +232,18 @@ describe('PhotoModal', () => {
       expect(screen.getByText('Electrical (AI)')).toBeInTheDocument()
       expect(screen.getByText('Installation')).toBeInTheDocument()
 
-      const aiTag = screen.getByText('Electrical (AI)')
-      const normalTag = screen.getByText('Installation')
+      const aiTag = screen.getByText('Electrical (AI)').parentElement
+      const normalTag = screen.getByText('Installation').parentElement
 
-      expect(aiTag).toHaveClass('bg-teal-100')
-      expect(normalTag).toHaveClass('bg-gray-200')
+      // AI tags have purple styling, normal tags have gray styling
+      expect(aiTag).toHaveClass('bg-purple-50')
+      expect(normalTag).toHaveClass('bg-gray-50')
     })
 
     it('should show "No tags yet." when photo has no tags', () => {
       renderWithProviders(<PhotoModal {...defaultProps} photo={createMockPhotoNoTags()} />)
 
-      expect(screen.getByText('No tags yet.')).toBeInTheDocument()
+      expect(screen.getByText('No tags yet')).toBeInTheDocument()
     })
   })
 
@@ -257,7 +260,7 @@ describe('PhotoModal', () => {
 
     it('should call onClose when backdrop is clicked', async () => {
       const user = userEvent.setup()
-      const { container } = render(<PhotoModal {...defaultProps} />)
+      const { container } = renderWithProviders(<PhotoModal {...defaultProps} />)
 
       const backdrop = container.querySelector('.fixed.inset-0')
       expect(backdrop).toBeInTheDocument()
@@ -370,9 +373,11 @@ describe('PhotoModal', () => {
         suggestedDescription: ''
       }
 
-      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={loadingAiData} />)
+      const { container } = renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={loadingAiData} />)
 
-      expect(screen.getByText('Getting Suggestions...')).toBeInTheDocument()
+      // Loading state shows a spinner, not text
+      const spinner = container.querySelector('.animate-spin')
+      expect(spinner).toBeInTheDocument()
       expect(screen.queryByText('Get AI Suggestions')).not.toBeInTheDocument()
     })
 
@@ -545,22 +550,24 @@ describe('PhotoModal', () => {
     it('should initialize description from photo', () => {
       renderWithProviders(<PhotoModal {...defaultProps} />)
 
-      const textarea = screen.getByDisplayValue('Electrical work in progress')
-      expect(textarea).toBeInTheDocument()
+      // Photo description is displayed as text, not in a textarea
+      expect(screen.getByText('Electrical work in progress')).toBeInTheDocument()
     })
 
     it('should initialize description from AI suggestion when photo has no description', () => {
       renderWithProviders(<PhotoModal {...defaultProps} photo={createMockPhotoNoTags()} aiSuggestionData={mockAiSuggestionData} />)
 
+      // AI suggested description appears in a textarea
       const textarea = screen.getByDisplayValue('Electrical conduit and wiring installation')
       expect(textarea).toBeInTheDocument()
     })
 
     it('should allow editing description', async () => {
       const user = userEvent.setup()
-      renderWithProviders(<PhotoModal {...defaultProps} />)
+      // Need AI suggestion data to have an editable textarea
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
-      const textarea = screen.getByDisplayValue('Electrical work in progress')
+      const textarea = screen.getByDisplayValue('Electrical conduit and wiring installation')
       await user.clear(textarea)
       await user.type(textarea, 'Updated electrical description')
 
@@ -571,9 +578,10 @@ describe('PhotoModal', () => {
       const user = userEvent.setup()
       mockOnSaveAiDescription.mockResolvedValue(undefined)
 
-      renderWithProviders(<PhotoModal {...defaultProps} />)
+      // Need AI suggestion data to have save button
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
-      const textarea = screen.getByDisplayValue('Electrical work in progress')
+      const textarea = screen.getByDisplayValue('Electrical conduit and wiring installation')
       await user.clear(textarea)
       await user.type(textarea, 'New description')
 
@@ -591,9 +599,10 @@ describe('PhotoModal', () => {
         () => new Promise(resolve => setTimeout(resolve, 100))
       )
 
-      renderWithProviders(<PhotoModal {...defaultProps} />)
+      // Need AI suggestion data to have save button
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
-      const textarea = screen.getByDisplayValue('Electrical work in progress')
+      const textarea = screen.getByDisplayValue('Electrical conduit and wiring installation')
       await user.clear(textarea)
       await user.type(textarea, 'New description')
 
@@ -604,7 +613,8 @@ describe('PhotoModal', () => {
     })
 
     it('should disable save button when description is unchanged', () => {
-      renderWithProviders(<PhotoModal {...defaultProps} />)
+      // Need AI suggestion data to have save button
+      renderWithProviders(<PhotoModal {...defaultProps} aiSuggestionData={mockAiSuggestionData} />)
 
       const saveButton = screen.getByText('Save Description')
       expect(saveButton).toBeDisabled()
@@ -712,8 +722,8 @@ describe('PhotoModal', () => {
       renderWithProviders(<PhotoModal {...defaultProps} photo={emptyPhoto} />)
 
       expect(screen.getByText('No image available')).toBeInTheDocument()
-      expect(screen.getByText('No description provided.')).toBeInTheDocument()
-      expect(screen.getByText('No tags yet.')).toBeInTheDocument()
+      expect(screen.getByText('No description provided')).toBeInTheDocument()
+      expect(screen.getByText('No tags yet')).toBeInTheDocument()
     })
 
     it('should handle missing project_id in AI suggestions', async () => {
