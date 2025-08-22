@@ -403,7 +403,12 @@ const DuplicateAnalysisPageContent: React.FC = () => {
         duplicatesFound,
         burstShotsFound,
         uniquePhotos: photoList.length - duplicatesFound - burstShotsFound,
-        analysisTime: `${Date.now() - startTime}ms`
+        analysisTime: (() => {
+          const totalSeconds = Math.floor((Date.now() - startTime) / 1000);
+          const minutes = Math.floor(totalSeconds / 60);
+          const seconds = totalSeconds % 60;
+          return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        })()
       }
     };
 
@@ -975,8 +980,20 @@ const DuplicateAnalysisPageContent: React.FC = () => {
 
         {/* Analysis Results */}
         {analysisSession && (
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+          <div className="relative">
+            {/* Close button */}
+            <button
+              onClick={() => setAnalysisSession(null)}
+              className="absolute -top-2 right-0 z-10 p-2 bg-white hover:bg-gray-100 rounded-full shadow-md border border-gray-200 transition-colors"
+              title="Close analysis results"
+            >
+              <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="groups">Burst Sequences</TabsTrigger>
               <TabsTrigger value="photos">Photo Grid</TabsTrigger>
@@ -1026,7 +1043,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Analysis Method:</span>
-                        <Badge>Claude Visual</Badge>
+                        <Badge>Claude Vision</Badge>
                       </div>
                     </div>
                   </CardContent>
@@ -1242,7 +1259,8 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                 </Card>
               </div>
             </TabsContent>
-          </Tabs>
+            </Tabs>
+          </div>
         )}
 
         {/* Photo Detail Modal */}
