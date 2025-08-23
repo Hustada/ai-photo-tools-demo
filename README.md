@@ -78,7 +78,7 @@ Automated curation suggestions:
 
 ### Infrastructure
 - **Vercel** - Hosting and serverless functions
-- **Vercel KV** - Distributed cache
+- **Supabase** - Database and real-time data
 - **CompanyCam API** - Photo data source
 - **Edge Functions** - Low-latency processing
 
@@ -137,6 +137,7 @@ Full bidirectional integration with CompanyCam's photo management system:
 - Node.js 18+ (LTS version)
 - CompanyCam API key
 - Vercel account (for deployment)
+- Supabase account (for database)
 
 ### Environment Variables
 Create `.env.local` with:
@@ -149,10 +150,10 @@ OPENAI_API_KEY=your_openai_key
 GOOGLE_VISION_API_KEY=your_google_vision_key
 ANTHROPIC_API_KEY=your_anthropic_key
 
-# Infrastructure
-KV_URL=your_vercel_kv_url
-KV_REST_API_URL=your_kv_rest_url
-KV_REST_API_TOKEN=your_kv_token
+# Database
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
 ### Local Development
