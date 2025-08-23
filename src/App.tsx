@@ -7,6 +7,7 @@ import TestSimilarity from './pages/test-similarity';
 import BlogPage from './pages/BlogPage';
 import GettingStartedPage from './pages/GettingStartedPage';
 import DuplicateAnalysisPage from './pages/DuplicateAnalysisPage';
+import AboutPage from './pages/AboutPage';
 import DemoBanner from './components/DemoBanner';
 
 // Simple component to protect routes
@@ -30,6 +31,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/docs" element={<GettingStartedPage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route element={<ProtectedRoute />}>
             {/* Routes nested under ProtectedRoute require an API key */}
             <Route path="/" element={<DuplicateAnalysisPage />} />

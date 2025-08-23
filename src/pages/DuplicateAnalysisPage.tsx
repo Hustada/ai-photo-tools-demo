@@ -1522,6 +1522,9 @@ const DuplicateAnalysisPageContent: React.FC = () => {
               <Link to="/docs" className="text-gray-600 hover:text-orange-600 transition-colors">
                 Documentation
               </Link>
+              <Link to="/about" className="text-gray-600 hover:text-orange-600 transition-colors">
+                About
+              </Link>
               <Link to="/blog" className="text-gray-600 hover:text-orange-600 transition-colors">
                 Blog
               </Link>

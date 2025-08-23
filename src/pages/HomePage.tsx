@@ -254,6 +254,16 @@ const HomePageContent: React.FC = () => {
                   <span>Getting Started</span>
                 </a>
                 <a 
+                  href="/about"
+                  className="text-sm text-gray-300 hover:text-orange-400 transition-colors px-3 py-1 rounded-md hover:bg-gray-800 flex items-center space-x-1"
+                  title="Technical documentation about AI pipelines"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>About</span>
+                </a>
+                <a 
                   href="/blog"
                   className="text-sm text-gray-300 hover:text-orange-400 transition-colors px-3 py-1 rounded-md hover:bg-gray-800 flex items-center space-x-1"
                   title="View CodeCraft development blog"
