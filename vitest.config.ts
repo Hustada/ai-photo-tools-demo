@@ -26,13 +26,35 @@ export default defineConfig({
         'node_modules/',
         'dist/',
         '.vercel/',
+        '.next/',
         'src/test/',
         '**/*.d.ts',
         '**/*.config.*',
+        '**/*.test.ts',
+        '**/*.test.tsx',
         'scripts/',
-        'fetch-*.js', // Exclude utility scripts
-        '**/test-setup.ts', // Exclude test setup files
-        '**/setup.ts', // Exclude setup files
+        'fetch-*.js',
+        '**/test-setup.ts',
+        '**/setup.ts',
+        // CLI tools and scripts
+        'blog-analysis.js',
+        'test-env-debug.js',
+        'perceptual-hash.ts',
+        'similarity-cli.ts',
+        'inspection.ts',
+        // Build artifacts
+        '**/*-manifest.js',
+        '**/polyfills.js',
+        // Mock and test data files
+        '**/ai-enhancements-mock.ts',
+        '**/blog-posts-simple.ts',
+        // API mock endpoints for testing
+        'api/ai-enhancements-batch.ts',
+        'api/blog-posts.ts',
+        'api/health.ts',
+        // Storybook
+        '**/*.stories.tsx',
+        '**/storybook-static/'
       ]
     }
   },

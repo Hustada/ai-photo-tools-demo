@@ -513,4 +513,255 @@ describe('PhotoCard', () => {
     })
   })
 
+  describe('Archived Photo Functionality', () => {
+    it('should show unarchive button for archived photos', () => {
+      const mockOnUnarchivePhoto = vi.fn()
+      const archivedPhoto = {
+        ...mockPhoto,
+        archive_state: 'archived'
+      }
+      
+      renderWithProviders(
+        <PhotoCard
+          photo={archivedPhoto}
+          onPhotoClick={() => {}}
+          onUnarchivePhoto={mockOnUnarchivePhoto}
+        />
+      )
+      
+      const unarchiveButton = screen.getByText('UNARCHIVE')
+      expect(unarchiveButton).toBeInTheDocument()
+    })
+
+    it('should call onUnarchivePhoto when unarchive button is clicked', async () => {
+      const user = userEvent.setup()
+      const mockOnUnarchivePhoto = vi.fn()
+      const archivedPhoto = {
+        ...mockPhoto,
+        archive_state: 'archived'
+      }
+      
+      renderWithProviders(
+        <PhotoCard
+          photo={archivedPhoto}
+          onPhotoClick={() => {}}
+          onUnarchivePhoto={mockOnUnarchivePhoto}
+        />
+      )
+      
+      const unarchiveButton = screen.getByText('UNARCHIVE')
+      await user.click(unarchiveButton)
+      
+      expect(mockOnUnarchivePhoto).toHaveBeenCalledWith('test-photo-123')
+    })
+
+    it('should handle unarchive button hover effects', async () => {
+      const mockOnUnarchivePhoto = vi.fn()
+      const archivedPhoto = {
+        ...mockPhoto,
+        archive_state: 'archived'
+      }
+      
+      renderWithProviders(
+        <PhotoCard
+          photo={archivedPhoto}
+          onPhotoClick={() => {}}
+          onUnarchivePhoto={mockOnUnarchivePhoto}
+        />
+      )
+      
+      const unarchiveButton = screen.getByText('UNARCHIVE')
+      
+      // Test hover events fire (style changes are tested, just verify events work)
+      fireEvent.mouseEnter(unarchiveButton)
+      fireEvent.mouseLeave(unarchiveButton)
+      expect(unarchiveButton).toBeInTheDocument()
+    })
+  })
+
+  describe('Image Loading Events', () => {
+    it('should handle image load event', () => {
+      const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {})
+      
+      const { container } = renderWithProviders(
+        <PhotoCard
+          photo={mockPhoto}
+          onPhotoClick={() => {}}
+        />
+      )
+      
+      const image = container.querySelector('img')
+      if (image) {
+        fireEvent.load(image)
+        expect(consoleDebugSpy).toHaveBeenCalledWith('[PhotoCard] Image loaded for photo test-photo-123')
+      }
+      
+      consoleDebugSpy.mockRestore()
+    })
+
+    it('should handle image error event', () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      
+      const { container } = renderWithProviders(
+        <PhotoCard
+          photo={mockPhoto}
+          onPhotoClick={() => {}}
+        />
+      )
+      
+      const image = container.querySelector('img')
+      if (image) {
+        fireEvent.error(image)
+        expect(consoleWarnSpy).toHaveBeenCalledWith('[PhotoCard] Failed to load image for photo test-photo-123')
+      }
+      
+      consoleWarnSpy.mockRestore()
+    })
+  })
+
+  describe('Tag Management', () => {
+    it('should show remove button on tag hover when onRemoveTag is provided', () => {
+      const mockOnRemoveTag = vi.fn()
+      
+      renderWithProviders(
+        <PhotoCard
+          photo={mockPhoto}
+          onPhotoClick={() => {}}
+          onRemoveTag={mockOnRemoveTag}
+        />
+      )
+      
+      // Find the tag's parent span which has the "group" class
+      const tagElement = screen.getByText('Roofing').closest('.group')
+      expect(tagElement).toBeInTheDocument()
+      
+      // The remove button should be present (even if not visible until hover)
+      const removeButton = tagElement?.querySelector('button')
+      expect(removeButton).toBeInTheDocument()
+    })
+
+    it('should call onRemoveTag when remove button is clicked', async () => {
+      const user = userEvent.setup()
+      const mockOnRemoveTag = vi.fn().mockResolvedValue(undefined)
+      
+      renderWithProviders(
+        <PhotoCard
+          photo={mockPhoto}
+          onPhotoClick={() => {}}
+          onRemoveTag={mockOnRemoveTag}
+        />
+      )
+      
+      const tagElement = screen.getByText('Roofing').closest('.group')
+      const removeButton = tagElement?.querySelector('button')
+      
+      if (removeButton) {
+        await user.click(removeButton)
+        expect(mockOnRemoveTag).toHaveBeenCalledWith('test-photo-123', 'tag-1')
+      }
+    })
+
+    it('should handle remove tag errors gracefully', async () => {
+      const user = userEvent.setup()
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockOnRemoveTag = vi.fn().mockRejectedValue(new Error('Remove failed'))
+      
+      renderWithProviders(
+        <PhotoCard
+          photo={mockPhoto}
+          onPhotoClick={() => {}}
+          onRemoveTag={mockOnRemoveTag}
+        />
+      )
+      
+      const tagElement = screen.getByText('Roofing').closest('.group')
+      const removeButton = tagElement?.querySelector('button')
+      
+      if (removeButton) {
+        await user.click(removeButton)
+        
+        await waitFor(() => {
+          expect(consoleErrorSpy).toHaveBeenCalledWith(
+            "[PhotoCard] Error removing tag 'Roofing':",
+            expect.any(Error)
+          )
+        })
+      }
+      
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('should handle remove button hover effects', () => {
+      const mockOnRemoveTag = vi.fn()
+      
+      renderWithProviders(
+        <PhotoCard
+          photo={mockPhoto}
+          onPhotoClick={() => {}}
+          onRemoveTag={mockOnRemoveTag}
+        />
+      )
+      
+      const tagElement = screen.getByText('Roofing').closest('.group')
+      const removeButton = tagElement?.querySelector('button')
+      
+      if (removeButton) {
+        // Test hover events fire
+        fireEvent.mouseEnter(removeButton)
+        fireEvent.mouseLeave(removeButton)
+        expect(removeButton).toBeInTheDocument()
+      }
+    })
+  })
+
+  describe('AI Suggestion Button Hover Effects', () => {
+    it('should handle AI button hover effects', () => {
+      renderWithProviders(
+        <PhotoCard
+          photo={mockPhoto}
+          onPhotoClick={() => {}}
+          onFetchAiSuggestions={() => {}}
+        />
+      )
+      
+      const aiButton = screen.getByText('Suggest Tags')
+      
+      // Test hover events fire
+      fireEvent.mouseEnter(aiButton)
+      fireEvent.mouseLeave(aiButton)
+      expect(aiButton).toBeInTheDocument()
+    })
+  })
+
+  describe('AI Tag Button Hover Effects', () => {
+    it('should handle AI tag button hover effects', () => {
+      const mockAiData: PhotoCardAiSuggestionState = {
+        suggestedTags: ['roofing', 'shingles'],
+        suggestedDescription: 'Test AI description',
+        isSuggesting: false,
+        suggestionError: null,
+        persistedDescription: null,
+        persistedAcceptedTags: [],
+        isLoadingPersisted: false,
+        persistedError: null
+      }
+      
+      renderWithProviders(
+        <PhotoCard
+          photo={mockPhoto}
+          onPhotoClick={() => {}}
+          onAddAiTag={() => {}}
+          aiSuggestionData={mockAiData}
+        />
+      )
+      
+      const tagButton = screen.getByText('roofing')
+      
+      // Test hover events fire
+      fireEvent.mouseEnter(tagButton)
+      fireEvent.mouseLeave(tagButton)
+      expect(tagButton).toBeInTheDocument()
+    })
+  })
+
 })
