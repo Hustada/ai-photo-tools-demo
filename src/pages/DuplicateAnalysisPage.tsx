@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { AlertCircle, Eye, Clock, Camera, MapPin, Hash, User, Building, Crown, Star, Book, FileText } from 'lucide-react';
+import { AlertCircle, Eye, Clock, Camera, MapPin, Hash, User, Building, Crown, Star, Book, FileText, Info } from 'lucide-react';
 import { useUserContext } from '../contexts/UserContext';
 import type { Photo, Tag } from '../types';
 import aiCameraLens from '../assets/aicameralens1.png';
@@ -836,6 +836,26 @@ const DuplicateAnalysisPageContent: React.FC = () => {
               
               {/* Navigation Links - Centered on mobile */}
               <nav className="flex items-center justify-center sm:justify-end gap-4 sm:gap-6">
+                <Link 
+                  to="/about" 
+                  className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium transition-all duration-200"
+                  style={{ 
+                    color: '#ea580c',
+                    textDecoration: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#FFFFFF';
+                    e.currentTarget.style.textShadow = '0 0 10px rgba(234, 88, 12, 0.8)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#ea580c';
+                    e.currentTarget.style.textShadow = 'none';
+                  }}
+                  title="About AI Pipelines"
+                >
+                  <Info className="w-4 h-4" />
+                  <span className="hidden sm:inline">About</span>
+                </Link>
                 <Link 
                   to="/blog" 
                   className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium transition-all duration-200"
