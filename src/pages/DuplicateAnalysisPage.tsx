@@ -1549,7 +1549,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                 Blog
               </Link>
               <a 
-                href="https://github.com" 
+                href="https://github.com/Hustada/ai-photo-tools-demo" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-gray-600 hover:text-orange-600 transition-colors"
