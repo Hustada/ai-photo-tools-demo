@@ -34,7 +34,7 @@ const AboutPage: React.FC = () => {
             AI-Powered Photo Intelligence
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-            Advanced computer vision pipelines designed specifically for construction photo management
+            Advanced computer vision pipelines designed specifically for photo management
           </p>
         </div>
 
