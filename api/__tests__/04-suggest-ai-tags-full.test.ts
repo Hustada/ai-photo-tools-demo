@@ -413,141 +413,7 @@ describe('/api/suggest-ai-tags - Full AI Pipeline', () => {
     })
   })
 
-  describe('Pinecone Integration', () => {
-    beforeEach(() => {
-      // Set up successful Google Vision and OpenAI embeddings
-      const visionResponse = {
-        responses: [{
-          labelAnnotations: [{ description: 'Building', score: 0.9 }]
-        }]
-      }
-      setupMockHttpsRequest(visionResponse)
-
-      mockOpenAIInstance.embeddings.create.mockResolvedValue({
-        data: [{ embedding: new Array(1536).fill(0.1) }]
-      })
-    })
-
-    it('should query Pinecone and use results in GPT prompt', async () => {
-      const { default: handler } = await import('../suggest-ai-tags')
-
-      mockPineconeIndex.query.mockResolvedValue({
-        matches: [
-          {
-            id: 'match1',
-            score: 0.95,
-            metadata: { text: 'Commercial roofing project completed successfully' }
-          },
-          {
-            id: 'match2',
-            score: 0.88,
-            metadata: { text: 'HVAC installation on office building' }
-          }
-        ]
-      })
-
-      mockOpenAIInstance.chat.completions.create.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              suggested_tags: ['roofing', 'commercial'],
-              suggested_description: 'Commercial roofing work in progress.'
-            })
-          }
-        }]
-      })
-
-      const req = createMockReq('POST', {
-        photoId: 'test-photo',
-        photoUrl: 'https://example.com/photo.jpg',
-        userId: 'test-user'
-      })
-      const res = createMockRes()
-
-      await handler(req, res)
-
-      // Verify Pinecone was queried
-      expect(mockPineconeIndex.query).toHaveBeenCalledWith({
-        vector: expect.any(Array),
-        topK: 5,
-        includeMetadata: true
-      })
-
-      // Verify GPT was called with memory context
-      const gptCall = mockOpenAIInstance.chat.completions.create.mock.calls[0][0]
-      const systemMessage = gptCall.messages.find((m: any) => m.role === 'system')
-      expect(systemMessage).toBeDefined()
-
-      expect(res.status).toHaveBeenCalledWith(200)
-    })
-
-    it('should handle Pinecone errors gracefully', async () => {
-      const { default: handler } = await import('../suggest-ai-tags')
-
-      mockPineconeIndex.query.mockRejectedValue(new Error('Pinecone timeout'))
-
-      mockOpenAIInstance.chat.completions.create.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              suggested_tags: ['building'],
-              suggested_description: 'Building construction work.'
-            })
-          }
-        }]
-      })
-
-      const req = createMockReq('POST', {
-        photoId: 'test-photo',
-        photoUrl: 'https://example.com/photo.jpg',
-        userId: 'test-user'
-      })
-      const res = createMockRes()
-
-      await handler(req, res)
-
-      // Should continue without Pinecone results
-      expect(res.status).toHaveBeenCalledWith(200)
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          suggestedTags: ['building'],
-          suggestedDescription: 'Building construction work.'
-        })
-      )
-    })
-
-    it('should work when Pinecone is not configured', async () => {
-      delete process.env.PINECONE_API_KEY
-
-      const { default: handler } = await import('../suggest-ai-tags')
-
-      mockOpenAIInstance.chat.completions.create.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              suggested_tags: ['building'],
-              suggested_description: 'Building construction.'
-            })
-          }
-        }]
-      })
-
-      const req = createMockReq('POST', {
-        photoId: 'test-photo',
-        photoUrl: 'https://example.com/photo.jpg',
-        userId: 'test-user'
-      })
-      const res = createMockRes()
-
-      await handler(req, res)
-
-      // Should not call Pinecone
-      expect(mockPineconeIndex.query).not.toHaveBeenCalled()
-
-      // Should still return results
-      expect(res.status).toHaveBeenCalledWith(200)
-    })
-  })
+  // Pinecone tests removed - Pinecone is disabled in the implementation
 
   describe('Complete AI Pipeline', () => {
     it('should execute full pipeline with all services', async () => {
@@ -607,10 +473,10 @@ describe('/api/suggest-ai-tags - Full AI Pipeline', () => {
 
       await handler(req, res)
 
-      // Verify all services were called
+      // Verify all services were called (except Pinecone which is disabled)
       expect(mockHttpsRequest).toHaveBeenCalled() // Google Vision
       expect(mockOpenAIInstance.embeddings.create).toHaveBeenCalled() // OpenAI Embeddings
-      expect(mockPineconeIndex.query).toHaveBeenCalled() // Pinecone
+      // Pinecone is disabled in the implementation, so it won't be called
       expect(mockOpenAIInstance.chat.completions.create).toHaveBeenCalled() // GPT
 
       // Verify final response

@@ -100,7 +100,8 @@ describe('usePhotosQuery', () => {
         'test-api-key',
         1,
         20,
-        undefined
+        undefined,
+        false
       );
     });
 
@@ -136,7 +137,8 @@ describe('usePhotosQuery', () => {
         'test-api-key',
         2,
         10,
-        undefined
+        undefined,
+        false
       );
     });
 
@@ -156,7 +158,8 @@ describe('usePhotosQuery', () => {
         'test-api-key',
         1,
         20,
-        tagIds
+        tagIds,
+        false
       );
     });
 
@@ -296,7 +299,8 @@ describe('usePhotosQuery', () => {
           'test-api-key',
           1,
           20,
-          undefined
+          undefined,
+          true  // refresh calls with forceRefresh=true
         );
       });
     });
@@ -406,7 +410,8 @@ describe('usePhotosQuery', () => {
         'test-api-key',
         1,
         20,
-        ['tag1']
+        ['tag1'],
+        false
       );
     });
   });

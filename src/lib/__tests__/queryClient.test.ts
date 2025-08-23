@@ -16,8 +16,8 @@ describe('queryClient', () => {
   it('should have correct default options', () => {
     const defaultOptions = queryClient.getDefaultOptions();
     
-    expect(defaultOptions.queries?.staleTime).toBe(5 * 60 * 1000); // 5 minutes
-    expect(defaultOptions.queries?.gcTime).toBe(10 * 60 * 1000); // 10 minutes
+    expect(defaultOptions.queries?.staleTime).toBe(30 * 60 * 1000); // 30 minutes
+    expect(defaultOptions.queries?.gcTime).toBe(2 * 60 * 60 * 1000); // 2 hours
   });
 
   describe('retry logic', () => {

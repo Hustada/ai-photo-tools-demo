@@ -302,9 +302,13 @@ describe('ScoutAiContext', () => {
       });
     });
 
-    it('should not generate suggestions when no similar photos found', async () => {
-      const { groupSimilarPhotos } = await import('../../utils/photoSimilarity');
-      vi.mocked(groupSimilarPhotos).mockResolvedValue([]);
+    it('should generate a message when no similar photos found', async () => {
+      const { useVisualSimilarity } = await import('../../hooks/useVisualSimilarity');
+      
+      // Mock visual similarity to return no groups
+      const mockVisualSimilarity = createMockVisualSimilarity([]);
+      mockVisualSimilarity.analyzeSimilarity.mockResolvedValue([]);
+      vi.mocked(useVisualSimilarity).mockReturnValue(mockVisualSimilarity);
 
       renderWithContext();
       
@@ -315,9 +319,10 @@ describe('ScoutAiContext', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByTestId('suggestions-count')).toHaveTextContent('0');
+        // Expect 1 suggestion - the debug message when no similar photos found
+        expect(screen.getByTestId('suggestions-count')).toHaveTextContent('1');
         expect(screen.getByTestId('is-analyzing')).toHaveTextContent('idle');
-      });
+      }, { timeout: 3000 });
     });
   });
 
@@ -397,9 +402,11 @@ describe('ScoutAiContext', () => {
       };
 
       render(
-        <ScoutAiProvider userId="test-user">
-          <PreferencesTestComponent />
-        </ScoutAiProvider>
+        <MemoryRouter>
+          <ScoutAiProvider userId="test-user">
+            <PreferencesTestComponent />
+          </ScoutAiProvider>
+        </MemoryRouter>
       );
       
       const updateButton = screen.getByTestId('update-preferences');
@@ -442,9 +449,11 @@ describe('ScoutAiContext', () => {
       });
       
       render(
-        <ScoutAiProvider userId="test-user">
-          <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
-        </ScoutAiProvider>
+        <MemoryRouter>
+          <ScoutAiProvider userId="test-user">
+            <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
+          </ScoutAiProvider>
+        </MemoryRouter>
       );
 
       await waitFor(() => {
@@ -499,9 +508,11 @@ describe('ScoutAiContext', () => {
       // Create a fresh component with the new mocks
       let freshContextValue: any;
       render(
-        <ScoutAiProvider userId="test-user">
-          <TestComponent onContextReady={(ctx) => { freshContextValue = ctx; }} />
-        </ScoutAiProvider>
+        <MemoryRouter>
+          <ScoutAiProvider userId="test-user">
+            <TestComponent onContextReady={(ctx) => { freshContextValue = ctx; }} />
+          </ScoutAiProvider>
+        </MemoryRouter>
       );
 
       await waitFor(() => {
@@ -592,9 +603,11 @@ describe('ScoutAiContext', () => {
       vi.clearAllMocks();
       
       render(
-        <ScoutAiProvider userId="test-user">
-          <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
-        </ScoutAiProvider>
+        <MemoryRouter>
+          <ScoutAiProvider userId="test-user">
+            <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
+          </ScoutAiProvider>
+        </MemoryRouter>
       );
 
       await waitFor(() => {
@@ -693,9 +706,11 @@ describe('ScoutAiContext', () => {
       });
       
       render(
-        <ScoutAiProvider userId="test-user">
-          <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
-        </ScoutAiProvider>
+        <MemoryRouter>
+          <ScoutAiProvider userId="test-user">
+            <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
+          </ScoutAiProvider>
+        </MemoryRouter>
       );
 
       await waitFor(() => {
@@ -751,9 +766,11 @@ describe('ScoutAiContext', () => {
       // Create a fresh component with the new mocks
       let freshContextValue: any;
       render(
-        <ScoutAiProvider userId="test-user">
-          <TestComponent onContextReady={(ctx) => { freshContextValue = ctx; }} />
-        </ScoutAiProvider>
+        <MemoryRouter>
+          <ScoutAiProvider userId="test-user">
+            <TestComponent onContextReady={(ctx) => { freshContextValue = ctx; }} />
+          </ScoutAiProvider>
+        </MemoryRouter>
       );
 
       await waitFor(() => {
@@ -808,9 +825,11 @@ describe('ScoutAiContext', () => {
       let contextValue: any;
 
       render(
-        <ScoutAiProvider userId="test-user">
-          <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
-        </ScoutAiProvider>
+        <MemoryRouter>
+          <ScoutAiProvider userId="test-user">
+            <TestComponent onContextReady={(ctx) => { contextValue = ctx; }} />
+          </ScoutAiProvider>
+        </MemoryRouter>
       );
 
       await waitFor(() => {

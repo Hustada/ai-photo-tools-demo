@@ -37,6 +37,16 @@ vi.mock('../services/companyCamService', () => ({
 }))
 
 // Mock the hooks
+vi.mock('../hooks/useScoutAiFeedback', () => ({
+  useScoutAiFeedback: () => ({
+    submitPositiveFeedback: vi.fn(),
+    submitEditFeedback: vi.fn(),
+    submitNegativeFeedback: vi.fn(),
+    isSubmitting: false,
+    error: null
+  })
+}))
+
 vi.mock('../hooks/useVisualSimilarity', () => ({
   useVisualSimilarity: () => ({
     state: {
@@ -166,7 +176,7 @@ describe('Integration Tests - Component Workflows', () => {
       )
 
       // Click AI suggestions button
-      const aiButton = screen.getByText('Suggest AI Tags')
+      const aiButton = screen.getByText('Suggest Tags')
       await user.click(aiButton)
 
       expect(mockOnFetchAiSuggestions).toHaveBeenCalledWith(
@@ -278,7 +288,12 @@ describe('Integration Tests - Component Workflows', () => {
       const aiButton = screen.getByText('Get AI Suggestions')
       await user.click(aiButton)
 
-      expect(mockOnFetchAiSuggestions).toHaveBeenCalled()
+      await waitFor(() => {
+        expect(mockOnFetchAiSuggestions).toHaveBeenCalled()
+      })
+
+      // Ensure the async function has completed
+      await new Promise(resolve => setTimeout(resolve, 10))
 
       // Rerender with AI suggestions
       rerender(
@@ -300,12 +315,18 @@ describe('Integration Tests - Component Workflows', () => {
         />
       )
 
-      // Step 2: Add AI suggested tag
+      // Step 2: Add AI suggested tag (tags show with + prefix)
+      // Debug: log what's actually rendered
       await waitFor(() => {
-        expect(screen.getByText('modal-tag-1')).toBeInTheDocument()
+        // First check if Suggested Tags section exists
+        expect(screen.getByText('Suggested Tags:')).toBeInTheDocument()
+      })
+      
+      await waitFor(() => {
+        expect(screen.getByText('+ modal-tag-1')).toBeInTheDocument()
       })
 
-      const tagButton = screen.getByText('modal-tag-1')
+      const tagButton = screen.getByText('+ modal-tag-1')
       await user.click(tagButton)
 
       expect(mockOnAddAiTag).toHaveBeenCalledWith(
@@ -314,7 +335,7 @@ describe('Integration Tests - Component Workflows', () => {
         mockPhoto
       )
 
-      // Step 3: Edit description
+      // Step 3: Edit description (photo's existing description in textarea when AI suggestions present)
       const textarea = screen.getByDisplayValue('Integration test photo')
       await user.clear(textarea)
       await user.type(textarea, 'Updated integration description')
@@ -356,10 +377,15 @@ describe('Integration Tests - Component Workflows', () => {
       const prevButton = screen.getByLabelText('Previous photo')
 
       await user.click(nextButton)
-      expect(mockOnShowNext).toHaveBeenCalled()
+      // Navigation has setTimeout delay
+      await waitFor(() => {
+        expect(mockOnShowNext).toHaveBeenCalled()
+      })
 
       await user.click(prevButton)
-      expect(mockOnShowPrevious).toHaveBeenCalled()
+      await waitFor(() => {
+        expect(mockOnShowPrevious).toHaveBeenCalled()
+      })
 
       // Test counter display
       expect(screen.getByText('2 / 3')).toBeInTheDocument()
@@ -400,7 +426,7 @@ describe('Integration Tests - Component Workflows', () => {
       )
 
       // Try to add tag (should fail gracefully)
-      const tagButton = screen.getByText('error-tag')
+      const tagButton = screen.getByText('+ error-tag')
       await user.click(tagButton)
 
       // Should call the onAddAiTag function
@@ -467,8 +493,8 @@ describe('Integration Tests - Component Workflows', () => {
       )
 
       // Should show loading state
-      expect(screen.getByText('Suggesting...')).toBeInTheDocument()
-      expect(screen.queryByText('Suggest AI Tags')).not.toBeInTheDocument()
+      expect(screen.getByText('Analyzing...')).toBeInTheDocument()
+      expect(screen.queryByText('Suggest Tags')).not.toBeInTheDocument()
     })
   })
 
@@ -496,7 +522,7 @@ describe('Integration Tests - Component Workflows', () => {
         />
       )
 
-      const aiButton = screen.getByText('Suggest AI Tags')
+      const aiButton = screen.getByText('Suggest Tags')
       await user.click(aiButton)
 
       expect(mockOnFetchAiSuggestions).toHaveBeenCalledWith(
