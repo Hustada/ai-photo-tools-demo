@@ -74,7 +74,6 @@ Automated curation suggestions:
 - **OpenAI GPT-4 Vision** - Scene understanding
 - **Google Cloud Vision** - Specialized detection
 - **Anthropic Claude 3.5** - Quality analysis
-- **TensorFlow.js** - Client-side ML
 
 ### Infrastructure
 - **Vercel** - Hosting and serverless functions
