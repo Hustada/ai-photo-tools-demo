@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Brain, Camera, Zap, Shield, Code, Layers, Server, Eye } from 'lucide-react';
+import { ArrowLeft, Brain, Camera, Zap, Code, Layers, Server } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 
@@ -310,17 +310,16 @@ UI Display`}
           </CardContent>
         </Card>
 
-        {/* Performance & Security */}
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Performance */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Zap className="w-6 h-6 text-yellow-500" />
-                <span>Performance Characteristics</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        {/* Performance Characteristics */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Zap className="w-6 h-6 text-yellow-500" />
+              <span>Performance Characteristics</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h5 className="font-semibold mb-2">Response Times</h5>
                 <div className="space-y-1 text-sm">
@@ -356,43 +355,9 @@ UI Display`}
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Security */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Shield className="w-6 h-6 text-blue-500" />
-                <span>Privacy & Security</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start space-x-2">
-                  <Eye className="w-4 h-4 text-gray-400 mt-0.5" />
-                  <span><strong>No Image Storage:</strong> Photos processed in-memory only</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <Shield className="w-4 h-4 text-gray-400 mt-0.5" />
-                  <span><strong>Secure APIs:</strong> Environment variables for all keys</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <Eye className="w-4 h-4 text-gray-400 mt-0.5" />
-                  <span><strong>User Isolation:</strong> Analyses scoped to user's photos</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <Zap className="w-4 h-4 text-gray-400 mt-0.5" />
-                  <span><strong>Minimal Transfer:</strong> Only necessary metadata sent</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <Shield className="w-4 h-4 text-gray-400 mt-0.5" />
-                  <span><strong>Temporary Processing:</strong> No persistent storage</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Footer */}
         <div className="mt-12 text-center text-sm text-gray-500 dark:text-gray-400">

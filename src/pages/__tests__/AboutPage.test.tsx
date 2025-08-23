@@ -41,11 +41,12 @@ describe('AboutPage', () => {
     expect(screen.getByText('Infrastructure')).toBeInTheDocument();
   });
 
-  it('should display Performance and Security sections', () => {
+  it('should display Performance section', () => {
     renderWithRouter(<AboutPage />);
     
     expect(screen.getByText('Performance Characteristics')).toBeInTheDocument();
-    expect(screen.getByText('Privacy & Security')).toBeInTheDocument();
+    expect(screen.getByText('Response Times')).toBeInTheDocument();
+    expect(screen.getByText('Accuracy Metrics')).toBeInTheDocument();
   });
 
   it('should have a back to app link', () => {
