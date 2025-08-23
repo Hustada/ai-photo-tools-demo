@@ -157,12 +157,6 @@ UI Display`}
                 <li className="flex items-start">
                   <span className="font-bold text-purple-500 mr-3">1.</span>
                   <div>
-                    <strong>User Action:</strong> Navigate to Duplicate Analysis page
-                  </div>
-                </li>
-                <li className="flex items-start">
-                  <span className="font-bold text-purple-500 mr-3">2.</span>
-                  <div>
                     <strong>Temporal Clustering:</strong>
                     <ul className="mt-1 ml-4 text-sm text-gray-600 dark:text-gray-400 list-disc">
                       <li>Groups photos within 30-second windows</li>
@@ -172,7 +166,7 @@ UI Display`}
                   </div>
                 </li>
                 <li className="flex items-start">
-                  <span className="font-bold text-purple-500 mr-3">3.</span>
+                  <span className="font-bold text-purple-500 mr-3">2.</span>
                   <div>
                     <strong>Claude Vision Analysis:</strong>
                     <ul className="mt-1 ml-4 text-sm text-gray-600 dark:text-gray-400 list-disc">
@@ -183,7 +177,7 @@ UI Display`}
                   </div>
                 </li>
                 <li className="flex items-start">
-                  <span className="font-bold text-purple-500 mr-3">4.</span>
+                  <span className="font-bold text-purple-500 mr-3">3.</span>
                   <div>
                     <strong>Quality Scoring</strong> (0-1 scale):
                     <ul className="mt-1 ml-4 text-sm text-gray-600 dark:text-gray-400 list-disc">
@@ -196,7 +190,7 @@ UI Display`}
                   </div>
                 </li>
                 <li className="flex items-start">
-                  <span className="font-bold text-purple-500 mr-3">5.</span>
+                  <span className="font-bold text-purple-500 mr-3">4.</span>
                   <div>
                     <strong>Smart Recommendations:</strong>
                     <ul className="mt-1 ml-4 text-sm text-gray-600 dark:text-gray-400 list-disc">
