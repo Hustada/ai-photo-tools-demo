@@ -116,20 +116,6 @@ Full bidirectional integration with CompanyCam's photo management system:
 - `/api/burst-detection` - Duplicate analysis
 - `/api/photo-analysis` - Deep photo analysis
 
-## Security & Compliance
-
-### Data Protection
-- End-to-end encryption for photo data
-- Secure API key management
-- User-scoped data isolation
-- GDPR-compliant data handling
-
-### Authentication
-- CompanyCam OAuth integration
-- API key authentication
-- Session management
-- Rate limiting protection
-
 ## Setup & Installation
 
 ### Prerequisites
