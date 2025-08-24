@@ -891,10 +891,10 @@ const DuplicateAnalysisPageContent: React.FC = () => {
                     e.currentTarget.style.color = '#ea580c';
                     e.currentTarget.style.textShadow = 'none';
                   }}
-                  title="Documentation"
+                  title="CodeCraft Documentation"
                 >
                   <Book className="w-4 h-4" />
-                  <span className="hidden sm:inline">Documentation</span>
+                  <span className="hidden sm:inline">CodeCraft Docs</span>
                 </Link>
               </nav>
             </div>
@@ -1540,7 +1540,7 @@ const DuplicateAnalysisPageContent: React.FC = () => {
             {/* Right side - Links */}
             <div className="flex items-center gap-6 text-sm">
               <Link to="/docs" className="text-gray-600 hover:text-orange-600 transition-colors">
-                Documentation
+                CodeCraft Docs
               </Link>
               <Link to="/about" className="text-gray-600 hover:text-orange-600 transition-colors">
                 About

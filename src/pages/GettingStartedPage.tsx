@@ -6,6 +6,42 @@ import MarkdownRenderer from '../components/MarkdownRenderer';
 
 const GettingStartedPage: React.FC = () => {
   const navigate = useNavigate();
+  const [showBackToTop, setShowBackToTop] = React.useState(false);
+  
+  // Handle scroll to show/hide back to top button
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 400);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+  
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    e.preventDefault();
+    console.log('Scrolling to section:', sectionId);
+    
+    // Try to find the element
+    const element = document.getElementById(sectionId);
+    console.log('Found element:', element);
+    
+    // Also log all h2, h3 elements to see what IDs they have
+    const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    console.log('All heading IDs:', Array.from(headings).map(h => h.id));
+    
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Update URL hash without triggering navigation
+      window.history.pushState(null, '', `#${sectionId}`);
+    } else {
+      console.error('Could not find element with ID:', sectionId);
+    }
+  };
 
   const gettingStartedContent = `# Getting Started with CodeCraft 🚀
 
@@ -430,14 +466,14 @@ Happy coding and documenting! 🎉
           <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">📚 Table of Contents</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <a href="#welcome-developer-" className="text-orange-600 hover:text-orange-800 transition-colors">👋 Welcome, Developer!</a>
-              <a href="#what-this-system-does" className="text-orange-600 hover:text-orange-800 transition-colors">🔧 What This System Does</a>
-              <a href="#step-by-step-walkthrough" className="text-orange-600 hover:text-orange-800 transition-colors">📋 Step-by-Step Walkthrough</a>
-              <a href="#cli-commands-reference" className="text-orange-600 hover:text-orange-800 transition-colors">⌨️ CLI Commands Reference</a>
-              <a href="#what-makes-this-smart" className="text-orange-600 hover:text-orange-800 transition-colors">🧠 What Makes This Smart</a>
-              <a href="#when-to-use-it" className="text-orange-600 hover:text-orange-800 transition-colors">🎯 When to Use It</a>
-              <a href="#pro-tips-best-practices" className="text-orange-600 hover:text-orange-800 transition-colors">💡 Pro Tips & Best Practices</a>
-              <a href="#troubleshooting" className="text-orange-600 hover:text-orange-800 transition-colors">🔧 Troubleshooting</a>
+              <a href="#welcome-developer" onClick={(e) => scrollToSection(e, 'welcome-developer')} className="text-orange-600 hover:text-orange-800 transition-colors cursor-pointer">👋 Welcome, Developer!</a>
+              <a href="#what-this-system-does" onClick={(e) => scrollToSection(e, 'what-this-system-does')} className="text-orange-600 hover:text-orange-800 transition-colors cursor-pointer">🔧 What This System Does</a>
+              <a href="#step-by-step-walkthrough" onClick={(e) => scrollToSection(e, 'step-by-step-walkthrough')} className="text-orange-600 hover:text-orange-800 transition-colors cursor-pointer">📋 Step-by-Step Walkthrough</a>
+              <a href="#cli-commands-reference" onClick={(e) => scrollToSection(e, 'cli-commands-reference')} className="text-orange-600 hover:text-orange-800 transition-colors cursor-pointer">⌨️ CLI Commands Reference</a>
+              <a href="#what-makes-this-smart" onClick={(e) => scrollToSection(e, 'what-makes-this-smart')} className="text-orange-600 hover:text-orange-800 transition-colors cursor-pointer">🧠 What Makes This Smart</a>
+              <a href="#when-to-use-it" onClick={(e) => scrollToSection(e, 'when-to-use-it')} className="text-orange-600 hover:text-orange-800 transition-colors cursor-pointer">🎯 When to Use It</a>
+              <a href="#pro-tips--best-practices" onClick={(e) => scrollToSection(e, 'pro-tips--best-practices')} className="text-orange-600 hover:text-orange-800 transition-colors cursor-pointer">💡 Pro Tips & Best Practices</a>
+              <a href="#troubleshooting" onClick={(e) => scrollToSection(e, 'troubleshooting')} className="text-orange-600 hover:text-orange-800 transition-colors cursor-pointer">🔧 Troubleshooting</a>
             </div>
           </div>
 
@@ -475,6 +511,19 @@ Happy coding and documenting! 🎉
           </div>
         </div>
       </div>
+      
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 bg-orange-500 hover:bg-orange-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-50"
+          title="Back to top"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 };

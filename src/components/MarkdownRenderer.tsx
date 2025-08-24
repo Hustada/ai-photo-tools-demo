@@ -177,47 +177,59 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={[
-          rehypeSlug,
-          [rehypeAutolinkHeadings, { 
-            behavior: 'wrap',
-            properties: {
-              className: ['heading-anchor'],
-              'aria-label': 'Link to this section'
-            }
-          }]
+          rehypeSlug
         ]}
         components={{
-          // Custom heading components with better styling
-          h1: ({ children }) => (
-            <h1 className="text-4xl font-bold text-gray-900 mb-6 mt-8 leading-tight">
-              {children}
-            </h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="text-3xl font-semibold text-gray-900 mb-4 mt-8 leading-tight border-b border-gray-200 pb-2">
-              {children}
-            </h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="text-2xl font-semibold text-gray-900 mb-3 mt-6 leading-tight">
-              {children}
-            </h3>
-          ),
-          h4: ({ children }) => (
-            <h4 className="text-xl font-semibold text-gray-900 mb-3 mt-6 leading-tight">
-              {children}
-            </h4>
-          ),
-          h5: ({ children }) => (
-            <h5 className="text-lg font-semibold text-gray-900 mb-2 mt-4 leading-tight">
-              {children}
-            </h5>
-          ),
-          h6: ({ children }) => (
-            <h6 className="text-base font-semibold text-gray-900 mb-2 mt-4 leading-tight">
-              {children}
-            </h6>
-          ),
+          // Custom heading components with better styling and IDs for navigation
+          h1: ({ children, ...props }) => {
+            // Extract text content for ID generation
+            const id = props.id || '';
+            return (
+              <h1 id={id} className="text-4xl font-bold text-gray-900 mb-6 mt-8 leading-tight">
+                {children}
+              </h1>
+            );
+          },
+          h2: ({ children, ...props }) => {
+            const id = props.id || '';
+            return (
+              <h2 id={id} className="text-3xl font-semibold text-gray-900 mb-4 mt-8 leading-tight border-b border-gray-200 pb-2">
+                {children}
+              </h2>
+            );
+          },
+          h3: ({ children, ...props }) => {
+            const id = props.id || '';
+            return (
+              <h3 id={id} className="text-2xl font-semibold text-gray-900 mb-3 mt-6 leading-tight">
+                {children}
+              </h3>
+            );
+          },
+          h4: ({ children, ...props }) => {
+            const id = props.id || '';
+            return (
+              <h4 id={id} className="text-xl font-semibold text-gray-900 mb-3 mt-6 leading-tight">
+                {children}
+              </h4>
+            );
+          },
+          h5: ({ children, ...props }) => {
+            const id = props.id || '';
+            return (
+              <h5 id={id} className="text-lg font-semibold text-gray-900 mb-2 mt-4 leading-tight">
+                {children}
+              </h5>
+            );
+          },
+          h6: ({ children, ...props }) => {
+            const id = props.id || '';
+            return (
+              <h6 id={id} className="text-base font-semibold text-gray-900 mb-2 mt-4 leading-tight">
+                {children}
+              </h6>
+            );
+          },
           
           // Paragraph styling
           p: ({ children }) => (
