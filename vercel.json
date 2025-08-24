@@ -3,6 +3,12 @@
   "devCommand": "vite --port $PORT",
   "buildCommand": "vite build",
   "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "functions": {
     "api/**/*.ts": {
       "maxDuration": 30
