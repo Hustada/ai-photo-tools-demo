@@ -8,14 +8,15 @@ export interface UseTagFilteringOptions {
 
 export interface UseTagFilteringReturn {
   // State
-  activeTagIds: string[]
+  activeTagIds: string[] // Keeping for backward compatibility
+  activeTagDisplayValues: string[] // The actual display values being filtered
   filteredPhotos: Photo[]
   isFiltering: boolean
   availableFilterTags: Tag[]
   filterLogic: 'AND' | 'OR'
   
   // Actions
-  toggleTag: (tagId: string) => void
+  toggleTag: (tagIdOrDisplayValue: string) => void
   clearAllFilters: () => void
   setFilterLogic: (logic: 'AND' | 'OR') => void
 }
@@ -25,7 +26,7 @@ export const useTagFiltering = (
   options: UseTagFilteringOptions = {}
 ): UseTagFilteringReturn => {
   const { showArchivedPhotos = false } = options;
-  const [activeTagIds, setActiveTagIds] = useState<string[]>([])
+  const [activeTagDisplayValues, setActiveTagDisplayValues] = useState<string[]>([])
   const [filterLogic, setFilterLogic] = useState<'AND' | 'OR'>('OR')
 
   // Compute available filter tags from all photos (deduplicated by display_value)
@@ -59,65 +60,86 @@ export const useTagFiltering = (
     }
 
     // If no tag filters are active, return all non-archived photos
-    if (activeTagIds.length === 0) {
+    if (activeTagDisplayValues.length === 0) {
       return photosToFilter;
     }
 
-    // Apply tag filtering
+    // Apply tag filtering by display value
     return photosToFilter.filter(photo => {
       if (!photo.tags || !Array.isArray(photo.tags)) {
         return false
       }
 
-      const photoTagIds = photo.tags
-        .filter(tag => tag && tag.id)
-        .map(tag => tag.id)
+      // Get all display values from the photo's tags (normalized to lowercase)
+      const photoTagDisplayValues = photo.tags
+        .filter(tag => tag && tag.display_value)
+        .map(tag => tag.display_value.toLowerCase())
+
+      // Normalize active display values to lowercase for comparison
+      const normalizedActiveValues = activeTagDisplayValues.map(v => v.toLowerCase())
 
       if (filterLogic === 'AND') {
         // AND logic: photo must have ALL selected tags
-        return activeTagIds.every(activeTagId => 
-          photoTagIds.includes(activeTagId)
+        return normalizedActiveValues.every(activeValue => 
+          photoTagDisplayValues.includes(activeValue)
         )
       } else {
         // OR logic: photo must have AT LEAST ONE selected tag
-        return activeTagIds.some(activeTagId => 
-          photoTagIds.includes(activeTagId)
+        return normalizedActiveValues.some(activeValue => 
+          photoTagDisplayValues.includes(activeValue)
         )
       }
     })
-  }, [photos, activeTagIds, filterLogic, showArchivedPhotos])
+  }, [photos, activeTagDisplayValues, filterLogic, showArchivedPhotos])
 
   // Derived state
   const isFiltering = useMemo(() => {
-    return activeTagIds.length > 0
-  }, [activeTagIds.length])
+    return activeTagDisplayValues.length > 0
+  }, [activeTagDisplayValues.length])
+
+  // Create activeTagIds for backward compatibility (maps display values back to IDs)
+  const activeTagIds = useMemo(() => {
+    return availableFilterTags
+      .filter(tag => activeTagDisplayValues.includes(tag.display_value))
+      .map(tag => tag.id)
+  }, [activeTagDisplayValues, availableFilterTags])
 
   // Actions
-  const toggleTag = useCallback((tagId: string) => {
-    console.log(`[useTagFiltering] Toggling filter for tag ${tagId}`)
+  const toggleTag = useCallback((tagIdOrDisplayValue: string) => {
+    // First check if it's a display value directly
+    let displayValue = tagIdOrDisplayValue;
     
-    setActiveTagIds(prevActiveTagIds => {
-      if (prevActiveTagIds.includes(tagId)) {
+    // If it looks like an ID (UUID format), try to find the corresponding display value
+    const tag = availableFilterTags.find(t => t.id === tagIdOrDisplayValue);
+    if (tag) {
+      displayValue = tag.display_value;
+    }
+    
+    console.log(`[useTagFiltering] Toggling filter for tag "${displayValue}"`)
+    
+    setActiveTagDisplayValues(prevActiveValues => {
+      if (prevActiveValues.includes(displayValue)) {
         // Remove tag from active filters
-        const newActiveTagIds = prevActiveTagIds.filter(id => id !== tagId)
-        console.log(`[useTagFiltering] Removed tag "${tagId}", active filters:`, newActiveTagIds)
-        return newActiveTagIds
+        const newActiveValues = prevActiveValues.filter(v => v !== displayValue)
+        console.log(`[useTagFiltering] Removed tag "${displayValue}", active filters:`, newActiveValues)
+        return newActiveValues
       } else {
         // Add tag to active filters
-        const newActiveTagIds = [...prevActiveTagIds, tagId]
-        console.log(`[useTagFiltering] Added tag "${tagId}", active filters:`, newActiveTagIds)
-        return newActiveTagIds
+        const newActiveValues = [...prevActiveValues, displayValue]
+        console.log(`[useTagFiltering] Added tag "${displayValue}", active filters:`, newActiveValues)
+        return newActiveValues
       }
     })
-  }, [])
+  }, [availableFilterTags])
 
   const clearAllFilters = useCallback(() => {
     console.log('[useTagFiltering] Clearing all filters')
-    setActiveTagIds([])
+    setActiveTagDisplayValues([])
   }, [])
 
   return {
-    activeTagIds,
+    activeTagIds, // For backward compatibility
+    activeTagDisplayValues,
     filteredPhotos,
     isFiltering,
     availableFilterTags,
