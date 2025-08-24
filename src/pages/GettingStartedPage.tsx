@@ -7,9 +7,11 @@ import MarkdownRenderer from '../components/MarkdownRenderer';
 const GettingStartedPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const gettingStartedContent = `# Getting Started with Automated Documentation 🚀
+  const gettingStartedContent = `# Getting Started with CodeCraft 🚀
 
 *Your guide to using Scout AI's intelligent documentation system*
+
+> **📝 Work in Progress:** This documentation is actively being developed and improved. Some sections may be incomplete or subject to change.
 
 ---
 
@@ -164,27 +166,65 @@ This completes the session and publishes to your blog!
 
 ## CLI Commands Reference
 
-| Command | Description | Example |
-|---------|-------------|---------|
-| \`npm run docs:start\` | Start documentation session | \`npm run docs:start "Feature Name"\` |
-| \`npm run docs:preview\` | Generate draft for review | \`npm run docs:preview\` |
-| \`npm run docs:publish\` | Publish reviewed blog post | \`npm run docs:publish\` |
-| \`npm run docs:status\` | Check current session status | \`npm run docs:status\` |
-| \`npm run docs:cancel\` | Cancel active session | \`npm run docs:cancel\` |
-| \`npm run docs:cleanup\` | Clean up stale sessions | \`npm run docs:cleanup\` |
+### Core Commands
 
-### Advanced Usage
+**\`docs:start\`**  
+Start a new documentation session to track your development work.
 
 \`\`\`bash
-# Start with description and tags
-npm run docs:start "Feature Name" --description "What this does" --tags "React,Testing,API"
+npm run docs:start "Feature Name"
 
-# Check what changes will be analyzed
-npm run docs:status
-
-# Generate the blog post
-npm run docs:complete
+# With options
+npm run docs:start "Feature Name" --description "What this does" --tags "React,API"
 \`\`\`
+
+**\`docs:preview\`**  
+Generate a draft blog post from your current session for review.
+
+\`\`\`bash
+npm run docs:preview
+\`\`\`
+
+**\`docs:publish\`**  
+Publish the reviewed blog post and complete the session.
+
+\`\`\`bash
+npm run docs:publish
+\`\`\`
+
+### Session Management
+
+**\`docs:status\`**  
+Check the status of your current documentation session.
+
+\`\`\`bash
+npm run docs:status
+\`\`\`
+
+**\`docs:cancel\`**  
+Cancel the active documentation session without publishing.
+
+\`\`\`bash
+npm run docs:cancel
+\`\`\`
+
+**\`docs:cleanup\`**  
+Clean up any stale or abandoned sessions.
+
+\`\`\`bash
+npm run docs:cleanup
+\`\`\`
+
+### Quick Reference
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| \`docs:start\` | Begin tracking | Starting new feature work |
+| \`docs:preview\` | Generate draft | Ready to review documentation |
+| \`docs:publish\` | Publish post | Draft is finalized |
+| \`docs:status\` | Check progress | Want to see current state |
+| \`docs:cancel\` | Abort session | Decided not to document |
+| \`docs:cleanup\` | Remove stale | Maintenance task |
 
 ---
 
@@ -199,10 +239,10 @@ The system understands your code:
 - **File Categories**: Distinguishes utils, components, tests, configs
 - **Code Snippets**: Extracts meaningful examples (not random lines)
 
-### 📖 Quality Writing
+### 📖 Quality Writing with CodeCraft
 
-The AI generates professional content:
-- **Consistent Voice**: Follows "CodeCraft" technical writing style
+CodeCraft AI generates professional content:
+- **Consistent Voice**: Follows CodeCraft technical writing style
 - **Technical Depth**: Explains both the "what" and "why" 
 - **Real Examples**: Uses actual code from your commits
 - **Smart Tags**: Generates relevant tags automatically
@@ -339,7 +379,7 @@ Happy coding and documenting! 🎉
 
 ---
 
-*Built with ❤️ by the Scout AI team | Making documentation effortless*`;
+*Built with ❤️ by the Scout AI team | CodeCraft - Making documentation effortless*`;
 
   return (
     <div className="min-h-screen bg-light-gray">
@@ -354,7 +394,7 @@ Happy coding and documenting! 🎉
             >
               ← Scout AI
             </button>
-            <h1 className="text-2xl font-bold text-orange-400">Getting Started</h1>
+            <h1 className="text-2xl font-bold text-orange-400">CodeCraft Documentation</h1>
           </div>
           <div className="flex items-center space-x-4">
             <button
@@ -368,7 +408,7 @@ Happy coding and documenting! 🎉
               <span>View Blog</span>
             </button>
             <div className="text-sm text-gray-300">
-              Automated Documentation Guide
+              CodeCraft Automated Documentation Guide
             </div>
           </div>
         </div>
@@ -377,17 +417,28 @@ Happy coding and documenting! 🎉
       {/* Content */}
       <div className="max-w-4xl mx-auto p-6">
         <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+          {/* Work in Progress Banner */}
+          <div className="bg-amber-50 border-b-2 border-amber-200 p-4">
+            <div className="flex items-center space-x-2 text-amber-800">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span className="font-semibold">Work in Progress</span>
+              <span className="text-sm">• This CodeCraft documentation is actively being developed. Some features and sections may change.</span>
+            </div>
+          </div>
+          
           {/* Table of Contents */}
           <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">📚 Table of Contents</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <a href="#welcome-developer" className="text-orange-600 hover:text-orange-800 transition-colors">👋 Welcome, Developer!</a>
+              <a href="#welcome-developer-" className="text-orange-600 hover:text-orange-800 transition-colors">👋 Welcome, Developer!</a>
               <a href="#what-this-system-does" className="text-orange-600 hover:text-orange-800 transition-colors">🔧 What This System Does</a>
               <a href="#step-by-step-walkthrough" className="text-orange-600 hover:text-orange-800 transition-colors">📋 Step-by-Step Walkthrough</a>
               <a href="#cli-commands-reference" className="text-orange-600 hover:text-orange-800 transition-colors">⌨️ CLI Commands Reference</a>
               <a href="#what-makes-this-smart" className="text-orange-600 hover:text-orange-800 transition-colors">🧠 What Makes This Smart</a>
               <a href="#when-to-use-it" className="text-orange-600 hover:text-orange-800 transition-colors">🎯 When to Use It</a>
-              <a href="#pro-tips--best-practices" className="text-orange-600 hover:text-orange-800 transition-colors">💡 Pro Tips & Best Practices</a>
+              <a href="#pro-tips-best-practices" className="text-orange-600 hover:text-orange-800 transition-colors">💡 Pro Tips & Best Practices</a>
               <a href="#troubleshooting" className="text-orange-600 hover:text-orange-800 transition-colors">🔧 Troubleshooting</a>
             </div>
           </div>

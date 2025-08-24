@@ -45,28 +45,21 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ children, className, inline }) =>
 
   return (
     <div className="relative group my-6">
-      <div className="flex items-center justify-between bg-gray-800 text-gray-300 px-4 py-2 text-sm rounded-t-lg">
+      <div className="flex items-center justify-between bg-gray-800 text-gray-300 px-4 py-2 text-sm rounded-t-lg border border-gray-700 border-b-0">
         <span className="font-medium">{language}</span>
         <button
           onClick={handleCopy}
-          className="flex items-center space-x-1 text-gray-400 hover:text-white transition-colors"
+          className="text-gray-400 hover:text-white transition-colors text-xs px-2 py-1 rounded hover:bg-gray-700 w-[70px] h-[24px] flex items-center justify-center gap-1"
           title="Copy code"
         >
-          {copied ? (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span>Copied!</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-              <span>Copy</span>
-            </>
-          )}
+          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {copied ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            )}
+          </svg>
+          <span className="text-xs">{copied ? 'Copied' : 'Copy'}</span>
         </button>
       </div>
       <Highlight
@@ -76,8 +69,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ children, className, inline }) =>
       >
         {({ className: highlightClassName, style, tokens, getLineProps, getTokenProps }) => (
           <pre 
-            className={`${highlightClassName} p-4 text-sm overflow-x-auto !mt-0 !rounded-t-none`}
-            style={{ ...style, margin: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
+            className={`${highlightClassName} p-4 text-sm overflow-x-auto !mt-0 rounded-b-lg border border-gray-700 border-t-0`}
+            style={{ ...style, margin: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomLeftRadius: '0.5rem', borderBottomRightRadius: '0.5rem' }}
           >
             {tokens.map((line, i) => (
               <div key={i} {...getLineProps({ line })}>
@@ -186,21 +179,10 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         rehypePlugins={[
           rehypeSlug,
           [rehypeAutolinkHeadings, { 
-            behavior: 'append',
+            behavior: 'wrap',
             properties: {
-              className: ['anchor-link'],
+              className: ['heading-anchor'],
               'aria-label': 'Link to this section'
-            },
-            content: {
-              type: 'element',
-              tagName: 'span',
-              properties: {
-                className: ['anchor-link-symbol']
-              },
-              children: [{
-                type: 'text',
-                value: '#'
-              }]
             }
           }]
         ]}
