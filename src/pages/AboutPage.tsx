@@ -27,13 +27,13 @@ const AboutPage: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
             AI-Powered Photo Intelligence
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Advanced computer vision pipelines designed specifically for photo management
           </p>
         </div>
@@ -101,37 +101,37 @@ const AboutPage: React.FC = () => {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h5 className="font-semibold mb-2">Technical Details</h5>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center py-1">
                     <span className="text-gray-600">Endpoint:</span>
-                    <code className="bg-gray-100 px-2 py-1 rounded">/api/suggest-ai-tags</code>
+                    <code className="bg-gray-100 px-2 py-0.5 rounded text-xs">/api/suggest-ai-tags</code>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center py-1">
                     <span className="text-gray-600">Response Time:</span>
-                    <span>2-4 seconds</span>
+                    <span className="font-medium">2-4 seconds</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center py-1">
                     <span className="text-gray-600">Models:</span>
-                    <span>GPT-4 Vision + Google Vision</span>
+                    <span className="font-medium">GPT-4 + Google Vision</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-gray-600">Batch Size:</span>
+                    <span className="font-medium">1 photo</span>
                   </div>
                 </div>
               </div>
 
               <div>
                 <h5 className="font-semibold mb-2">Data Flow</h5>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <pre className="text-xs text-gray-700">
+                <div className="bg-gray-50 rounded-lg p-3 h-[120px] flex items-center justify-center">
+                  <pre className="text-xs text-gray-700 leading-relaxed">
 {`Photo URL
     ↓
 Google Vision API
     ↓
-Label Annotations
-    ↓
 GPT-4 Vision
     ↓
-Construction Tags
-    ↓
-UI Display`}
+Construction Tags`}
                   </pre>
                 </div>
               </div>
@@ -206,44 +206,46 @@ UI Display`}
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h5 className="font-semibold mb-2">Technical Details</h5>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center py-1">
                     <span className="text-gray-600">Endpoint:</span>
-                    <code className="bg-gray-100 px-2 py-1 rounded">/api/claude-visual-analysis</code>
+                    <code className="bg-gray-100 px-2 py-0.5 rounded text-xs">/api/claude-analysis</code>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center py-1">
                     <span className="text-gray-600">Model:</span>
-                    <span>Claude 3.5 Sonnet</span>
+                    <span className="font-medium">Claude 3.5 Sonnet</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center py-1">
                     <span className="text-gray-600">Batch Size:</span>
-                    <span>10 photos</span>
+                    <span className="font-medium">10 photos</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center py-1">
                     <span className="text-gray-600">Response Time:</span>
-                    <span>3-5 seconds/batch</span>
+                    <span className="font-medium">3-5 seconds/batch</span>
                   </div>
                 </div>
               </div>
 
               <div>
                 <h5 className="font-semibold mb-2">Classification Types</h5>
-                <div className="space-y-1 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <Badge className="bg-red-100 text-red-800">Duplicate</Badge>
-                    <span className="text-xs text-gray-600">Nearly identical</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge className="bg-orange-100 text-orange-800">Burst Shot</Badge>
-                    <span className="text-xs text-gray-600">Rapid sequence</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge className="bg-yellow-100 text-yellow-800">Similar</Badge>
-                    <span className="text-xs text-gray-600">Same subject, different angle</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge className="bg-green-100 text-green-800">Unique</Badge>
-                    <span className="text-xs text-gray-600">Distinct content</span>
+                <div className="bg-gray-50 rounded-lg p-3 h-[120px] flex items-center">
+                  <div className="space-y-1.5 text-sm w-full">
+                    <div className="flex items-center justify-between">
+                      <Badge className="bg-red-100 text-red-800">Duplicate</Badge>
+                      <span className="text-xs text-gray-600">Nearly identical</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Badge className="bg-orange-100 text-orange-800">Burst</Badge>
+                      <span className="text-xs text-gray-600">Rapid sequence</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Badge className="bg-yellow-100 text-yellow-800">Similar</Badge>
+                      <span className="text-xs text-gray-600">Same subject</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Badge className="bg-green-100 text-green-800">Unique</Badge>
+                      <span className="text-xs text-gray-600">Distinct content</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -313,7 +315,7 @@ UI Display`}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-8">
               <div>
                 <h5 className="font-semibold mb-2">Response Times</h5>
                 <div className="space-y-1 text-sm">
