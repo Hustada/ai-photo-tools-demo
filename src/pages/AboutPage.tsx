@@ -52,16 +52,17 @@ const AboutPage: React.FC = () => {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h4 className="font-semibold text-lg mb-3">How It Works</h4>
-              <ol className="space-y-3">
-                <li className="flex items-start">
-                  <span className="font-bold text-blue-500 mr-3">1.</span>
-                  <div>
-                    <strong>User Action:</strong> Click "Suggest Tags" on any photo
-                  </div>
-                </li>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-semibold text-lg mb-3">How It Works</h4>
+                <ol className="space-y-3">
+                  <li className="flex items-start">
+                    <span className="font-bold text-blue-500 mr-3">1.</span>
+                    <div>
+                      <strong>User Action:</strong> Click "Suggest Tags" on any photo
+                    </div>
+                  </li>
                 <li className="flex items-start">
                   <span className="font-bold text-blue-500 mr-3">2.</span>
                   <div>
@@ -97,8 +98,8 @@ const AboutPage: React.FC = () => {
                 </li>
               </ol>
             </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
+            
+            <div className="space-y-6">
               <div>
                 <h5 className="font-semibold mb-2">Technical Details</h5>
                 <div className="space-y-2 text-sm">
@@ -150,14 +151,15 @@ Construction Tags`}
               <Badge variant="outline">Anthropic Claude 3.5 Sonnet</Badge>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h4 className="font-semibold text-lg mb-3">How It Works</h4>
-              <ol className="space-y-3">
-                <li className="flex items-start">
-                  <span className="font-bold text-purple-500 mr-3">1.</span>
-                  <div>
-                    <strong>Temporal Clustering:</strong>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-semibold text-lg mb-3">How It Works</h4>
+                <ol className="space-y-3">
+                  <li className="flex items-start">
+                    <span className="font-bold text-purple-500 mr-3">1.</span>
+                    <div>
+                      <strong>Temporal Clustering:</strong>
                     <ul className="mt-1 ml-4 text-sm text-gray-600 list-disc">
                       <li>Groups photos within 30-second windows</li>
                       <li>Considers location proximity</li>
@@ -202,8 +204,8 @@ Construction Tags`}
                 </li>
               </ol>
             </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
+            
+            <div className="space-y-6">
               <div>
                 <h5 className="font-semibold mb-2">Technical Details</h5>
                 <div className="space-y-2 text-sm">
