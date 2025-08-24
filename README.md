@@ -73,7 +73,7 @@ Automated curation suggestions:
 ### AI/ML Services
 - **OpenAI GPT-4 Vision** - Scene understanding
 - **Google Cloud Vision** - Specialized detection
-- **Anthropic Claude 3.5** - Quality analysis
+- **Anthropic Claude 3.5** - Burst detection & quality analysis
 
 ### Infrastructure
 - **Vercel** - Hosting and serverless functions
