@@ -11,8 +11,6 @@ const GettingStartedPage: React.FC = () => {
 
 *Your guide to using Scout AI's intelligent documentation system*
 
-> **📝 Work in Progress:** This documentation is actively being developed and improved. Some sections may be incomplete or subject to change.
-
 ---
 
 ## Welcome, Developer! 👋
