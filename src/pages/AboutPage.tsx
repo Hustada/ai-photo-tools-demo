@@ -124,7 +124,7 @@ const AboutPage: React.FC = () => {
 
                 <div>
                   <h5 className="font-semibold mb-2">Data Flow</h5>
-                  <div className="bg-gray-50 rounded-lg p-3 h-[120px] flex items-center justify-center">
+                  <div className="bg-gray-50 rounded-lg p-3 min-h-[120px] flex items-center justify-center">
                     <pre className="text-xs text-gray-700 leading-relaxed">
 {`Photo URL
     ↓
@@ -231,7 +231,7 @@ Construction Tags`}
 
                 <div>
                   <h5 className="font-semibold mb-2">Classification Types</h5>
-                  <div className="bg-gray-50 rounded-lg p-3 h-[120px] flex items-center">
+                  <div className="bg-gray-50 rounded-lg p-3 min-h-[120px] flex items-center">
                     <div className="space-y-1.5 text-sm w-full">
                       <div className="flex items-center justify-between">
                         <Badge className="bg-red-100 text-red-800">Duplicate</Badge>
