@@ -73,29 +73,25 @@ const LoginPage: React.FC = () => {
           Login
         </button>
         
-        {/* Demo Mode Button - Only show if demo key is configured */}
-        {demoApiKey && (
-          <>
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-600"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-800 text-gray-400">OR</span>
-              </div>
-            </div>
-            
-            <button
-              onClick={handleDemoLogin}
-              className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800 border border-gray-600"
-            >
-              🚀 Try Demo
-            </button>
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              Demo mode uses test project data
-            </p>
-          </>
-        )}
+        {/* Demo Mode Button - Always visible */}
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-600"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-gray-800 text-gray-400">OR</span>
+          </div>
+        </div>
+        
+        <button
+          onClick={handleDemoLogin}
+          className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800 border border-gray-600"
+        >
+          🚀 Try Demo
+        </button>
+        <p className="text-xs text-gray-500 mt-2 text-center">
+          {demoApiKey ? 'Demo mode uses test project data' : 'Demo mode requires configuration'}
+        </p>
         
         <p className="text-xs text-gray-500 mt-4 text-center">
           Your API key will be stored locally in your browser.
