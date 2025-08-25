@@ -206,7 +206,7 @@ const HomePageContent: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-light-gray">
-      <div className="sticky top-0 flex flex-col md:flex-row md:justify-between md:items-center p-4 bg-gray-900/95 backdrop-blur-md text-white space-y-4 md:space-y-0 border-b border-gray-700/50 shadow-lg z-50">
+      <div className="sticky top-0 flex flex-col md:flex-row md:justify-between md:items-center p-4 bg-gray-900/95 text-white space-y-4 md:space-y-0 border-b border-gray-700/50 shadow-lg z-50">
         {/* Left side: App Title with Avatar */}
         <div className="flex items-center justify-center md:justify-start space-x-3">
           <img 

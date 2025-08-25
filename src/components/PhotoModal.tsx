@@ -169,7 +169,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[1000] animate-fadeIn" 
+      className="fixed inset-0 bg-black/90 flex items-center justify-center z-[1000] animate-fadeIn" 
       onClick={onClose}
     >
       <div 
@@ -181,7 +181,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           {/* Counter Badge and Keyboard Hint */}
           <div className="flex items-center gap-2">
             {totalPhotos > 0 && (
-              <div className="px-2.5 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
+              <div className="px-2.5 py-1 bg-white/10 rounded-full border border-white/20">
                 <span className="text-xs sm:text-sm font-medium text-white">
                   {currentIndex + 1} / {totalPhotos}
                 </span>
@@ -198,7 +198,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
           {/* Close Button */}
           <button 
             onClick={onClose} 
-            className="p-2.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20 hover:bg-white/20 transition-all duration-200 group"
+            className="p-2.5 bg-white/10 rounded-full border border-white/20 hover:bg-white/20 transition-colors duration-200 group"
             aria-label="Close"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white group-hover:rotate-90 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -221,7 +221,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
             <img 
               src={mainImageUri} 
               alt={photo.description || 'Photo'} 
-              className={`w-full h-full object-contain transition-all duration-500 ${imageTransition ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
+              className={`w-full h-full object-contain transition-opacity duration-500 ${imageTransition ? 'opacity-0' : 'opacity-100'}`}
               style={{ maxWidth: '100%', maxHeight: '100%' }}
               onLoad={() => setImageLoading(false)}
               onError={() => setImageLoading(false)}
@@ -246,7 +246,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               }, 150);
             }}
             disabled={!canNavigatePrevious}
-            className="absolute top-1/2 left-2 sm:left-4 transform -translate-y-1/2 z-10 p-2.5 sm:p-3 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full disabled:opacity-0 disabled:cursor-not-allowed transition-all duration-300 opacity-0 group-hover:opacity-100 hover:bg-white/20 hover:scale-110 active:scale-95"
+            className="absolute top-1/2 left-2 sm:left-4 transform -translate-y-1/2 z-10 p-2.5 sm:p-3 bg-white/10 border border-white/20 text-white rounded-full disabled:opacity-0 disabled:cursor-not-allowed transition-opacity duration-300 opacity-0 group-hover:opacity-100 hover:bg-white/20"
             aria-label="Previous photo"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -265,7 +265,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
               }, 150);
             }}
             disabled={!canNavigateNext}
-            className="absolute top-1/2 right-2 sm:right-4 transform -translate-y-1/2 z-10 p-2.5 sm:p-3 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full disabled:opacity-0 disabled:cursor-not-allowed transition-all duration-300 opacity-0 group-hover:opacity-100 hover:bg-white/20 hover:scale-110 active:scale-95"
+            className="absolute top-1/2 right-2 sm:right-4 transform -translate-y-1/2 z-10 p-2.5 sm:p-3 bg-white/10 border border-white/20 text-white rounded-full disabled:opacity-0 disabled:cursor-not-allowed transition-opacity duration-300 opacity-0 group-hover:opacity-100 hover:bg-white/20"
             aria-label="Next photo"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -330,7 +330,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                       <span key={tag.id} className="relative inline-block group">
                         <span className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 inline-block ${
                           isAiTag ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-gray-50 text-gray-700 border-gray-200'
-                        }`}>
+                        } transition-colors duration-150`}>
                           {tag.display_value}
                           {isAiTag && (
                             <span className="ml-1 text-purple-500">✨</span>
@@ -342,7 +342,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                               e.stopPropagation();
                               await onRemoveTag(photo.id, tag.id);
                             }}
-                            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center text-xs shadow-md"
+                            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center justify-center text-xs shadow-md"
                           >
                             ×
                           </button>
@@ -382,7 +382,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                 ) && (
                 <button 
                   onClick={handleFetchAiSuggestionsFromProp} 
-                  className="w-full px-4 py-2.5 bg-gradient-to-r from-orange-500 via-orange-600 to-gray-800 hover:from-orange-600 hover:via-orange-700 hover:to-gray-900 text-white rounded-lg font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                  className="w-full px-4 py-2.5 bg-gradient-to-r from-orange-500 via-orange-600 to-gray-800 hover:from-orange-600 hover:via-orange-700 hover:to-gray-900 text-white rounded-lg font-medium transition-colors duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none">
                     <path d="M12 2L2 7V12C2 17 6.5 21.16 12 22C17.5 21.16 22 17 22 12V7L12 2Z" fill="currentColor" fillOpacity="0.9"/>
@@ -415,7 +415,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                   <textarea
                     value={editableDescription}
                     onChange={(e) => setEditableDescription(e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded-lg text-sm min-h-[60px] focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none transition-all duration-200 bg-gray-50"
+                    className="w-full p-2.5 border border-gray-200 rounded-lg text-sm min-h-[60px] focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none transition-colors duration-150 bg-gray-50"
                     placeholder="Edit suggested description..."
                     rows={2}
                   />
@@ -446,7 +446,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                       setIsSavingDescription(false);
                     }}
                     disabled={isSavingDescription || editableDescription === (photo.description || '')}
-                    className="mt-2 px-3 py-1.5 bg-white border border-gray-200 hover:border-orange-500 hover:bg-orange-50 text-sm rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="mt-2 px-3 py-1.5 bg-white border border-gray-200 hover:border-orange-500 hover:bg-orange-50 text-sm rounded-md transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSavingDescription ? 'Saving...' : 'Save Description'}
                   </button>
@@ -463,7 +463,7 @@ const PhotoModal: React.FC<PhotoModalProps> = ({
                         key={`ai-modal-tag-${index}`}
                         onClick={() => handleAddAiTag(tag)}
                         disabled={addingTag === tag}
-                        className="px-2.5 py-1 bg-white border border-gray-200 hover:border-orange-500 hover:bg-orange-50 text-xs rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-2.5 py-1 bg-white border border-gray-200 hover:border-orange-500 hover:bg-orange-50 text-xs rounded-md transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {addingTag === tag ? 'Adding...' : `+ ${tag}`}
                       </button>

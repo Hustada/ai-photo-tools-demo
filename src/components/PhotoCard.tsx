@@ -78,7 +78,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
   return (
     <div
-      className="p-1 rounded-xl cursor-pointer shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-out flex flex-col relative overflow-hidden w-full"
+      className="p-1 rounded-xl cursor-pointer shadow-lg hover:shadow-xl transition-shadow duration-200 flex flex-col relative overflow-hidden w-full"
       style={{
         background: isArchived ? 'linear-gradient(to bottom, #f3f4f6, #e5e7eb)' : 'linear-gradient(to bottom, #ffffff, #f3f4f6)',
         opacity: isArchived ? 0.7 : 1,
@@ -99,7 +99,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                 e.stopPropagation();
                 onUnarchivePhoto(photo.id);
               }}
-              className="text-white px-2 py-1 text-xs font-bold rounded transition-colors"
+              className="text-white px-2 py-1 text-xs font-bold rounded"
               style={{ backgroundColor: '#2563eb' }}
               onMouseEnter={(e) => e.target.style.backgroundColor = '#1d4ed8'}
               onMouseLeave={(e) => e.target.style.backgroundColor = '#2563eb'}
@@ -164,8 +164,8 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                         onTagClick(tag.id);
                       }
                     }}
-                    className={`px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150 ease-in-out inline-block ${
-                      onTagClick ? 'cursor-pointer hover:scale-105' : 'cursor-default'
+                    className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors duration-150 inline-block ${
+                      onTagClick ? 'cursor-pointer' : 'cursor-default'
                     }`}
                     style={{
                       backgroundColor: tag.isAiEnhanced
@@ -210,7 +210,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                           console.error(`[PhotoCard] Error removing tag '${tag.display_value}':`, err);
                         }
                       }}
-                      className="absolute -top-1 -right-1 w-4 h-4 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-xs"
+                      className="absolute -top-1 -right-1 w-4 h-4 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center justify-center text-xs"
                       style={{ backgroundColor: '#6b7280' }}
                       onMouseEnter={(e) => e.target.style.backgroundColor = '#ef4444'}
                       onMouseLeave={(e) => e.target.style.backgroundColor = '#6b7280'}
@@ -247,7 +247,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         ) : (
           <button
             onClick={handleSuggestAiTags}
-            className="w-full border-t flex items-center justify-center gap-2 text-xs font-bold italic transition-all duration-300 ease-out rounded-b-xl"
+            className="w-full border-t flex items-center justify-center gap-2 text-xs font-bold italic transition-colors duration-200 rounded-b-xl"
             style={{ 
               borderColor: '#e5e7eb',
               height: '48px',
@@ -313,7 +313,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
                       console.error(`[PhotoCard] Error calling onAddAiTag for tag '${tag}':`, err);
                     }
                   }}
-                  className="px-2.5 py-1 border text-xs rounded-full transition-colors duration-150"
+                  className="px-2.5 py-1 border text-xs rounded-full transition-colors duration-100"
                   style={{ 
                     backgroundColor: '#FFFFFF', 
                     color: '#374151', 
