@@ -6,6 +6,7 @@ import scoutAiAvatar from '../assets/scout-ai-avatar-orange2.png';
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [apiKey, setApiKey] = useState<string>('');
+  const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(false);
   const demoApiKey = import.meta.env.VITE_DEMO_API_KEY;
 
   const handleLogin = () => {
@@ -50,30 +51,22 @@ const LoginPage: React.FC = () => {
           />
           <h1 className="text-3xl font-bold text-orange-400 mb-2">Scout AI</h1>
           <p className="text-gray-400 text-center text-sm">
-            Enter your CompanyCam API Key to access Scout AI.
+            Experience AI-powered photo intelligence
           </p>
         </div>
-        <div className="mb-4">
-          <label htmlFor="apiKey" className="block text-sm font-medium text-gray-300 mb-1">
-            CompanyCam API Key
-          </label>
-          <input
-            type="password" // Use password type to obscure the key visually
-            id="apiKey"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
-            placeholder="Paste your API key here"
-          />
-        </div>
-        <button
-          onClick={handleLogin}
-          className="w-full bg-orange-600 hover:bg-orange-500 text-white font-semibold py-2 px-4 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-        >
-          Login
-        </button>
         
-        {/* Demo Mode Button - Always visible */}
+        {/* Demo Mode Button - Primary */}
+        <button
+          onClick={handleDemoLogin}
+          className="w-full bg-orange-600 hover:bg-orange-500 text-white font-semibold py-3 px-4 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-800 mb-3"
+        >
+          🚀 Try Demo
+        </button>
+        <p className="text-xs text-gray-500 text-center mb-4">
+          {demoApiKey ? 'Explore with sample project data' : 'Demo mode requires configuration'}
+        </p>
+        
+        {/* Divider */}
         <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-600"></div>
@@ -83,18 +76,43 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
         
-        <button
-          onClick={handleDemoLogin}
-          className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800 border border-gray-600"
-        >
-          🚀 Try Demo
-        </button>
-        <p className="text-xs text-gray-500 mt-2 text-center">
-          {demoApiKey ? 'Demo mode uses test project data' : 'Demo mode requires configuration'}
-        </p>
+        {/* API Key Section - Collapsible */}
+        {!showApiKeyInput ? (
+          <button
+            onClick={() => setShowApiKeyInput(true)}
+            className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800 border border-gray-600"
+          >
+            🔑 Use Your Own API Key
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-400 text-center">
+              Connect to your own CompanyCam project to analyze your photos
+            </p>
+            <div>
+              <label htmlFor="apiKey" className="block text-sm font-medium text-gray-300 mb-1">
+                CompanyCam API Key
+              </label>
+              <input
+                type="password"
+                id="apiKey"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500"
+                placeholder="Paste your project API key here"
+              />
+            </div>
+            <button
+              onClick={handleLogin}
+              className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800 border border-gray-600"
+            >
+              Login with API Key
+            </button>
+          </div>
+        )}
         
         <p className="text-xs text-gray-500 mt-4 text-center">
-          Your API key will be stored locally in your browser.
+          {showApiKeyInput ? 'Your API key will be stored locally in your browser.' : 'No account needed to try the demo'}
         </p>
       </div>
     </div>
